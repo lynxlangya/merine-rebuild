@@ -1,0 +1,181 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAPI definition",
+    "version": "v0"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/bootstrap/probes": {
+      "post": {
+        "tags": [
+          "bootstrap-controller"
+        ],
+        "summary": "写入一条本地合成联调记录",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProbe"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseProbeRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bootstrap": {
+      "get": {
+        "tags": [
+          "bootstrap-controller"
+        ],
+        "summary": "查询本地工程与数据库联调状态",
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBootstrapStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateProbe": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "note"
+        ]
+      },
+      "ApiResponseProbeRecord": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProbeRecord"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "ProbeRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "note"
+        ]
+      },
+      "ApiResponseBootstrapStatus": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BootstrapStatus"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "BootstrapStatus": {
+        "type": "object",
+        "properties": {
+          "application": {
+            "type": "string"
+          },
+          "database": {
+            "type": "string"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalProbes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recentProbes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProbeRecord"
+            }
+          }
+        },
+        "required": [
+          "application",
+          "database",
+          "recentProbes",
+          "serverTime",
+          "totalProbes"
+        ]
+      }
+    }
+  }
+}

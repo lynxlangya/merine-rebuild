@@ -1,0 +1,109 @@
+name: merine-rebuild-dev
+
+x-java: &java
+  image: merine-rebuild-api-dev:local
+  build:
+    context: ..
+    dockerfile: infra/docker/api.Dockerfile
+  working_dir: /workspace/apps/api
+  volumes:
+    - ..:/workspace
+    - maven_cache:/root/.m2
+    - api_target:/workspace/apps/api/target
+
+x-db-url: &db-url jdbc:mysql://mysql:3306/merine_rebuild?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+
+services:
+  mysql:
+    image: mysql:8.4@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a
+    environment:
+      MYSQL_DATABASE: merine_rebuild
+      MYSQL_USER: merine_migrate
+      MYSQL_PASSWORD: ${MYSQL_MIGRATION_PASSWORD:?Run scripts/dev.sh setup}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run scripts/dev.sh setup}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
+      TZ: UTC
+    ports:
+      - '127.0.0.1:3307:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/10-app-user.sh:/docker-entrypoint-initdb.d/10-app-user.sh:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'MYSQL_PWD="$${MYSQL_APP_PASSWORD}" mysql --user=merine_app --database=merine_rebuild --silent --execute="SELECT 1" >/dev/null',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  migrate:
+    <<: *java
+    profiles: [tools]
+    environment:
+      DB_URL: *db-url
+      DB_MIGRATION_USER: merine_migrate
+      DB_MIGRATION_PASSWORD: ${MYSQL_MIGRATION_PASSWORD:?Run scripts/dev.sh setup}
+    command: ['./mvnw', '-B', '-q', 'flyway:migrate']
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api:
+    <<: *java
+    environment:
+      DB_URL: *db-url
+      DB_APP_USER: merine_app
+      DB_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
+    ports:
+      - '127.0.0.1:9002:9002'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl --fail --silent http://127.0.0.1:9002/api/bootstrap >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/docker/web.Dockerfile
+    environment:
+      API_PROXY_TARGET: http://api:9002
+      API_BASE_URL: http://api:9002
+      CI: 'true'
+    ports:
+      - '127.0.0.1:5173:5173'
+    volumes:
+      - ..:/workspace
+      - root_node_modules:/workspace/node_modules
+      - web_node_modules:/workspace/apps/web/node_modules
+      - pnpm_store:/root/.local/share/pnpm/store
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          'fetch("http://127.0.0.1:5173").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+volumes:
+  mysql_data:
+  maven_cache:
+  api_target:
+  root_node_modules:
+  web_node_modules:
+  pnpm_store:

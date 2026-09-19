@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: merine-rebuild
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_APP_USER}
+    password: ${DB_APP_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 5000
+  sql:
+    init:
+      mode: never
+
+server:
+  address: 0.0.0.0
+  port: 9002
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /api/openapi
+  swagger-ui:
+    path: /api/docs
+
+logging:
+  pattern:
+    level: '%5p [requestId=%X{requestId}]'

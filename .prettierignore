@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+packages/api-contract/openapi.json
+packages/api-contract/src/schema.d.ts
+apps/api/mvnw*
+apps/api/.mvn/
+**/target/
+**/dist/
+**/node_modules/

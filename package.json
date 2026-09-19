@@ -1,0 +1,27 @@
+{
+  "name": "merine-rebuild",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "bash scripts/dev.sh up",
+    "deps:up": "bash scripts/dev.sh deps",
+    "db:migrate": "bash scripts/dev.sh migrate",
+    "stack:status": "bash scripts/dev.sh status",
+    "stack:logs": "bash scripts/dev.sh logs",
+    "stack:down": "bash scripts/dev.sh down",
+    "check": "bash scripts/dev.sh check",
+    "build": "bash scripts/dev.sh build",
+    "smoke": "node scripts/smoke.mjs",
+    "contract:generate": "node scripts/generate-contract.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.9.8"
+  }
+}
