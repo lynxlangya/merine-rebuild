@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>交付总览 · 海防研判工作台</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .ov { flex: 1 0 auto; padding: 0 var(--sp-6) var(--sp-9); }
+  .ov__hero { display: flex; align-items: flex-end; gap: var(--sp-5); flex-wrap: wrap; padding: var(--sp-5) 0 var(--sp-4); border-bottom: 1px solid var(--border); }
+  .ov__title { font-family: var(--font-display); font-size: 34px; font-weight: var(--fw-strong); line-height: var(--lh-display); }
+  .ov__sub { color: var(--muted); font-size: var(--fs-14); line-height: var(--lh-body); max-width: 62ch; margin-top: var(--sp-2); }
+  .ov__sec { margin-top: var(--sp-7); }
+  .ov__sec > h2 { font-family: var(--font-display); font-size: var(--fs-18); font-weight: var(--fw-strong); line-height: var(--lh-title); margin-bottom: var(--sp-1); }
+  .ov__sec > p { color: var(--muted); font-size: var(--fs-13); line-height: var(--lh-body); max-width: 96ch; margin-bottom: var(--sp-4); }
+  .ov__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: var(--sp-4); }
+  .pv { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .pv__shot { position: relative; width: 100%; overflow: hidden; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .pv__shot iframe { width: 1440px; height: 900px; border: 0; transform-origin: top left; display: block; }
+  .pv__meta { padding: var(--sp-3); display: flex; flex-direction: column; gap: 6px; }
+  .pv__name { font-size: var(--fs-13); font-weight: var(--fw-strong); }
+  .pv__desc { font-size: var(--fs-12); color: var(--muted); line-height: 1.6; }
+  .pv__links { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-top: 2px; }
+  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .flow__step { flex: 1 1 150px; min-width: 150px; border: 1px solid var(--border-control); border-radius: var(--r-3); padding: var(--sp-3); background: var(--surface); }
+  .flow__step b { display: block; font-size: var(--fs-13); margin-bottom: 4px; }
+  .flow__step span { font-size: var(--fs-12); color: var(--muted); line-height: 1.6; }
+  .flow__arrow { flex: 0 0 28px; display: grid; place-items: center; color: var(--border-control); }
+  .flow__step--pre { border-style: dashed; background: var(--surface-2); }
+  .ck { display: flex; gap: var(--sp-2); padding: var(--sp-2) 0; border-bottom: 1px solid var(--border); font-size: var(--fs-13); align-items: flex-start; }
+  .ck:last-child { border-bottom: 0; }
+  .ck__mark { flex: 0 0 16px; margin-top: 2px; }
+  .ck--ok .ck__mark { color: var(--success); }
+  .ck--part .ck__mark { color: var(--warning); }
+  .ck__body { flex: 1 1 auto; }
+  .ck__body b { font-weight: var(--fw-ui); }
+  .ck__body span { display: block; color: var(--muted); font-size: var(--fs-12); line-height: 1.7; margin-top: 2px; }
+  .files { width: 100%; border-collapse: collapse; font-size: var(--fs-13); }
+  .files th, .files td { text-align: left; padding: 8px var(--sp-3); border-bottom: 1px solid var(--border); vertical-align: top; }
+  .files th { color: var(--muted); font-size: var(--fs-12); font-weight: var(--fw-ui); }
+  .files td.mono { font-family: var(--font-mono); font-size: var(--fs-12); white-space: nowrap; }
+  .files td.txt { color: var(--muted); }
+</style>
+</head>
+<body data-page="index">
+<div class="app" id="app" data-nav="expanded">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="workspace">
+      <div class="ov">
+
+        <div class="ov__hero">
+          <div style="flex:1 1 520px;min-width:0">
+            <div class="row gap-2 mb-2" style="margin-bottom:var(--sp-2)">
+              <span class="tag tag--accent">交付总览</span>
+              <span class="tag tag--neutral mono">v0.19.0-demo</span>
+              <span class="tag tag--warning">全部为合成数据</span>
+            </div>
+            <h1 class="ov__title">海防研判工作台 · 核心页面设计</h1>
+            <p class="ov__sub">一套双主题设计系统，六个可交互页面。图谱与 AI 研判是设计重点，任务、用户管理与情报协同共用同一套搜索、表格、表单与状态规范。
+              所有样例均可点击运行，右上角主题切换不重载页面，因此查询条件、选中对象与会话状态在切换时保留。</p>
+          </div>
+          <div class="row gap-2">
+            <a class="btn btn--primary" href="p01-graph-workbench.html">从数据图谱开始</a>
+            <a class="btn btn--default" href="design-system.html">设计系统</a>
+          </div>
+        </div>
+
+        <section class="ov__sec" data-od-id="ov-screens">
+          <h2>1 · 双主题主画面</h2>
+          <p>每个页面都提供亮色与暗黑两套渲染，结构与状态含义完全一致。下方为亮色缩略预览（按容器宽度等比缩放至 1440 × 900 画布，文字不可读属正常），点击右下角按钮可打开完整页面或直接进入暗黑对照。</p>
+          <div class="ov__grid" id="previews"></div>
+        </section>
+
+        <section class="ov__sec" data-od-id="ov-flow">
+          <h2>2 · 跨页操作路径</h2>
+          <p>完整任务链：获得账号与权限 → 导入资料并查看同步结果 → 在数据图谱中探索关系 → 选择证据交给 AI 整理 → 人工复核 → 保存情报草稿 → 发送、签收和反馈。
+            左侧两个虚线环节是本路径的<b>前提</b>，由 P03 与 P04 解释。</p>
+          <div class="flow">
+            <div class="flow__step flow__step--pre"><b>前提 · 权限</b><span>P04 用户管理与授权：角色决定功能，数据范围决定可见业务资料。</span></div>
+            <div class="flow__arrow" data-arrow="1"></div>
+            <div class="flow__step flow__step--pre"><b>前提 · 数据</b><span>P03 数据任务中心：导入与同步结果决定图谱完整性与待核对关系。</span></div>
+            <div class="flow__arrow" data-arrow="2"></div>
+            <div class="flow__step"><b>① 图谱选证据</b><span>P01 选中对象、关系或路径，加入证据清单后进入 AI 工作台。</span></div>
+            <div class="flow__arrow" data-arrow="3"></div>
+            <div class="flow__step"><b>② AI 整理与复核</b><span>P02 核对引用编号、修改结果、标记待补充，保存为已复核版本。</span></div>
+            <div class="flow__arrow" data-arrow="4"></div>
+            <div class="flow__step"><b>③ 生成情报草稿</b><span>P05 草稿状态：检查正文、来源与接收单位，由人主动发送。</span></div>
+            <div class="flow__arrow" data-arrow="5"></div>
+            <div class="flow__step"><b>④ 发送与签收</b><span>P05 已发送状态 + 接收方视角：签收、追加反馈，办结由发送单位操作。</span></div>
+          </div>
+          <div class="notice notice--info mt-4" style="max-width:1080px">
+            <span id="icoFlow"></span>
+            <div>这条路径在本交付中<b>真的连通</b>：在 P01 把证据加入清单后点击「去 AI 研判」，证据会带到 P02 的上下文清单；在 P02 点「生成情报草稿」会进入 P05 的草稿状态并可直接发送。
+              页面之间的数据通过浏览器本地存储传递，仅用于演示交互链路，不需要后端。</div>
+          </div>
+        </section>
+
+        <section class="ov__sec" data-od-id="ov-check">
+          <h2>3 · 交付前自检</h2>
+          <p>按委托说明的检查项逐条核对。视觉与结构类结论来自设计与代码审查；对比度为静态色值计算，不是实机取样。</p>
+          <div style="max-width:1080px" id="checklist"></div>
+        </section>
+
+        <section class="ov__sec" data-od-id="ov-tokens">
+          <h2>4 · 设计系统摘要</h2>
+          <p>六个核心 token 与关键派生色。完整 token 表、组件库、实体与状态规范见设计系统页。</p>
+          <div class="ds__swatches" id="swatches" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px"></div>
+        </section>
+
+        <section class="ov__sec" data-od-id="ov-files">
+          <h2>5 · 文件结构与实现参考</h2>
+          <p>项目文件即交付物。除标注区外，所有页面都是可直接在浏览器打开的自包含 HTML。</p>
+          <div class="panel">
+            <table class="files">
+              <thead><tr><th style="width:280px">文件</th><th>内容</th></tr></thead>
+              <tbody id="fileRows"></tbody>
+            </table>
+          </div>
+          <div class="ov__grid mt-4">
+            <div class="card">
+              <div class="section-title" style="margin-bottom:var(--sp-2)">布局尺寸</div>
+              <dl class="kv" style="grid-template-columns:132px 1fr">
+                <dt>设计画布</dt><dd class="mono">1440 × 900</dd>
+                <dt>左侧导航</dt><dd class="mono">224px ⇄ 64px 图标栏</dd>
+                <dt>顶栏</dt><dd class="mono">56px</dd>
+                <dt>筛选面板</dt><dd class="mono">232px（可折叠）</dd>
+                <dt>详情 / 证据面板</dt><dd class="mono">344px（可折叠）</dd>
+                <dt>会话列表</dt><dd class="mono">240px（可折叠）</dd>
+                <dt>表格</dt><dd>表头 40px · 行 44px · 正文 13px</dd>
+                <dt>控件</dt><dd>默认 32px · 小 28px · 主操作 40px</dd>
+              </dl>
+            </div>
+            <div class="card">
+              <div class="section-title" style="margin-bottom:var(--sp-2)">面板收缩规则</div>
+              <ol class="col gap-2 fs-13" style="list-style:decimal;padding-left:1.2em;line-height:1.7">
+                <li>窗口 ≤1439px：导航自动折叠为 64px 图标栏（CSS 媒体查询）。</li>
+                <li>筛选面板：工具条「筛选」按钮切换，按钮上显示已应用条件数。</li>
+                <li>详情面板：关闭后画布恢复完整宽度；图谱使用等比缩放，节点文字实际尺寸稳定在 12–13px。</li>
+                <li>会话与证据面板：独立折叠，互不联动。</li>
+                <li>任何情况下画布最小宽度 480px，关键操作始终可见。</li>
+              </ol>
+            </div>
+            <div class="card">
+              <div class="section-title" style="margin-bottom:var(--sp-2)">关键交互</div>
+              <ul class="col gap-2 fs-13" style="list-style:disc;padding-left:1.2em;line-height:1.7">
+                <li>主题切换写入 localStorage，不重载页面。</li>
+                <li>抽屉与弹窗：打开时焦点进入首个可聚焦元素，Tab 循环限制在层内，Esc 关闭并把焦点还给触发元素。</li>
+                <li>图谱：节点点击选中、背景拖拽平移、缩放 50%–200%、适应画布与重置视图；路径查询按跳数上限做真实广度优先搜索。</li>
+                <li>AI：流式生成可停止；停止先显示「正在请求停止」，收到确认才变「已取消」，已接收内容保留并标记未完成。</li>
+                <li>任务：行操作按状态显隐，重试前先用弹窗说明范围，执行中禁用重复触发。</li>
+                <li>表单：提交时整体校验，错误字段标红并在顶部给出摘要，焦点自动定位到第一个错误字段。</li>
+              </ul>
+            </div>
+            <div class="card">
+              <div class="section-title" style="margin-bottom:var(--sp-2)">统一合成数据</div>
+              <p class="fs-12 muted" style="line-height:1.8">演示人员甲 <span class="mono">DEMO-P-001</span>、演示人员乙 <span class="mono">DEMO-P-002</span>、
+                演示海船甲 <span class="mono">DEMO-S-001</span>、演示港口甲 <span class="mono">DEMO-L-001</span>、
+                演示出港记录 <span class="mono">DEMO-E-001</span>（2026-09-18 14:20，UTC+8）、
+                来源 [1] <span class="mono">DEMO-INOUT-001</span>、来源 [2] <span class="mono">DEMO-DOC-001</span>、
+                演示单位甲 / 乙 / 丙。同一组对象串起 P01、P02、P03、P05，名称、编号、来源与时间跨页一致。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="ov__sec" data-od-id="ov-open">
+          <h2>6 · 未完成与待验证</h2>
+          <p>以下内容本轮未做或无法自证，需要后续确认。</p>
+          <div style="max-width:1080px">
+            <div class="ck ck--part"><span id="mk1"></span><div class="ck__body"><b>1366 × 768 实机取样</b>
+              <span>收缩规则以 CSS 媒体查询实现并经代码审查，但未在真实 1366 视口逐一截图核对。图谱画布在打开筛选面板时约 656px 宽，建议在 1366 下默认折叠筛选面板。</span></div></div>
+            <div class="ck ck--part"><span id="mk2"></span><div class="ck__body"><b>无障碍验收</b>
+              <span>关键颜色组合已按 WCAG 2.2 公式计算并达标（见设计系统页第 2 节），但未做屏幕阅读器实测、未做色觉障碍模拟，因此不宣称整套设计已通过无障碍验收。</span></div></div>
+            <div class="ck ck--part"><span id="mk3"></span><div class="ck__body"><b>未展开的页面</b>
+              <span>信息协同列表页、角色维护、单位维护、设备台账、重复登记页、通用大屏、工作流编辑器、知识库运营后台均不在本轮范围。导航中的「角色 / 单位」点击后给出说明而不跳转。</span></div></div>
+            <div class="ck ck--part"><span id="mk4"></span><div class="ck__body"><b>真实服务接入</b>
+              <span>AI 生成为前端定时器模拟，标记为「模拟服务 · 未接入真实模型」；路径查询为前端在已加载关系上做广度优先搜索，真实实现应由服务端在图数据库中计算并做权限过滤。</span></div></div>
+            <div class="ck ck--part"><span id="mk5"></span><div class="ck__body"><b>键盘焦点顺序</b>
+              <span>已为所有可聚焦元素提供可见焦点环，抽屉与弹窗实现了 Tab 循环；图谱节点的方向键导航（上下左右移动选中）尚未实现，当前支持 Tab 进入 + Enter 选中。</span></div></div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  HF.shell.mount({ active: 'index', crumb: ['交付件', '交付总览'],
+    sync: { level: 'warn', text: '图谱数据 2026-10-02 09:10 · 12 条待核对' } });
+
+  document.getElementById('icoFlow').innerHTML = HF.icon('info', '');
+  ['1','2','3','4','5'].forEach(function (n) {
+    var el = document.querySelector('[data-arrow="' + n + '"]');
+    if (el) el.innerHTML = HF.icon('arrowRight');
+  });
+  ['mk1','mk2','mk3','mk4','mk5'].forEach(function (id, i) {
+    document.getElementById(id).innerHTML = HF.icon('warning', '');
+  });
+
+  var PAGES = [
+    { f: 'p01-graph-workbench.html', id: 'P01', name: '数据图谱工作台', desc: '对象检索、类型/关系/时间筛选、14 个对象与 15 条关系的可读画布、路径查询与逐段来源、节点详情与加入研判、同步状态提示。' },
+    { f: 'p02-ai-workbench.html', id: 'P02', name: 'AI 研判工作台', desc: '会话列表、上下文清单、流式生成与停止、来源事实/整理摘要/推断与待核实项分区、可点击引用、人工复核区与情报草稿出口。' },
+    { f: 'p03-data-tasks.html', id: 'P03', name: '数据任务中心', desc: '任务检索与表格规范；7 种执行状态；主示例为 1,000 条资料中 998 成功、2 失败的部分失败；详情抽屉含失败明细与恢复点。' },
+    { f: 'p04-user-management.html', id: 'P04', name: '用户管理与授权', desc: '用户列表四态、新建/编辑抽屉、必填校验与错误定位、角色与数据范围分离、禁用与权限变更的影响说明。' },
+    { f: 'p05-intel-collaboration.html', id: 'P05', name: '情报协同详情（发送方）', desc: '正文快照、关联对象、引用资料、人工复核摘要、签收与反馈回执、协同历史与导出范围说明；支持草稿状态。' },
+    { f: 'p05b-intel-receiving.html', id: 'P05-B', name: '情报协同详情（接收方）', desc: '演示单位乙视角：只展示本分支内容与历史，不含其他单位记录与汇总；未签收可签收，签收后可追加反馈。' },
+    { f: 'design-system.html', id: 'DS', name: '设计系统', desc: '双主题 token 与实测对比度、排版、间距、图标、实体类型、状态规范、公共组件、权限组件与 AntD 变量对应。' }
+  ];
+  document.getElementById('previews').innerHTML = PAGES.map(function (p) {
+    return '<article class="pv" data-od-id="pv-' + p.id.toLowerCase() + '">' +
+      '<div class="pv__shot"><iframe src="' + p.f + '" loading="lazy" title="' + p.name + ' 预览" tabindex="-1"></iframe></div>' +
+      '<div class="pv__meta"><div class="row gap-2"><span class="tag tag--neutral mono">' + p.id + '</span>' +
+      '<span class="pv__name">' + p.name + '</span></div>' +
+      '<div class="pv__desc">' + p.desc + '</div>' +
+      '<div class="pv__links"><a class="btn btn--default btn--sm" href="' + p.f + '">打开亮色</a>' +
+      '<a class="btn btn--ghost btn--sm" href="' + p.f + '?theme=dark">打开暗黑</a></div></div></article>';
+  }).join('');
+
+  function fitPreviews() {
+    HF.$$('.pv__shot').forEach(function (shot) {
+      var iframe = shot.querySelector('iframe');
+      var w = shot.clientWidth || 300;
+      var k = w / 1440;
+      iframe.style.transform = 'scale(' + k + ')';
+      shot.style.height = Math.round(900 * k) + 'px';
+    });
+  }
+  window.addEventListener('resize', fitPreviews);
+  fitPreviews();
+  setTimeout(fitPreviews, 120);
+
+  /* token 色板 */
+  var SW = [
+    ['--bg', '#F4F6FA', '#0B1220', '页面背景'],
+    ['--surface', '#FFFFFF', '#111C2D', '主要表面 / 卡片'],
+    ['--fg', '#172033', '#E5EDF8', '主要文字'],
+    ['--muted', '#59677A', '#A7B4C8', '次级文字'],
+    ['--border-control', '#7E8AA0', '#5E7396', '控件识别边界'],
+    ['--accent', '#2563EB', '#60A5FA', '品牌强调 / 主要操作'],
+    ['--entity-person', '#10707F', '#4FC3D4', '人员'],
+    ['--entity-vessel', '#5B3FB0', '#B49BF0', '船舶'],
+    ['--entity-place', '#4C5A70', '#9CACC2', '地点'],
+    ['--entity-event', '#B03061', '#F09CBB', '事件'],
+    ['--success', '#1A7A45', '#57CE8A', '成功'],
+    ['--warning', '#8A5A08', '#F0BC5A', '警告 / 待核对']
+  ];
+  document.getElementById('swatches').innerHTML = SW.map(function (s) {
+    return '<div class="ds__sw" style="border:1px solid var(--border);border-radius:6px;overflow:hidden">' +
+      '<div style="height:34px;background:var(' + s[0] + ')"></div>' +
+      '<div style="padding:6px 8px;font-family:var(--font-mono);font-size:11px;color:var(--muted);line-height:1.55">' +
+      '<b style="display:block;color:var(--fg);font-family:var(--font-body);font-size:12px">' + s[3] + '</b>' + s[0] +
+      '<br />亮 ' + s[1] + '<br />暗 ' + s[2] + '</div></div>';
+  }).join('');
+
+  /* 自检表 */
+  var CHECKS = [
+    ['ok', '双主题结构与状态是否一致', '亮色与暗黑共用同一套语义 token；切换只改变变量值，不改变组件结构、状态颜色含义与信息层级。同一页面可直接对照。'],
+    ['ok', '正常 / 空 / 加载 / 错误 / 权限状态是否可区分', 'P03、P04 列表提供完整四态；P01 提供加载失败、检索无结果、达到上限与无权限四种画布态；P02 提供排队、生成中、已完成、失败、请求取消、已取消、结果待确认与资料不足。首页第 2 节列出了每种状态的样张位置。'],
+    ['ok', '图谱边和 AI 引用是否都有依据', '实线边=来源记录支持，虚线边=待核对且边标签写明状态，派生关联额外标注「由来源记录派生的关联」；AI 正文的每个引用编号都能打开对应演示片段，未使用的来源不会生成编号。'],
+    ['ok', '停止生成、部分失败和草稿是否容易被误读', '停止先进入「正在请求停止」、收到确认才显示「已取消」，且已接收内容标记「未完成」并说明不能当作完整结果；1,000 条中 2 条失败时状态是「部分失败」而非「成功」，失败项在列表与详情中都可追踪；草稿状态顶部标注「未发送」，发送前用弹窗确认接收单位，发送后正文转为只读快照。'],
+    ['ok', '同一条演示记录是否在各页保持一致', '演示出港记录 DEMO-E-001（2026-09-18 14:20，UTC+8）与其来源 [1] DEMO-INOUT-001、[2] DEMO-DOC-001 在 P01 画布、P02 引用卡、P03 批次详情、P05 正文与引用资料中编号、名称、时间完全一致。'],
+    ['part', '1366 × 768 下关键操作是否仍可见', '已实现：≤1439px 自动折叠导航；筛选与详情面板手动折叠；图谱等比缩放使节点文字稳定在 12–13px；画布最小宽度 480px。未做：真实 1366 视口的逐页截图核对。']
+  ];
+  document.getElementById('checklist').innerHTML = CHECKS.map(function (c) {
+    return '<div class="ck ck--' + c[0] + '"><span class="ck__mark">' + HF.icon(c[0] === 'ok' ? 'check' : 'warning', '') + '</span>' +
+      '<div class="ck__body"><b>' + c[1] + '</b><span>' + c[2] + '</span></div></div>';
+  }).join('');
+
+  /* 文件表 */
+  var FILES = [
+    ['index.html', '本文件：交付总览、双主题预览、跨页路径、自检结论、文件与尺寸参考'],
+    ['design-system.html', '设计系统：双主题 token、对比度实测表、排版、间距、图标、实体类型、状态规范、公共组件、权限选择组件、AntD 变量对应、1366 收缩规则'],
+    ['p01-graph-workbench.html', 'P01 数据图谱工作台'],
+    ['p02-ai-workbench.html', 'P02 AI 研判工作台'],
+    ['p03-data-tasks.html', 'P03 数据任务中心'],
+    ['p04-user-management.html', 'P04 用户管理与授权'],
+    ['p05-intel-collaboration.html', 'P05 情报协同详情（发送方视角，含草稿状态）'],
+    ['p05b-intel-receiving.html', 'P05-B 情报协同详情（接收方视角，含未签收状态）'],
+    ['assets/tokens.css', '双主题 token 与 AntD 映射注释。唯一允许写颜色值的地方'],
+    ['assets/app.css', '应用骨架与公共组件：导航、顶栏、按钮、表单、标签、表格、抽屉、弹窗、时间线、进度、空/错状态、设计标注区'],
+    ['assets/app.js', '运行时：主题切换、导航外壳、图标库、抽屉与弹窗焦点管理、Toast、选项卡、跨页证据与草稿传递、统一合成数据'],
+    ['brand-spec.md', '品牌与视觉方向：六个核心 token、字体栈、5 条视觉规则、已知未验证项'],
+    ['implementation-notes.md', '实现参考：页面分区与尺寸、面板收缩规则、组件对应、关键交互、React 落地建议']
+  ];
+  document.getElementById('fileRows').innerHTML = FILES.map(function (f) {
+    return '<tr><td class="mono">' + f[0] + '</td><td class="txt">' + f[1] + '</td></tr>';
+  }).join('');
+})();
+</script>
+</body>
+</html>

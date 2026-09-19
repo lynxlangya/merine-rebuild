@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>数据图谱工作台 · 海防研判工作台</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  /* ---------- 工作区三栏骨架 ---------- */
+  .wb { position: relative; display: flex; flex: 1 0 auto; min-height: 0; gap: var(--sp-3); padding: 0 var(--sp-4) var(--sp-3); }
+  .wb__filter { flex: 0 0 var(--filter-w); width: var(--filter-w); display: flex; flex-direction: column; }
+  .wb__filter[hidden] { display: none; }
+  .wb__canvas { flex: 1 1 auto; min-width: 480px; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .wb__detail { flex: 0 0 var(--panel-w); width: var(--panel-w); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .wb__detail[hidden] { display: none; }
+
+  /* ---------- 工具条 ---------- */
+  .tb { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: nowrap; }
+  .tbar { flex: 0 0 auto; }
+  .tbar--path { padding: var(--sp-3) 0 0; flex-wrap: wrap; row-gap: var(--sp-2); }
+  .tb > * { flex: 0 0 auto; }
+  #combo { z-index: 45; }
+  .tbar__search { position: relative; width: 320px; flex: 0 0 320px; }
+  .tbar__search .input { padding-left: 32px; }
+  .tbar__search > svg { position: absolute; left: 9px; top: 8px; width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
+  .combo { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 45; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-3); box-shadow: var(--shadow-3); max-height: 360px; overflow: auto; padding: var(--sp-1); }
+  .combo__group { padding: 6px 8px 2px; font-size: var(--fs-11); color: var(--muted); letter-spacing: var(--ls-caps); text-transform: uppercase; }
+  .combo__item { display: flex; align-items: center; gap: var(--sp-2); width: 100%; padding: 7px var(--sp-2); border: 0; background: transparent; border-radius: var(--r-2); cursor: pointer; text-align: left; font-size: var(--fs-13); }
+  .combo__item:hover, .combo__item:focus-visible { background: var(--surface-hover); }
+  .combo__name { font-weight: var(--fw-ui); }
+  .combo__id { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); margin-left: auto; }
+  .chip-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 var(--sp-3); border: 1px solid var(--border-control); border-radius: var(--r-3); background: var(--surface); color: var(--fg); font-size: var(--fs-13); cursor: pointer; }
+  .chip-btn:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+  .chip-btn[aria-pressed="true"], .chip-btn[data-on="true"] { background: var(--surface-selected); border-color: var(--accent-soft-border); color: var(--fg); font-weight: var(--fw-ui); }
+  .chip-btn__n { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--accent); }
+  .chip-btn__n[hidden] { display: none; }
+  .combo__item.is-active { background: var(--surface-selected); }
+  .chip-btn svg { width: 14px; height: 14px; color: var(--muted); }
+
+  /* ---------- 筛选面板 ---------- */
+  .flt__group { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); }
+  .flt__group:last-child { border-bottom: 0; }
+  .flt__label { font-size: var(--fs-12); font-weight: var(--fw-ui); color: var(--fg); margin-bottom: var(--sp-2); display: flex; align-items: center; gap: 6px; }
+  .flt__count { margin-left: auto; font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); }
+  .flt__list { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .flt__foot { margin-top: auto; padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--border); display: flex; gap: var(--sp-2); }
+  .flt__scope { font-size: var(--fs-12); color: var(--muted); line-height: var(--lh-body); }
+  .flt__scope b { color: var(--fg); font-family: var(--font-mono); }
+
+  /* ---------- 画布 ---------- */
+  .cv__strip { display: flex; align-items: center; flex-wrap: wrap; row-gap: 4px; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border); background: var(--surface-2); font-size: var(--fs-12); color: var(--muted); }
+  .cv__strip b { color: var(--fg); }
+  .cv__stage { position: relative; flex: 1 1 auto; min-height: 0; background: var(--graph-canvas); overflow: hidden; }
+  .cv__svg { width: 100%; height: 100%; display: block; cursor: grab; }
+  .cv__svg.dragging { cursor: grabbing; }
+  /* 图例与缩放级别改为画布下方的固定带：画布内不再有常驻浮层，
+     任何视口高度下都不会压住节点或边标签（1366×768 同样成立） */
+  .cv__legend { flex: 0 0 auto; display: flex; align-items: center; flex-wrap: wrap; gap: 6px var(--sp-3); padding: 7px var(--sp-3); border-top: 1px solid var(--border); background: var(--surface); font-size: var(--fs-11); color: var(--muted); }
+  .cv__legend-item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .cv__legend-item b { color: var(--fg); font-weight: var(--fw-ui); }
+  .cv__legend .eg--person { color: var(--entity-person); }
+  .cv__legend .eg--vessel { color: var(--entity-vessel); }
+  .cv__legend .eg--place  { color: var(--entity-place); }
+  .cv__legend .eg--event  { color: var(--entity-event); }
+  .cv__legend-zoom { margin-left: auto; font-family: var(--font-mono); letter-spacing: var(--ls-mono); font-variant-numeric: tabular-nums; }
+  .cv__pop { position: absolute; z-index: 30; width: 260px; }
+  .cv__pop[hidden] { display: none; }
+
+  /* 画布状态层：加载 / 失败 / 空结果，均保留工具条、筛选条件与已选对象 */
+  .cv__state { position: absolute; inset: 0; z-index: 12; background: var(--graph-canvas); display: flex; align-items: center; justify-content: center; padding: var(--sp-4); }
+  .cv__state[hidden] { display: none; }
+  .cv__state .state { padding: var(--sp-6) var(--sp-4); }
+  .cv__state .state__desc { max-width: 46ch; }
+  .cv__skel { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-4); }
+  .cv__diag { margin-top: var(--sp-2); width: 100%; max-width: 420px; text-align: left; font-size: var(--fs-11); color: var(--muted); }
+  .cv__diag summary { cursor: pointer; padding: 3px 0; }
+  .cv__diag pre { margin: var(--sp-1) 0 0; padding: var(--sp-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-2); font-family: var(--font-mono); font-size: var(--fs-11); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .cv__stage[data-state="loading"] .cv__svg,
+  .cv__stage[data-state="error"] .cv__svg,
+  .cv__stage[data-state="empty"] .cv__svg { visibility: hidden; }
+  .is-off { display: none; }
+
+  /* ---------- 图谱元素（全部走 class，不在属性里写色值） ---------- */
+  .nd { cursor: pointer; }
+  .nd__mark { fill: var(--graph-node-fill); stroke-width: 2; }
+  .nd__char { font-family: var(--font-display); font-size: 16px; font-weight: 600; text-anchor: middle; }
+  .nd__ring { fill: none; stroke: var(--accent); stroke-width: 2.5; opacity: 0; }
+  .nd__name { font-family: var(--font-display); font-size: 16px; font-weight: 600; fill: var(--fg); text-anchor: middle; paint-order: stroke; stroke: var(--graph-canvas); stroke-width: 3.5px; stroke-linejoin: round; }
+  .nd__id { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.02em; fill: var(--muted); text-anchor: middle; paint-order: stroke; stroke: var(--graph-canvas); stroke-width: 3px; stroke-linejoin: round; }
+  .nd__more { fill: var(--warning); }
+  .nd__more-t { font-family: var(--font-mono); font-size: 11px; fill: var(--surface); text-anchor: middle; font-weight: 600; }
+  .nd--person .nd__mark { stroke: var(--entity-person); } .nd--person .nd__char { fill: var(--entity-person); }
+  .nd--vessel .nd__mark { stroke: var(--entity-vessel); } .nd--vessel .nd__char { fill: var(--entity-vessel); }
+  .nd--place  .nd__mark { stroke: var(--entity-place); }  .nd--place  .nd__char { fill: var(--entity-place); }
+  .nd--event  .nd__mark { stroke: var(--entity-event); }  .nd--event  .nd__char { fill: var(--entity-event); }
+  .nd:hover .nd__name, .nd[aria-selected="true"] .nd__name { fill: var(--fg); }
+  .nd[aria-selected="true"] .nd__ring { opacity: 1; }
+  .nd[aria-selected="true"] .nd__mark { fill: var(--accent-soft); }
+  /* 路径弱化态：图形退后，文字仍保持 ≥4.5:1，不靠整体不透明度把标签压到不可读 */
+  .nd--dim .nd__mark, .nd--dim .nd__char, .nd--dim .nd__ring, .nd--dim .nd__more-g { opacity: var(--graph-dim); }
+  .nd--dim .nd__name { fill: var(--muted); }
+  .nd--dim:hover .nd__mark, .nd--dim:hover .nd__char { opacity: 1; }
+  .nd--dim:hover .nd__name { fill: var(--fg); }
+  .nd--path .nd__ring { opacity: 1; stroke-dasharray: none; }
+  .ed { fill: none; stroke: var(--graph-edge); stroke-width: 1.6; }
+  .ed--pending { stroke: var(--warning); stroke-dasharray: 7 5; }
+  .ed--derived { stroke-dasharray: 2 4; }
+  .ed--path { stroke: var(--accent); stroke-width: 3; stroke-dasharray: none; }
+  .ed-g.ed--dim .ed, .ed-g.ed--dim .ed__plate { opacity: var(--graph-dim); }
+  .ed-g.ed--dim .ed__label { fill: var(--fg-placeholder); }
+  .ed__arrow { fill: var(--graph-edge); }
+  .ed__arrow--pending { fill: var(--warning); }
+  .ed__arrow--path { fill: var(--accent); }
+  .ed__plate { fill: var(--graph-canvas); }
+  .ed__label { font-family: var(--font-body); font-size: 13px; fill: var(--muted); text-anchor: middle; }
+  .ed--path .ed__label { fill: var(--accent); font-weight: 600; }
+  .ed--pending .ed__label { fill: var(--warning); font-weight: 500; }
+  .ed--hit { stroke-width: 12; stroke: transparent; fill: none; cursor: pointer; }
+  .cv__grid { fill: none; }
+
+  /* ---------- 证据托盘 ---------- */
+  .tray { flex: 0 0 auto; display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-top: 1px solid var(--border); background: var(--surface-2); min-height: 52px; }
+  .tray__list { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; overflow-x: auto; padding-bottom: 2px; }
+  .ev-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 4px 0 8px; border-radius: var(--r-2); border: 1px solid var(--border-control); background: var(--surface); font-size: var(--fs-12); white-space: nowrap; }
+  .ev-chip__x { width: 22px; height: 22px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r-1); cursor: pointer; display: grid; place-items: center; }
+  .ev-chip__x:hover { background: var(--surface-hover); color: var(--fg); }
+  .ev-chip__x svg { width: 11px; height: 11px; }
+
+  /* ---------- 详情面板 ---------- */
+  .dp__head { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); }
+  .dp__title { font-family: var(--font-display); font-size: var(--fs-16); font-weight: var(--fw-strong); line-height: var(--lh-title); margin-top: var(--sp-2); }
+  .dp__body { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3); }
+  .dp__foot { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .dp__foot #dpAdd { flex: 1 1 100%; }   /* 证据动作独占一行：320px 面板内不会把相邻按钮挤到溢出 */
+  .seg-row { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2) 0; border-bottom: 1px solid var(--border); font-size: var(--fs-12); }
+  .seg-row:last-child { border-bottom: 0; }
+  .seg-row__no { flex: 0 0 20px; height: 20px; border-radius: var(--r-1); background: var(--tag-neutral-bg); color: var(--muted); font-family: var(--font-mono); font-size: var(--fs-11); display: grid; place-items: center; }
+  .seg-row--pending .seg-row__no { background: var(--tag-warning-bg); color: var(--warning); }
+  /* 关联事件行可点击并可用键盘打开：关系不必只靠拖动或鼠标命中连线 */
+  .seg-row--act { width: 100%; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: var(--sp-2) var(--sp-1); border-radius: 0; }
+  .seg-row--act:hover { background: var(--row-hover); }
+  .seg-row--act:last-child { border-bottom: 0; }
+  .seg-row__go { flex: 0 0 auto; align-self: center; color: var(--muted); }
+  .seg-row__go svg { width: 13px; height: 13px; }
+
+  /* ---------- 1366×768：次要面板改为覆盖式，优先保证画布可用 ---------- */
+  @media (max-width: 1439px) {
+    .wb__filter { position: absolute; left: var(--sp-4); top: 0; bottom: var(--sp-3); width: var(--filter-w); z-index: 20; box-shadow: var(--shadow-3); }
+  }
+</style>
+</head>
+<body data-page="graph">
+<div class="app" id="app" data-nav="expanded">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="workspace">
+
+      <div class="page-head page-head--slim" style="padding:10px var(--sp-4);align-items:center">
+        <div class="page-head__main row gap-3">
+          <h1 class="page-title" style="font-size:var(--fs-16)">数据图谱工作台</h1>
+          <span class="muted fs-12">回答：这几个对象怎样关联、关系来自哪条资料、哪些还需要核对</span>
+        </div>
+        <div class="page-head__actions">
+          <span class="tag tag--neutral" data-od-id="p01-scope"><i class="eg eg--place"></i>数据范围：演示单位甲 · 演示库</span>
+          <button class="btn btn--ghost btn--sm" type="button" id="btnGoAI2">AI 研判 <span id="icoArrowA"></span></button>
+        </div>
+      </div>
+
+      <!-- 工具条：检索 → 筛选 → 路径查询 → 视图控制 -->
+      <div class="tbar" style="padding:0 var(--sp-4) var(--sp-3)" data-od-id="p01-toolbar">
+        <div class="tb">
+          <div class="tbar__search" id="searchBox">
+            <span id="icoSearch"></span>
+            <input class="input" id="q" type="search" role="combobox" aria-autocomplete="list" placeholder="检索人员、船舶、地点、事件（名称或业务编号）"
+                   aria-label="对象检索" aria-expanded="false" aria-controls="combo" autocomplete="off" />
+            <div class="combo" id="combo" hidden role="listbox" aria-label="检索结果"></div>
+          </div>
+          <span class="divider--v"></span>
+          <button class="chip-btn" type="button" id="btnFilter" aria-pressed="true" aria-controls="filterPanel">
+            <span id="icoFilter"></span>筛选 <span class="chip-btn__n" id="fltCount" hidden>0</span>
+          </button>
+          <button class="chip-btn" type="button" id="btnDetail" aria-pressed="true" aria-controls="detailPanel">
+            <span id="icoDetail"></span>详情
+          </button>
+          <button class="chip-btn" type="button" id="btnPath" aria-pressed="false"><span id="icoPath"></span>路径查询</button>
+          <span class="spacer"></span>
+          <span class="muted fs-12" style="white-space:nowrap">缩放</span>
+          <button class="btn btn--default btn--icon" type="button" id="btnZout" title="缩小" aria-label="缩小"></button>
+          <button class="btn btn--default btn--icon" type="button" id="btnZin" title="放大" aria-label="放大"></button>
+          <button class="btn btn--default btn--sm" type="button" id="btnFit" title="适应画布">适应画布</button>
+          <button class="btn btn--default btn--sm" type="button" id="btnLocate">定位选中</button>
+          <button class="btn btn--ghost btn--sm" type="button" id="btnReset">重置</button>
+          <button class="btn btn--ghost btn--sm" type="button" id="btnExpandAll">展开待核对</button>
+        </div>
+        <div class="tb tbar--path" id="pathBar" hidden>
+          <span class="tag tag--accent">路径查询</span>
+          <label class="fs-12 muted" for="pFrom">起点</label>
+          <div class="select-wrap" style="width:212px"><select class="select" id="pFrom"></select></div>
+          <span class="muted fs-12">→</span>
+          <label class="fs-12 muted" for="pTo">终点</label>
+          <div class="select-wrap" style="width:212px"><select class="select" id="pTo"></select></div>
+          <label class="fs-12 muted" for="pHops">跳数上限</label>
+          <div class="select-wrap" style="width:104px"><select class="select" id="pHops">
+            <option>2 跳</option><option>3 跳</option><option selected>4 跳</option><option>5 跳</option></select></div>
+          <button class="btn btn--primary btn--sm" type="button" id="btnRunPath">查询路径</button>
+          <span class="spacer"></span>
+          <span class="fs-12 muted">逐段列出来源；待核对段标注</span>
+          <button class="btn btn--text btn--sm" type="button" id="btnExitPath">退出路径查询</button>
+        </div>
+      </div>
+
+      <div class="wb">
+        <!-- 筛选面板 -->
+        <aside class="wb__filter panel" id="filterPanel" data-od-id="p01-filter" aria-label="筛选面板">
+          <div class="panel__head"><span class="panel__title">筛选</span><span class="panel__spacer"></span>
+            <button class="btn btn--ghost btn--sm" type="button" id="btnClearFlt">重置</button></div>
+          <div class="flt__group">
+            <div class="flt__label">实体类型 <span class="flt__count">14 / 14</span></div>
+            <div class="flt__list" id="fltType"></div>
+          </div>
+          <div class="flt__group">
+            <div class="flt__label">关系类型</div>
+            <div class="flt__list">
+              <label class="check"><input type="checkbox" checked data-rel-flt="ok" /><span class="check__text">来源记录支持的关系（实线 / 点线）</span></label>
+              <label class="check"><input type="checkbox" checked data-rel-flt="pending" /><span class="check__text">待核对的关系（黄色虚线）</span></label>
+            </div>
+          </div>
+          <div class="flt__group">
+            <div class="flt__label">时间范围</div>
+            <div class="flt__list">
+              <input class="input" type="date" value="2026-09-01" aria-label="起始日期" />
+              <input class="input" type="date" value="2026-10-02" aria-label="结束日期" />
+              <div class="row gap-2 mt-2">
+                <button class="btn btn--default btn--sm" type="button">近 7 天</button>
+                <button class="btn btn--default btn--sm" type="button">近 30 天</button>
+              </div>
+            </div>
+          </div>
+          <div class="flt__group">
+            <div class="flt__label">当前查询范围</div>
+            <p class="flt__scope">演示单位甲 · 演示库；2026-09-01 至 2026-10-02；含 4 类实体、6 类关系。<br />
+              已加载 <b>14</b> 个对象、<b>15</b> 条关系，关系上限 <b>200</b>。达到上限时可继续缩小时间范围。</p>
+          </div>
+          <div class="flt__foot">
+            <button class="btn btn--default btn--sm btn--block" type="button" id="btnApplyFlt">应用筛选</button>
+          </div>
+        </aside>
+
+        <!-- 画布 -->
+        <section class="wb__canvas" data-od-id="p01-canvas" aria-label="图谱画布">
+          <div class="cv__strip" data-od-id="p01-canvas-strip">
+            <span style="white-space:nowrap">范围 <b>演示单位甲</b></span>
+            <span class="crumb-sep">|</span>
+            <span class="mono" style="white-space:nowrap">2026-09-01 – 10-02</span>
+            <span class="crumb-sep">|</span>
+            <span class="row gap-1" id="stripChips"></span>
+            <span class="spacer"></span>
+            <span class="mono" id="loadedHint" style="white-space:nowrap">14 对象 · 15 关系 · 上限 200</span>
+          </div>
+          <div class="notice" style="border-radius:0;border-left:0;border-right:0;border-top:0" id="syncNotice" data-od-id="p01-sync-notice">
+            <span id="icoSyncNotice"></span>
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">图谱数据可能未完整更新：12 条关系待核对，未写入图谱边。<a class="notice__link" href="p03-data-tasks.html">查看任务 DEMO-T-0032</a></div>
+          </div>
+          <div class="cv__stage" id="stage" data-state="ok">
+            <svg class="cv__svg" id="svg" viewBox="0 0 770 760" preserveAspectRatio="xMidYMid meet"
+                 role="group" aria-label="数据图谱：14 个演示对象与 15 条关系">
+              <defs>
+                <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
+                  <circle cx="1" cy="1" r="1" fill="var(--graph-grid)" />
+                </pattern>
+                <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 1.4 L9 5 L0 8.6 z" class="ed__arrow" />
+                </marker>
+                <marker id="arw-pending" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 1.4 L9 5 L0 8.6 z" class="ed__arrow ed__arrow--pending" />
+                </marker>
+                <marker id="arw-path" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 1.4 L9 5 L0 8.6 z" class="ed__arrow ed__arrow--path" />
+                </marker>
+              </defs>
+              <rect class="cv__grid" width="770" height="760" fill="url(#grid)" pointer-events="none" />
+              <g id="viewport"><g id="edges"></g><g id="nodes" role="listbox" aria-label="图谱对象"></g></g>
+            </svg>
+            <div class="cv__state" id="stateLoading" data-cstate="loading" role="status" aria-live="polite" hidden data-od-id="p01-state-loading">
+              <div class="state">
+                <div class="cv__skel" aria-hidden="true">
+                  <i class="skeleton" style="width:44px;height:44px;border-radius:50%"></i>
+                  <i class="skeleton" style="width:58px;height:38px"></i>
+                  <i class="skeleton" style="width:44px;height:44px;transform:rotate(45deg)"></i>
+                  <i class="skeleton" style="width:60px;height:30px"></i>
+                </div>
+                <div class="row gap-2"><span class="spinner"></span><span class="state__title">正在加载图谱数据</span></div>
+                <div class="state__desc">范围：演示单位甲 · 演示库 · 2026-09-01 至 2026-10-02。加载完成后直接绘制对象与关系，已输入的检索词与筛选条件会保留。</div>
+              </div>
+            </div>
+            <div class="cv__state" id="stateError" data-cstate="error" role="alert" hidden data-od-id="p01-state-error">
+              <div class="state state--error">
+                <div class="state__icon" id="icoErrState"></div>
+                <div class="state__title">图谱数据加载失败</div>
+                <div class="state__desc">已保留当前筛选条件与已选中对象，可原样重试。失败原因：图查询服务连接超时；技术诊断信息在下方展开，不堆到主界面。</div>
+                <div class="state__actions">
+                  <button class="btn btn--default btn--sm" type="button" id="btnReloadGraph"><span id="icoReloadState"></span>重新加载</button>
+                  <a class="btn btn--text btn--sm" href="p03-data-tasks.html">查看数据任务</a>
+                </div>
+                <details class="cv__diag"><summary>技术诊断信息</summary>
+                  <pre>code: GRAPH_QUERY_TIMEOUT
+query: demo-scope-4types-6rels
+range: 2026-09-01..2026-10-02
+trace: DEMO-TRACE-7F31
+action: 重试；连续失败请联系系统管理员</pre></details>
+              </div>
+            </div>
+            <div class="cv__state" id="stateEmpty" data-cstate="empty" hidden data-od-id="p01-state-empty">
+              <div class="state">
+                <div class="state__title">当前条件下没有对象</div>
+                <div class="state__desc">演示单位甲 · 演示库 内，2026-09-01 至 2026-10-02、所选实体类型与关系类型没有结果。不显示推测对象，也不用其他单位的数据补位。</div>
+                <div class="state__actions"><button class="btn btn--default btn--sm" type="button" id="btnEmptyClear">清除筛选条件</button></div>
+              </div>
+            </div>
+            <div class="popover cv__pop" id="expandPop" hidden data-od-id="p01-expand-pop"></div>
+          </div>
+          <div class="cv__legend" data-od-id="p01-legend">
+            <span class="cv__legend-item"><i class="eg eg--person"></i><b>人员</b></span>
+            <span class="cv__legend-item"><i class="eg eg--vessel"></i><b>船舶</b></span>
+            <span class="cv__legend-item"><i class="eg eg--place"></i><b>地点</b></span>
+            <span class="cv__legend-item"><i class="eg eg--event"></i><b>事件</b></span>
+            <span class="cv__legend-item"><svg width="30" height="10" viewBox="0 0 34 10" aria-hidden="true"><path d="M0 5h26" stroke="var(--graph-edge)" stroke-width="1.6"/><path d="M26 2l6 3-6 3z" fill="var(--graph-edge)"/></svg>来源记录支持</span>
+            <span class="cv__legend-item"><svg width="30" height="10" viewBox="0 0 34 10" aria-hidden="true"><path d="M0 5h26" stroke="var(--warning)" stroke-width="1.6" stroke-dasharray="5 4"/><path d="M26 2l6 3-6 3z" fill="var(--warning)"/></svg>待核对</span>
+            <span class="cv__legend-item"><svg width="30" height="10" viewBox="0 0 34 10" aria-hidden="true"><path d="M0 5h26" stroke="var(--graph-edge)" stroke-width="1.6" stroke-dasharray="2 4"/></svg>派生关联</span>
+            <span class="cv__legend-zoom" id="zoomLabel" title="当前缩放比例（适应画布为 100%）">100%</span>
+          </div>
+          <div class="tray" data-od-id="p01-tray">
+            <span class="fs-12 fw-strong" style="white-space:nowrap">证据清单</span>
+            <span class="tag tag--neutral mono" id="evCount" style="padding:0 6px">0</span>
+            <div class="tray__list" id="evList"></div>
+            <button class="btn btn--ghost btn--sm" type="button" id="evClear" hidden>清空</button>
+            <button class="btn btn--primary btn--sm" type="button" id="goAI" disabled>去 AI 研判 →</button>
+          </div>
+        </section>
+
+        <!-- 详情面板 -->
+        <aside class="wb__detail" id="detailPanel" data-od-id="p01-detail" aria-label="对象详情">
+          <div class="dp__head">
+            <div class="row">
+              <span class="fs-12 muted" id="dpKind">对象详情</span>
+              <span class="spacer"></span>
+              <button class="btn btn--ghost btn--icon btn--sm" type="button" id="dpClose" title="折叠详情面板" aria-label="折叠详情面板"></button>
+            </div>
+            <div id="dpTitleWrap"></div>
+          </div>
+          <div class="tabs" data-tabs="dpPanels" id="dpTabs" role="tablist">
+            <button class="tabs__btn" role="tab" data-tab="prop" aria-selected="true" id="tab-prop">属性</button>
+            <button class="tabs__btn" role="tab" data-tab="src" aria-selected="false" id="tab-src">来源记录 <span class="tabs__count" id="cntSrc">0</span></button>
+            <button class="tabs__btn" role="tab" data-tab="rel" aria-selected="false" id="tab-rel">关联事件 <span class="tabs__count" id="cntRel">0</span></button>
+          </div>
+          <div class="dp__body" id="dpPanels">
+            <div data-tab-panel="prop" id="panel-prop"></div>
+            <div data-tab-panel="src" id="panel-src" hidden></div>
+            <div data-tab-panel="rel" id="panel-rel" hidden></div>
+          </div>
+          <div class="dp__foot">
+            <button class="btn btn--default btn--sm" type="button" id="dpExpandNode">展开关联</button>
+            <button class="btn btn--default btn--sm" type="button" id="dpLocate">在画布中定位</button>
+            <span class="spacer"></span>
+            <button class="btn btn--default btn--sm" type="button" id="dpAdd" style="display:none">加入证据清单</button>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ 设计标注（非产品界面） ============ -->
+      <section class="doc" data-od-id="p01-doc">
+        <div class="doc__head"><span class="doc__badge">设计标注 · 非产品界面</span>
+          <h2 class="doc__title">P01 关键状态与交互</h2>
+          <span class="spacer"></span>
+          <div class="seg" role="group" aria-label="画布状态演示开关（非产品控件）" data-od-id="p01-state-switch">
+            <button class="seg__btn" type="button" data-setstate="ok" aria-pressed="true">正常</button>
+            <button class="seg__btn" type="button" data-setstate="loading" aria-pressed="false">加载中</button>
+            <button class="seg__btn" type="button" data-setstate="error" aria-pressed="false">加载失败</button>
+            <button class="seg__btn" type="button" data-setstate="empty" aria-pressed="false">无结果</button>
+          </div>
+        </div>
+        <p class="doc__desc">以下状态卡片用于说明实现细节，不参与产品操作。右侧开关直接把上方画布切到「加载中 / 加载失败 / 无结果」三种状态，可逐一点开核对文案与可执行动作；切回「正常」即恢复图谱。所有卡片中的文案与主画面保持同一套演示数据。</p>
+        <div class="doc__grid">
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S1</span><span class="doc__card-title">选中节点与证据详情</span></div>
+            <div class="doc__card-body">点击节点后右侧面板切换为该对象；属性分「属性 / 来源记录 / 关联事件」三块。来源记录卡可打开核对，缺少资料的属性直接写「待核对」，不留空。</div>
+            <div class="doc__sample"><span class="tag tag--warning tag--dashed">关系 · 待核对</span><span class="fs-12 muted">演示海船甲 —停靠申报→ 演示停靠记录 · 来源 [4] 编号重复</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S2</span><span class="doc__card-title">路径高亮</span></div>
+            <div class="doc__card-body">选择起点、终点与跳数上限后，命中路径加粗为品牌色实线；非路径对象的<b>图形</b>降至 38% 不透明度，<b>名称改用次级文字色而不是降透明度</b>，因此弱化后仍可读、实体形状与颜色也仍可辨认。路径侧栏逐段列出依据来源。</div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S3</span><span class="doc__card-title">路径未命中</span></div>
+            <div class="doc__card-body">跳数上限内无路径时，不做任何高亮，并明确提示可放宽跳数上限；不显示"可能相关"的推测连线。</div>
+            <div class="doc__sample"><span class="tag tag--neutral">未找到路径</span><span class="fs-12 muted">演示人员乙 → 演示港口乙 在 2 跳内无路径，可放宽至 4 跳</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S4</span><span class="doc__card-title">检索无结果</span></div>
+            <div class="doc__card-body">下拉直接给出空状态与「清除筛选条件」入口，不虚构相近对象。同名对象通过业务编号区分（演示出港记录有两个编号）。</div>
+            <div class="doc__sample"><span class="tag tag--neutral">DEMO-E-001</span><span class="tag tag--neutral">DEMO-E-004</span><span class="fs-12 muted">同名 · 不同批次</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S5</span><span class="doc__card-title">加载失败 / 加载中 / 无结果</span></div>
+            <div class="doc__card-body">三种画布状态都保留工具条与筛选条件：加载中用占位图形 + 当前查询范围，不用空白页；失败态给出可原样重试的动作与可展开的技术诊断；无结果直接说明「不显示推测对象，也不用其他单位数据补位」。用上方开关逐个核对。</div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S6</span><span class="doc__card-title">达到上限 / 范围外对象</span></div>
+            <div class="doc__card-body">节点右下角以角标显示未加载关系数；展开后若对象不在当前筛选范围，如实说明而不悄悄隐藏。上限提示给"继续缩小范围"这一条可执行动作。</div>
+            <div class="doc__sample"><span class="tag tag--warning">+3</span><span class="fs-12 muted">演示海船丙：3 条关联未加载，其中 2 个对象超出当前时间范围</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S7</span><span class="doc__card-title">无权限对象</span></div>
+            <div class="doc__card-body">无权限对象不出现在图中，检索不返回，也<b>不提示</b>其名称、数量或隐藏路径信息；路径查询若必须经过无权限对象，只回答"当前权限下未找到路径"。</div>
+            <div class="doc__sample"><span class="tag tag--neutral">当前权限下未找到路径</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S8</span><span class="doc__card-title">数据同步时间与状态</span></div>
+            <div class="doc__card-body">画布顶部固定一行同步状态；存在延迟或部分失败时说明"图谱数据可能未完整更新"，并链接到对应任务，不由用户自行猜测。</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  HF.shell.mount({ active: 'graph', crumb: ['数据图谱', '数据图谱工作台'],
+    sync: { level: 'warn', text: '图谱数据 2026-10-02 09:10 · 12 条待核对' } });
+
+  var NODES = HF.data.GRAPH.nodes, EDGES = HF.data.GRAPH.edges, OBJ = HF.data.OBJECTS, SRC = HF.data.SOURCES;
+  var CHAR = { person: '人', vessel: '船', place: '港', event: '事' };
+  var SIZE = { person: [26, 26], vessel: [28, 21], place: [24, 24], event: [28, 24] };
+  var BOW = { 'DEMO-E-002|DEMO-L-001': -0.20, 'DEMO-E-001|DEMO-S-001': 0.12, 'DEMO-E-002|DEMO-S-001': -0.10,
+              'DEMO-E-001|DEMO-L-001': 0.10, 'DEMO-P-003|DEMO-E-004': -0.12, 'DEMO-P-004|DEMO-E-002': 0.10,
+              'DEMO-E-004|DEMO-L-003': -0.08, 'DEMO-S-003|DEMO-L-003': 0.10 };
+  var nodeMap = {}; NODES.forEach(function (n) { nodeMap[n.id] = n; });
+  /* 当前可见集合：检索、路径查询与计数都读它，筛选应用后同步刷新 */
+  var NODE_ON = {}, EDGE_ON = EDGES.map(function () { return true; });
+  NODES.forEach(function (n) { NODE_ON[n.id] = true; });
+  var selected = null, pathSet = null, expanded = false, currentEdge = null;
+
+  /* 图标落位 */
+  [['icoSearch','search'],['icoFilter','filter'],['icoPath','path'],['icoDetail','doc'],
+   ['icoSyncNotice','warning'],['icoErrState','error'],['icoReloadState','refresh']].forEach(function (p) {
+    var el = document.getElementById(p[0]);
+    if (el) { el.innerHTML = HF.icon(p[1], ''); var s = el.querySelector('svg'); if (s) { s.setAttribute('width','15'); s.setAttribute('height','15'); s.style.color = 'var(--muted)'; } }
+  });
+  [['btnZin','plus'],['btnZout','minus']].forEach(function (p) {
+    document.getElementById(p[0]).innerHTML = HF.icon(p[1]);
+  });
+  document.getElementById('dpClose').innerHTML = HF.icon('chevronRight');
+  document.getElementById('icoArrowA').outerHTML = HF.icon('arrowRight', '');
+
+  /* ---------- 边几何 ---------- */
+  function edgeGeom(e) {
+    var a = nodeMap[e.a], b = nodeMap[e.b];
+    var dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+    var ux = dx / len, uy = dy / len;
+    var sa = SIZE[a.t], sb = SIZE[b.t];
+    var trimA = Math.abs(ux) * sa[0] + Math.abs(uy) * sa[1] + 5;
+    var trimB = Math.abs(ux) * sb[0] + Math.abs(uy) * sb[1] + 9;
+    var x1 = a.x + ux * trimA, y1 = a.y + uy * trimA;
+    var x2 = b.x - ux * trimB, y2 = b.y - uy * trimB;
+    var bow = BOW[e.a + '|' + e.b] != null ? BOW[e.a + '|' + e.b] : 0.11;
+    var px = -uy, py = ux;
+    var mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    var off = bow * Math.hypot(x2 - x1, y2 - y1);
+    var cx = mx + px * off, cy = my + py * off;
+    /* 长边的标签放在曲线 36% 处：中点会与两端节点的名称标签挤在一起 */
+    var L = Math.hypot(x2 - x1, y2 - y1);
+    var t = L > 360 ? 0.36 : 0.5, mt = 1 - t;
+    var lx = mt * mt * x1 + 2 * mt * t * cx + t * t * x2;
+    var ly = mt * mt * y1 + 2 * mt * t * cy + t * t * y2;
+    return { d: 'M' + x1 + ' ' + y1 + 'Q' + cx + ' ' + cy + ' ' + x2 + ' ' + y2, lx: lx, ly: ly };
+  }
+  function labelW(t) {
+    var w = 0; for (var i = 0; i < t.length; i++) w += t.charCodeAt(i) > 0x2E80 ? 12.6 : 7;
+    return w + 12;
+  }
+
+  /* ---------- 渲染 ---------- */
+  function nodeSVG(n) {
+    var o = OBJ[n.id], s = SIZE[n.t], m = '';
+    if (n.t === 'person') m = '<circle class="nd__mark" r="' + s[0] + '" />';
+    else if (n.t === 'event') m = '<path class="nd__mark" d="M0 ' + (-s[1]) + ' L' + s[0] + ' 0 L0 ' + s[1] + ' L' + (-s[0]) + ' 0 Z" />';
+    else m = '<rect class="nd__mark" x="' + (-s[0]) + '" y="' + (-s[1]) + '" width="' + (s[0] * 2) + '" height="' + (s[1] * 2) + '" rx="' + (n.t === 'vessel' ? 9 : 2) + '" />';
+    var ring = '<circle class="nd__ring" r="' + (Math.max(s[0], s[1]) + 7) + '" />';
+    var more = n.more ? '<g class="nd__more-g"><circle class="nd__more" cx="' + (s[0] + 4) + '" cy="' + (-s[1] - 4) + '" r="9" />' +
+      '<text class="nd__more-t" x="' + (s[0] + 4) + '" y="' + (-s[1] - 0.5) + '">+' + n.more + '</text></g>' : '';
+    return '<g class="nd nd--' + n.t + '" data-id="' + n.id + '" transform="translate(' + n.x + ',' + n.y + ')" ' +
+      'role="option" aria-selected="false" tabindex="-1" aria-label="' + o.name + ' ' + n.id + ' ' + o.label + '">' + ring + m +
+      '<text class="nd__char" y="5">' + CHAR[n.t] + '</text>' + more +
+      '<text class="nd__name" y="' + (s[1] + 24) + '">' + o.name + '</text>' +
+      '<text class="nd__id" y="' + (s[1] + 40) + '">' + n.id + '</text></g>';
+  }
+  function edgeSVG(e, i) {
+    var g = edgeGeom(e), lbl = e.rel + (e.pending ? ' · 待核对' : '');
+    var w = labelW(lbl), h = 17;
+    return '<g class="ed-g" data-i="' + i + '">' +
+      '<path class="ed' + (e.pending ? ' ed--pending' : '') + (e.derived ? ' ed--derived' : '') + '" d="' + g.d + '" marker-end="url(#' + (e.pending ? 'arw-pending' : 'arw') + ')" />' +
+      '<rect class="ed__plate" x="' + (g.lx - w / 2) + '" y="' + (g.ly - h / 2) + '" width="' + w + '" height="' + h + '" rx="3" />' +
+      '<text class="ed__label" x="' + g.lx + '" y="' + (g.ly + 4.2) + '">' + lbl + '</text>' +
+      '<path class="ed--hit" d="' + g.d + '" data-edge="' + i + '" />' +
+      '<title>' + e.rel + '：' + OBJ[e.a].name + ' — ' + OBJ[e.b].name + '（来源 [' + e.src.join('][') + ']' + (e.pending ? '，待核对' : '') + '）</title></g>';
+  }
+  document.getElementById('edges').innerHTML = EDGES.map(edgeSVG).join('');
+  document.getElementById('nodes').innerHTML = NODES.map(nodeSVG).join('');
+
+  /* ---------- 筛选类型 ---------- */
+  var TYPES = [['person','人员'],['vessel','船舶'],['place','地点'],['event','事件']];
+  document.getElementById('fltType').innerHTML = TYPES.map(function (t, i) {
+    var n = NODES.filter(function (x) { return x.t === t[0]; }).length;
+    return '<label class="check"><input type="checkbox" checked data-type="' + t[0] + '" />' +
+      '<span class="check__text row gap-2"><i class="eg eg--' + t[0] + '" style="color:var(--entity-' + t[0] + ')"></i>' +
+      t[1] + '<span class="mono fs-11 muted" style="margin-left:auto">' + n + '</span></span></label>';
+  }).join('');
+  document.getElementById('stripChips').innerHTML =
+    '<span class="mono fs-11 muted" style="white-space:nowrap">人员 4 · 船舶 3 · 地点 3 · 事件 4</span>';
+
+  /* ---------- 检索：↑↓ 移动高亮、Enter 选中、Esc 关闭（不依赖鼠标） ---------- */
+  var q = document.getElementById('q'), combo = document.getElementById('combo'), comboActive = -1;
+  function renderCombo(kw) {
+    kw = (kw || '').trim().toLowerCase();
+    comboActive = -1; q.removeAttribute('aria-activedescendant');
+    var list = NODES.filter(function (n) { return NODE_ON[n.id]; }).map(function (n) { return { id: n.id, o: OBJ[n.id] }; }).filter(function (x) {
+      if (!kw) return true;
+      return x.o.name.toLowerCase().indexOf(kw) >= 0 || x.id.toLowerCase().indexOf(kw) >= 0;
+    });
+    if (!list.length) {
+      combo.innerHTML = '<div class="state" style="padding:var(--sp-5) var(--sp-3)"><div class="state__title">没有匹配的对象</div>' +
+        '<div class="state__desc">已检索当前筛选范围内的对象。可检查业务编号，或清除筛选条件后重试。</div>' +
+        '<div class="state__actions"><button class="btn btn--default btn--sm" type="button" data-clear-flt>清除筛选条件</button></div></div>';
+      return;
+    }
+    var groups = {}, h = '', shown = 0;
+    list.forEach(function (x) { (groups[x.o.type] = groups[x.o.type] || []).push(x); });
+    TYPES.forEach(function (t) {
+      var g = groups[t[0]]; if (!g || !g.length) return;
+      h += '<div class="combo__group">' + t[1] + ' · ' + g.length + '</div>';
+      g.slice(0, 5).forEach(function (x) {
+        h += '<button class="combo__item" role="option" id="opt-' + shown + '" aria-selected="false" type="button" data-pick="' + x.id + '">' +
+          '<i class="eg eg--' + x.o.type + '" style="color:var(--entity-' + x.o.type + ')"></i>' +
+          '<span class="combo__name">' + x.o.name + '</span><span class="combo__id">' + x.id + '</span></button>';
+        shown++;
+      });
+    });
+    if (shown < list.length) h += '<div class="combo__group">另有 ' + (list.length - shown) + ' 个对象，请继续输入以缩小范围</div>';
+    combo.innerHTML = h;
+  }
+  function openCombo() { combo.hidden = false; q.setAttribute('aria-expanded', 'true'); renderCombo(q.value); }
+  function closeCombo() { combo.hidden = true; q.setAttribute('aria-expanded', 'false'); q.removeAttribute('aria-activedescendant'); comboActive = -1; }
+  function setComboActive(i) {
+    var items = HF.$$('.combo__item', combo);
+    if (!items.length) return;
+    comboActive = Math.max(0, Math.min(items.length - 1, i));
+    items.forEach(function (el, k) {
+      var on = k === comboActive;
+      el.classList.toggle('is-active', on);
+      el.setAttribute('aria-selected', String(on));
+    });
+    var el = items[comboActive];
+    q.setAttribute('aria-activedescendant', el.id);
+    /* 不用 scrollIntoView：它会带动外层页面滚动，破坏内嵌预览 */
+    if (el.offsetTop < combo.scrollTop) combo.scrollTop = el.offsetTop - 6;
+    else if (el.offsetTop + el.offsetHeight > combo.scrollTop + combo.clientHeight)
+      combo.scrollTop = el.offsetTop + el.offsetHeight - combo.clientHeight + 6;
+  }
+  q.addEventListener('focus', openCombo);
+  q.addEventListener('input', openCombo);
+  q.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (combo.hidden) openCombo();
+      e.preventDefault(); setComboActive(comboActive + (e.key === 'ArrowDown' ? 1 : -1)); return;
+    }
+    if (e.key === 'Escape') { if (!combo.hidden) { e.preventDefault(); closeCombo(); } return; }
+    if (e.key === 'Enter' && !combo.hidden) {
+      var items = HF.$$('.combo__item', combo), pick = items[comboActive >= 0 ? comboActive : 0];
+      if (pick) { e.preventDefault(); pick.click(); }
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (!document.getElementById('searchBox').contains(e.target)) closeCombo();
+  });
+  combo.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pick]');
+    if (b) { var pid = b.getAttribute('data-pick'); selectNode(pid, true); closeCombo(); q.value = OBJ[pid].name; }
+    if (e.target.closest('[data-clear-flt]')) {
+      closeCombo(); clearFilters();
+      HF.toast({ type: 'info', title: '已清除筛选条件', desc: '已恢复当前查询范围内的全部 ' + NODES.length + ' 个对象。' });
+    }
+  });
+
+  /* ---------- 选择 / 详情 ---------- */
+  var dpTitle = document.getElementById('dpTitleWrap');
+  function sourcesOf(id) {
+    var s = [];
+    EDGES.forEach(function (e) { if (e.a === id || e.b === id) e.src.forEach(function (k) { if (s.indexOf(k) < 0) s.push(k); }); });
+    return s.sort();
+  }
+  function relsOf(id) { return EDGES.filter(function (e) { return e.a === id || e.b === id; }); }
+
+  function renderDetail(id) {
+    var o = OBJ[id];
+    currentEdge = null;
+    document.getElementById('dpKind').textContent = '对象详情';
+    document.getElementById('dpAdd').removeAttribute('data-edge-add');
+    document.getElementById('dpAdd').disabled = false;
+    var ss = sourcesOf(id);
+    dpTitle.innerHTML = '<div class="row gap-2"><span class="tag tag--' + o.type + '"><i class="eg eg--' + o.type + '"></i>' + o.label + '</span>' +
+      (relOf(id).some(function (e) { return e.pending; }) ? '<span class="tag tag--warning tag--dashed">含待核对关系</span>' : '') + '</div>' +
+      '<div class="dp__title">' + o.name + '</div><div class="mono fs-12 muted">' + id + '</div>';
+    document.getElementById('panel-prop').innerHTML =
+      '<dl class="kv">' + o.props.map(function (p) { return '<dt>' + p[0] + '</dt><dd>' + p[1] + '</dd>'; }).join('') +
+      '<dt>来源记录</dt><dd class="row gap-1 row--wrap">' +
+        (ss.length ? ss.map(function (k) { return '<span class="tag tag--neutral mono">[' + k + '] ' + SRC[k].id + '</span>'; }).join('') : '<span class="muted">暂无直接来源</span>') +
+      '</dd></dl>' +
+      (relOf(id).some(function (e) { return e.pending; })
+        ? '<div class="notice mt-3"><span>' + HF.icon('warning', '') + '</span><div>该对象有 <b>1 条</b>关系待核对：来源 [4] 的申报编号与既有记录重复，未写入图谱边。</div></div>' : '');
+    document.getElementById('cntSrc').textContent = ss.length;
+    document.getElementById('panel-src').innerHTML = ss.length
+      ? '<div class="col gap-2">' + ss.map(function (k) {
+          var s = SRC[k];
+          return '<div class="source-card"><div class="source-card__head"><span class="source-card__idx">[' + s.idx + ']</span>' +
+            '<span class="source-card__title">' + s.name + '</span></div>' +
+            (s.status === 'pending' ? '<span class="tag tag--warning tag--dashed" style="align-self:flex-start">待核对</span>' : '') +
+            '<div class="source-card__quote">' + s.quote + '</div>' +
+            '<div class="source-card__meta"><span>' + s.id + '</span><span>' + s.at + '</span></div>' +
+            '<button class="btn btn--default btn--sm" type="button" data-open-src="' + k + '">打开核对</button></div>';
+        }).join('') + '</div>'
+      : '<div class="state" style="padding:var(--sp-6) 0"><div class="state__title">暂无来源记录</div><div class="state__desc">该对象来自其他对象的派生关联，尚无直接来源。</div></div>';
+    var rel = relOf(id);
+    document.getElementById('cntRel').textContent = rel.length;
+    document.getElementById('panel-rel').innerHTML = rel.length
+      ? '<div class="col gap-1">' + rel.map(function (e) {
+          var ei = EDGES.indexOf(e), other = e.a === id ? e.b : e.a;
+          return '<button class="seg-row seg-row--act' + (e.pending ? ' seg-row--pending' : '') + '" type="button" data-rel-edge="' + ei + '">' +
+            '<span class="seg-row__no">' + (e.pending ? '!' : '✓') + '</span>' +
+            '<span><b>' + e.rel + '</b><br /><span class="muted">' + OBJ[other].name + ' · ' + other + '</span><br />' +
+            '<span class="mono fs-11 muted">来源 [' + e.src.join('][') + ']' + (e.derived ? ' · 由来源记录派生的关联' : '') + '</span></span>' +
+            '<span class="seg-row__go">' + HF.icon('chevronRight', '') + '</span></button>';
+        }).join('') + '</div>'
+      : '<div class="state" style="padding:var(--sp-6) 0"><div class="state__desc">当前范围内没有关联关系。</div></div>';
+    document.getElementById('dpExpandNode').style.display = (nodeMap[id] && nodeMap[id].more && !expanded) ? '' : 'none';
+    document.getElementById('dpAdd').style.display = '';
+    document.getElementById('dpAdd').textContent = '加入证据清单';
+  }
+  function relOf(id) { return EDGES.filter(function (e) { return (e.a === id || e.b === id); }); }
+
+  function ensureGraphTabbable() {
+    if (!HF.$$('.nd').some(function (g) { return g.getAttribute('tabindex') === '0' && !g.classList.contains('is-off'); })) {
+      var first = document.querySelector('.nd:not(.is-off)');
+      if (first) first.setAttribute('tabindex', '0');
+    }
+  }
+  function syncDetailBtn() {
+    document.getElementById('btnDetail').setAttribute('aria-pressed', String(!document.getElementById('detailPanel').hidden));
+  }
+
+  function selectNode(id, center) {
+    selected = id; pathSet = null;
+    HF.$$('.nd').forEach(function (g) {
+      var cur = g.getAttribute('data-id') === id;
+      g.setAttribute('aria-selected', String(cur));
+      g.setAttribute('tabindex', cur ? '0' : '-1');           /* roving tabindex：图谱只占一个 Tab 位 */
+      g.classList.remove('nd--dim', 'nd--path');
+    });
+    HF.$$('.ed-g').forEach(function (g) { g.classList.remove('ed--dim', 'ed--path'); var p = g.querySelector('path.ed'); p.classList.remove('ed--path'); p.setAttribute('marker-end', p.classList.contains('ed--pending') ? 'url(#arw-pending)' : 'url(#arw)'); });
+    document.getElementById('detailPanel').hidden = false;
+    syncDetailBtn();
+    renderDetail(id);
+    if (center) centerOn(nodeMap[id]);
+    var act = document.activeElement;
+    if (act && act.closest && act.closest('#nodes')) {
+      var el = document.querySelector('.nd[data-id="' + id + '"]');
+      if (el && el.focus) el.focus();
+    }
+    document.getElementById('tab-prop').click();
+  }
+  var view = { k: 1, x: 0, y: 0 };
+  function applyView() {
+    document.getElementById('viewport').setAttribute('transform', 'translate(' + view.x + ',' + view.y + ') scale(' + view.k + ')');
+    document.getElementById('zoomLabel').textContent = Math.round(view.k * 100) + '%';
+  }
+  function centerOn(n) {                       /* 只由「定位」与「适应画布」触发，选中不移动画布 */
+    view.x = 385 - n.x * view.k;
+    view.y = 330 - n.y * view.k;
+    applyView();
+  }
+
+  document.getElementById('nodes').addEventListener('click', function (e) {
+    var g = e.target.closest('.nd'); if (!g) return;
+    var id = g.getAttribute('data-id');
+    if (nodeMap[id].more && !expanded) { showExpand(id); }
+    selectNode(id, false);
+  });
+  document.getElementById('nodes').addEventListener('keydown', function (e) {
+    var g = e.target.closest('.nd'); if (!g) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectNode(g.getAttribute('data-id'), true); return; }
+    var dir = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!dir) return;
+    e.preventDefault();
+    var cur = nodeMap[g.getAttribute('data-id')], best = null, score = 0;
+    NODES.forEach(function (n) {
+      if (n.id === cur.id || !NODE_ON[n.id]) return;
+      var dx = n.x - cur.x, dy = n.y - cur.y, proj = dx * dir[0] + dy * dir[1];
+      if (proj <= 0) return;
+      var s = proj / (1 + Math.abs(dx * dir[1] - dy * dir[0]));   /* 同轴优先，避免斜向跳跃 */
+      if (s > score) { score = s; best = n; }
+    });
+    if (best) selectNode(best.id, true);
+  });
+  document.getElementById('edges').addEventListener('click', function (e) {
+    var p = e.target.closest('[data-edge]'); if (!p) return;
+    var ed = EDGES[+p.getAttribute('data-edge')];
+    showEdge(ed);
+  });
+
+  function showEdge(e) {
+    pathSet = null;
+    currentEdge = e;
+    document.getElementById('dpKind').textContent = '关系详情';
+    document.getElementById('dpTitleWrap').innerHTML =
+      '<div class="row gap-2"><span class="tag ' + (e.pending ? 'tag--warning tag--dashed' : 'tag--accent') + '">' +
+      (e.pending ? '待核对关系' : '记录支持的关系') + '</span></div>' +
+      '<div class="dp__title">' + OBJ[e.a].name + ' —' + e.rel + '→ ' + OBJ[e.b].name + '</div>' +
+      '<div class="mono fs-12 muted">来源 [' + e.src.join('][') + ']</div>';
+    document.getElementById('panel-prop').innerHTML =
+      '<dl class="kv"><dt>关系名称</dt><dd>' + e.rel + '</dd>' +
+      '<dt>起始对象</dt><dd>' + OBJ[e.a].name + ' · <span class="mono">' + e.a + '</span></dd>' +
+      '<dt>目标对象</dt><dd>' + OBJ[e.b].name + ' · <span class="mono">' + e.b + '</span></dd>' +
+      '<dt>依据状态</dt><dd>' + (e.pending ? '<span class="tag tag--warning tag--dashed">待核对</span>' : '<span class="tag tag--success">来源记录支持</span>') + '</dd>' +
+      (e.pending ? '<dt>证据说明</dt><dd>该段依据的登记编号与既有记录重复，未写入图谱边。<b>不单独加入证据</b>；请用「把整条路径加入证据」，系统会同时带上该段与它的待核对状态。</dd>' : '') +
+      (e.derived ? '<dt>派生说明</dt><dd>由来源记录派生的关联，不是直接登记的关系。</dd>' : '') + '</dl>';
+    ['cntSrc', 'cntRel'].forEach(function (i) { document.getElementById(i).textContent = '—'; });
+    document.getElementById('panel-src').innerHTML = '<div class="col gap-2">' + e.src.map(function (k) {
+      var s = SRC[k];
+      return '<div class="source-card"><div class="source-card__head"><span class="source-card__idx">[' + s.idx + ']</span>' +
+        '<span class="source-card__title">' + s.name + '</span></div><div class="source-card__quote">' + s.quote + '</div>' +
+        '<div class="source-card__meta"><span>' + s.id + '</span><span>' + s.at + '</span></div>' +
+        '<button class="btn btn--default btn--sm" type="button" data-open-src="' + k + '">打开核对</button></div>';
+    }).join('') + '</div>';
+    document.getElementById('panel-rel').innerHTML = '<div class="state" style="padding:var(--sp-6) 0"><div class="state__desc">关系详情不包含关联事件列表。</div></div>';
+    document.getElementById('dpAdd').style.display = '';
+    document.getElementById('dpAdd').disabled = !!e.pending;
+    document.getElementById('dpAdd').textContent = e.pending ? '待核对关系需随路径加入' : '把这条关系加入证据';
+    document.getElementById('dpAdd').title = e.pending ? '待核对关系不能单独加入证据；请改用「把整条路径加入证据」' : '';
+    document.getElementById('dpAdd').setAttribute('data-edge-add', '1');
+    document.getElementById('detailPanel').hidden = false;
+    syncDetailBtn();
+    document.getElementById('tab-prop').click();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-open-src]');
+    if (b) {
+      var s = SRC[b.getAttribute('data-open-src')];
+      HF.toast({ type: 'info', title: '打开来源 [' + s.idx + '] ' + s.name, desc: s.id + ' · ' + s.at + ' · ' + s.origin });
+      return;
+    }
+    var re = e.target.closest('[data-rel-edge]');
+    if (re) { showEdge(EDGES[+re.getAttribute('data-rel-edge')]); return; }
+    if (!document.getElementById('expandPop').hidden && !e.target.closest('#expandPop') && !e.target.closest('.nd')) closeExpand();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('expandPop').hidden) closeExpand();
+  });
+
+  /* ---------- 隐藏关系展开 ---------- */
+  var popFocus = null;
+  function closeExpand() {
+    var pop = document.getElementById('expandPop');
+    if (pop.hidden) return;
+    pop.hidden = true;
+    if (popFocus && document.contains(popFocus)) popFocus.focus();
+    popFocus = null;
+  }
+  function showExpand(id) {
+    var n = nodeMap[id], o = OBJ[id], pop = document.getElementById('expandPop');
+    var stageEl = document.getElementById('stage');
+    var rect = stageEl.getBoundingClientRect();
+    var vb = document.getElementById('svg').getBoundingClientRect();
+    var k = Math.min(vb.width / 770, vb.height / 760);
+    var offX = vb.left - rect.left + (vb.width - 770 * k) / 2;
+    var offY = vb.top - rect.top + (vb.height - 760 * k) / 2;
+    popFocus = document.querySelector('.nd[data-id="' + id + '"]');
+    pop.hidden = false;
+    pop.setAttribute('role', 'dialog');
+    pop.setAttribute('aria-label', o.name + ' 未加载关联关系');
+    pop.innerHTML = '<div class="popover__title">' + o.name + ' · 还有 ' + n.more + ' 条关联未加载</div>' +
+      '<div class="popover__desc">其中 2 个对象不在当前时间范围内（2026-08-01 之前的演示记录）。可先加载这 3 条关系，或放宽时间范围后重新检索。</div>' +
+      '<div class="row gap-2 mt-3"><button class="btn btn--primary btn--sm" type="button" id="doExpand">加载这 3 条关系</button>' +
+      '<button class="btn btn--text btn--sm" type="button" id="cancelExpand">取消</button></div>';
+    pop.style.left = Math.max(8, Math.min(rect.width - 276, offX + n.x * k + 34 * k)) + 'px';
+    pop.style.top = Math.max(8, Math.min(rect.height - 150, offY + n.y * k - 20)) + 'px';
+    document.getElementById('doExpand').onclick = function () {
+      expanded = true; pop.hidden = true; popFocus = null;
+      document.getElementById('loadedHint').textContent = '16 对象 · 18 关系 · 上限 200';
+      document.getElementById('stripChips').innerHTML = '<span class="tag tag--warning">2 个对象超出当前范围</span>';
+      HF.toast({ type: 'warning', title: '已加载 3 条关联关系',
+        desc: '演示海船丙 → 演示停靠记录、演示港口丙、演示关联申报。其中 2 个对象超出当前时间范围，未加入画布。' });
+      selectNode('DEMO-S-003', true);
+    };
+    document.getElementById('cancelExpand').onclick = closeExpand;
+    document.getElementById('doExpand').focus();
+  }
+  document.getElementById('dpExpandNode').onclick = function () { if (selected) showExpand(selected); };
+  document.getElementById('btnExpandAll').onclick = function () {
+    if (expanded) { HF.toast({ type: 'info', title: '当前范围内已没有未加载关系' }); return; }
+    if (!NODE_ON['DEMO-S-003']) { HF.toast({ type: 'info', title: '演示海船丙不在当前筛选范围', desc: '放宽实体类型或时间范围后再展开未加载关系。' }); return; }
+    showExpand('DEMO-S-003');
+  };
+
+  /* ---------- 路径查询 ---------- */
+  function buildPathOptions() {
+    var opts = NODES.filter(function (n) { return NODE_ON[n.id]; })
+      .map(function (n) { return '<option value="' + n.id + '">' + OBJ[n.id].name + ' · ' + n.id + '</option>'; }).join('');
+    ['pFrom', 'pTo'].forEach(function (id) {
+      var s = document.getElementById(id), keep = s.value;
+      s.innerHTML = opts;
+      s.disabled = !opts;
+      if (keep && NODE_ON[keep]) s.value = keep;
+    });
+  }
+  buildPathOptions();
+  document.getElementById('pFrom').value = 'DEMO-P-002';
+  document.getElementById('pTo').value = 'DEMO-L-002';
+
+  document.getElementById('btnPath').onclick = function () {
+    var on = this.getAttribute('aria-pressed') === 'true';
+    this.setAttribute('aria-pressed', String(!on));
+    document.getElementById('pathBar').hidden = on;
+    if (on) clearPath();
+  };
+  document.getElementById('btnExitPath').onclick = function () {
+    document.getElementById('btnPath').setAttribute('aria-pressed', 'false');
+    document.getElementById('pathBar').hidden = true; clearPath();
+  };
+  function clearPath() {
+    pathSet = null;
+    HF.$$('.nd').forEach(function (g) { g.classList.remove('nd--dim', 'nd--path'); });
+    HF.$$('.ed-g').forEach(function (g) { g.classList.remove('ed--dim', 'ed--path'); });
+    document.getElementById('dpKind').textContent = '对象详情';
+    if (selected) renderDetail(selected);
+  }
+  function bfs(from, to, maxHops) {
+    var adj = {};
+    EDGES.forEach(function (e, i) { if (!EDGE_ON[i]) return; (adj[e.a] = adj[e.a] || []).push([e.b, i]); (adj[e.b] = adj[e.b] || []).push([e.a, i]); });
+    var qq = [[from, [], []]], seen = {}; seen[from] = 0;
+    while (qq.length) {
+      var cur = qq.shift(), id = cur[0], ns = cur[1], es = cur[2];
+      if (id === to && es.length) return { nodes: ns.concat(id), edges: es };
+      if (es.length >= maxHops) continue;
+      (adj[id] || []).forEach(function (nx) {
+        if (seen[nx[0]] != null && seen[nx[0]] <= es.length + 1) return;
+        seen[nx[0]] = es.length + 1;
+        qq.push([nx[0], ns.concat(id), es.concat(nx[1])]);
+      });
+    }
+    return null;
+  }
+  document.getElementById('btnRunPath').onclick = function () {
+    var from = document.getElementById('pFrom').value, to = document.getElementById('pTo').value;
+    var hops = parseInt(document.getElementById('pHops').value, 10);
+    if (from === to) { HF.toast({ type: 'warning', title: '起点与终点相同', desc: '请选择两个不同的对象。' }); return; }
+    var r = bfs(from, to, hops);
+    document.getElementById('detailPanel').hidden = false;
+    syncDetailBtn();
+    document.getElementById('dpKind').textContent = '路径查询结果';
+    if (!r) {
+      clearPath();
+      document.getElementById('dpTitleWrap').innerHTML = '<div class="row gap-2"><span class="tag tag--neutral">未找到路径</span></div>' +
+        '<div class="dp__title">' + OBJ[from].name + ' → ' + OBJ[to].name + '</div>' +
+        '<div class="mono fs-12 muted">跳数上限 ' + hops + ' 跳</div>';
+      document.getElementById('panel-prop').innerHTML = '<div class="state" style="padding:var(--sp-5) 0"><div class="state__title">在 ' + hops + ' 跳上限内没有路径</div>' +
+        '<div class="state__desc">已按当前查询范围与权限计算。<b>不显示推测连线</b>；可放宽跳数上限，或缩小筛选范围后重新检索。</div>' +
+        '<div class="state__actions"><button class="btn btn--default btn--sm" type="button" id="widen">放宽到 5 跳</button></div></div>';
+      document.getElementById('widen').onclick = function () { document.getElementById('pHops').value = '5 跳'; document.getElementById('btnRunPath').click(); };
+      ['panel-src', 'panel-rel'].forEach(function (p) { document.getElementById(p).innerHTML = ''; });
+      document.getElementById('tab-prop').click();
+      return;
+    }
+    pathSet = r;
+    var ns = {}; r.nodes.forEach(function (n) { ns[n] = 1; });
+    HF.$$('.nd').forEach(function (g) {
+      var id = g.getAttribute('data-id');
+      g.classList.toggle('nd--path', !!ns[id]);
+      g.classList.toggle('nd--dim', !ns[id]);
+      g.setAttribute('aria-selected', String(id === from || id === to));
+    });
+    var es = {}; r.edges.forEach(function (i) { es[i] = 1; });
+    HF.$$('.ed-g').forEach(function (g, i) {
+      g.classList.toggle('ed--path', !!es[i]);
+      g.classList.toggle('ed--dim', !es[i]);
+      var path = g.querySelector('path.ed');
+      path.classList.toggle('ed--path', !!es[i]);
+      path.setAttribute('marker-end', es[i] ? 'url(#arw-path)' : (EDGES[i].pending ? 'url(#arw-pending)' : 'url(#arw)'));
+    });
+    var pend = r.edges.filter(function (i) { return EDGES[i].pending; });
+    document.getElementById('detailPanel').hidden = false;
+    syncDetailBtn();
+    document.getElementById('dpTitleWrap').innerHTML =
+      '<div class="row gap-2"><span class="tag tag--accent">命中路径</span><span class="tag tag--neutral mono">' + r.edges.length + ' 跳</span>' +
+      (pend.length ? '<span class="tag tag--warning tag--dashed">含 ' + pend.length + ' 段待核对</span>' : '') + '</div>' +
+      '<div class="dp__title">' + OBJ[from].name + ' → ' + OBJ[to].name + '</div>' +
+      '<div class="mono fs-12 muted">跳数上限 ' + hops + ' 跳 · 最短路径</div>';
+    document.getElementById('panel-prop').innerHTML =
+      (pend.length ? '<div class="notice"><span>' + HF.icon('warning', '') + '</span><div>路径中 <b>第 ' +
+        (r.edges.map(function (i, k) { return EDGES[i].pending ? k + 1 : 0; }).filter(function (x) { return x; })[0]) +
+        ' 段</b>为待核对关系。结论需人工确认，本条路径不作为事实认定。</div></div>' : '') +
+      '<div class="mt-3">' + r.edges.map(function (i, k) {
+        var e = EDGES[i];
+        return '<div class="seg-row' + (e.pending ? ' seg-row--pending' : '') + '">' +
+          '<span class="seg-row__no">' + (k + 1) + '</span>' +
+          '<span><b>' + OBJ[e.a].name + ' —' + e.rel + '→ ' + OBJ[e.b].name + '</b><br />' +
+          '<span class="mono fs-11 muted">来源 [' + e.src.join('][') + ']' + (e.pending ? ' · 待核对' : '') + (e.derived ? ' · 派生关联' : '') + '</span></span></div>';
+      }).join('') + '</div>';
+    document.getElementById('cntSrc').textContent = '—';
+    document.getElementById('cntRel').textContent = '—';
+    document.getElementById('panel-src').innerHTML = '';
+    document.getElementById('panel-rel').innerHTML = '';
+    document.getElementById('dpAdd').style.display = '';
+    document.getElementById('dpAdd').textContent = '把整条路径加入证据';
+    document.getElementById('tab-prop').click();
+    HF.toast({ type: pend.length ? 'warning' : 'success', title: '找到 ' + r.edges.length + ' 跳路径',
+      desc: pend.length ? '其中 1 段为待核对关系，已在结果中标注。' : '路径全部由来源记录支持。' });
+  };
+
+  /* ---------- 视图控制 ---------- */
+  function setZoom(k) {                        /* 围绕画布中心缩放，保持已平移位置 */
+    var cx = 385, cy = 380, r = k / view.k;
+    view.x = cx - (cx - view.x) * r;
+    view.y = cy - (cy - view.y) * r;
+    view.k = k;
+    applyView();
+  }
+  document.getElementById('btnZin').onclick = function () { setZoom(Math.min(2, view.k + 0.15)); };
+  document.getElementById('btnZout').onclick = function () { setZoom(Math.max(0.5, view.k - 0.15)); };
+  function home() { view.k = 1; view.x = 0; view.y = 0; applyView(); }
+  document.getElementById('btnFit').onclick = home;
+  function resetAll() {
+    home(); selected = null; pathSet = null; expanded = false;
+    HF.$$('.nd').forEach(function (g) { g.setAttribute('aria-selected', 'false'); g.setAttribute('tabindex', '-1'); g.classList.remove('nd--dim', 'nd--path'); });
+    HF.$$('.ed-g').forEach(function (g) {
+      g.classList.remove('ed--dim', 'ed--path');
+      var p = g.querySelector('path.ed'); p.classList.remove('ed--path');
+      p.setAttribute('marker-end', EDGES[+g.getAttribute('data-i')].pending ? 'url(#arw-pending)' : 'url(#arw)');
+    });
+    closeExpand();
+    document.getElementById('detailPanel').hidden = true;
+    syncDetailBtn();
+    applyFilters(true);
+    ensureGraphTabbable();
+    HF.toast({ type: 'info', title: '已重置视图', desc: '缩放恢复 100%，选中对象、路径高亮与未加载关系提示已清除。' });
+  }
+  document.getElementById('btnReset').onclick = resetAll;
+  document.getElementById('btnLocate').onclick = function () {
+    if (!selected) { HF.toast({ type: 'info', title: '尚未选中对象', desc: '在画布中选择一个对象，或使用上方检索框。' }); return; }
+    centerOn(nodeMap[selected]);
+    HF.toast({ type: 'info', title: '已定位到 ' + OBJ[selected].name });
+  };
+  document.getElementById('dpLocate').onclick = function () { if (selected) centerOn(nodeMap[selected]); };
+
+  /* 拖拽平移 */
+  (function () {
+    var svg = document.getElementById('svg');
+    var dragging = false, sx = 0, sy = 0, base = { x: 0, y: 0 };
+    svg.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.nd') || e.target.closest('[data-edge]')) return;
+      dragging = true; sx = e.clientX; sy = e.clientY;
+      base.x = view.x; base.y = view.y;
+      svg.classList.add('dragging'); svg.setPointerCapture(e.pointerId);
+    });
+    svg.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      view.x = base.x + (e.clientX - sx);
+      view.y = base.y + (e.clientY - sy);
+      applyView();
+    });
+    svg.addEventListener('pointerup', function (e) {
+      dragging = false; svg.classList.remove('dragging');
+      try { svg.releasePointerCapture(e.pointerId); } catch (x) {}
+    });
+  })();
+
+  /* ---------- 证据清单 ---------- */
+  var ev = HF.evidence.get();
+  function renderEv() {
+    document.getElementById('evCount').textContent = ev.length;
+    document.getElementById('evList').innerHTML = ev.length
+      ? ev.map(function (x) {
+          return '<span class="ev-chip"><span class="tag tag--' + (x.type || 'neutral') + '" style="height:18px;padding:0 6px">' + x.kind + '</span>' +
+            x.label + '<button class="ev-chip__x" type="button" data-del="' + x.key + '" aria-label="移除 ' + x.label + '">' + HF.icon('close', '') + '</button></span>';
+        }).join('')
+      : '<span class="fs-12 muted">为空 · 在图谱中选择对象、关系或路径后加入</span>';
+    document.getElementById('evClear').hidden = !ev.length;
+    document.getElementById('goAI').disabled = !ev.length;
+  }
+  document.getElementById('evList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-del]'); if (!b) return;
+    ev = ev.filter(function (x) { return x.key !== b.getAttribute('data-del'); });
+    HF.store.setJSON('evidence', ev); renderEv();
+  });
+  document.getElementById('evClear').onclick = function () { ev = []; HF.store.setJSON('evidence', ev); renderEv(); };
+  document.getElementById('dpAdd').onclick = function () {
+    if (pathSet) {
+      var items = pathSet.nodes.map(function (id) { return { key: id, kind: OBJ[id].label, type: OBJ[id].type, label: OBJ[id].name }; });
+      var pathSrc = [];
+      pathSet.edges.forEach(function (i) {
+        var e = EDGES[i];
+        items.push({ key: 'e' + i, kind: e.pending ? '关系 · 待核对' : '关系', type: e.pending ? 'warning' : 'neutral',
+          label: OBJ[e.a].name + ' —' + e.rel + '→ ' + OBJ[e.b].name });
+        e.src.forEach(function (k) { if (pathSrc.indexOf(k) < 0) pathSrc.push(k); });
+      });
+      pathSrc.sort().forEach(function (k) { items.push({ key: 's' + k, kind: '来源', type: 'accent', label: '[' + k + '] ' + SRC[k].name }); });
+      items.forEach(function (it) { if (!ev.some(function (x) { return x.key === it.key; })) ev.push(it); });
+      HF.store.setJSON('evidence', ev); renderEv();
+      HF.toast({ type: 'success', title: '已加入 ' + items.length + ' 项证据',
+        desc: '包含路径上的对象、' + pathSet.edges.length + ' 段关系与 ' + pathSrc.length + ' 条来源，可在托盘中逐项移除。' });
+      return;
+    }
+    if (currentEdge) {
+      if (currentEdge.pending) {
+        HF.toast({ type: 'warning', title: '待核对关系不能单独作为证据', desc: '请改用「把整条路径加入证据」，系统会同时带上该段与它的待核对状态。' });
+        return;
+      }
+      var ei = EDGES.indexOf(currentEdge);
+      var items3 = [
+        { key: 'e' + ei, kind: '关系', type: 'neutral', label: OBJ[currentEdge.a].name + ' —' + currentEdge.rel + '→ ' + OBJ[currentEdge.b].name },
+        { key: currentEdge.a, kind: OBJ[currentEdge.a].label, type: OBJ[currentEdge.a].type, label: OBJ[currentEdge.a].name },
+        { key: currentEdge.b, kind: OBJ[currentEdge.b].label, type: OBJ[currentEdge.b].type, label: OBJ[currentEdge.b].name }
+      ];
+      currentEdge.src.forEach(function (k) { items3.push({ key: 's' + k, kind: '来源', type: 'accent', label: '[' + k + '] ' + SRC[k].name }); });
+      items3.forEach(function (it) { if (!ev.some(function (x) { return x.key === it.key; })) ev.push(it); });
+      HF.store.setJSON('evidence', ev); renderEv();
+      HF.toast({ type: 'success', title: '已加入 ' + items3.length + ' 项证据', desc: '关系及其来源已进入证据清单，对象会自动去重。' });
+      return;
+    }
+    if (document.getElementById('dpAdd').getAttribute('data-edge-add')) {
+      document.getElementById('dpAdd').removeAttribute('data-edge-add');
+      HF.toast({ type: 'warning', title: '待核对关系不能单独作为证据', desc: '请改用「把整条路径加入证据」，系统会同时带上该段与它的来源状态。' });
+      return;
+    }
+    if (!selected) return;
+    var o = OBJ[selected];
+    var items2 = [{ key: selected, kind: o.label, type: o.type, label: o.name }];
+    sourcesOf(selected).forEach(function (k) { items2.push({ key: 's' + k, kind: '来源', type: 'accent', label: '[' + k + '] ' + SRC[k].name }); });
+    items2.forEach(function (it) { if (!ev.some(function (x) { return x.key === it.key; })) ev.push(it); });
+    HF.store.setJSON('evidence', ev); renderEv();
+    HF.toast({ type: 'success', title: '已加入 ' + items2.length + ' 项证据', desc: o.name + ' 及其来源记录已进入证据清单。' });
+  };
+  function goAI() {
+    if (!ev.length) return;
+    HF.store.setJSON('evidence', ev);
+    location.href = 'p02-ai-workbench.html?from=graph';
+  }
+  document.getElementById('goAI').onclick = goAI;
+  document.getElementById('btnGoAI2').onclick = function () { location.href = 'p02-ai-workbench.html'; };
+
+  /* ---------- 筛选：勾选即生效，画布、检索、路径选项与计数同步 ---------- */
+  function applyFilters(silent) {
+    var types = [], rels = [];
+    HF.$$('#fltType input').forEach(function (i) { if (i.checked) types.push(i.getAttribute('data-type')); });
+    HF.$$('[data-rel-flt]').forEach(function (i) { if (i.checked) rels.push(i.getAttribute('data-rel-flt')); });
+    /* 筛选一变，路径高亮不再成立：先清掉，避免高亮残留在已隐藏的对象上 */
+    var hadPath = !!pathSet; pathSet = null;
+    /* 只统计真正收窄范围的条件（未勾选的类型），全选时徽标隐藏、条带不显示「已筛选」 */
+    var narrowing = (TYPES.length - types.length) + (HF.$$('[data-rel-flt]').length - rels.length);
+    NODES.forEach(function (n) { NODE_ON[n.id] = types.indexOf(n.t) >= 0; });
+    var nn = 0, ne = 0; NODES.forEach(function (n) { if (NODE_ON[n.id]) nn++; });
+    HF.$$('.ed-g').forEach(function (g, i) {
+      var e = EDGES[i];
+      var keep = !!NODE_ON[e.a] && !!NODE_ON[e.b] && rels.indexOf(e.pending ? 'pending' : 'ok') >= 0;
+      EDGE_ON[i] = keep; if (keep) ne++;
+      g.classList.toggle('is-off', !keep);
+      if (hadPath) {
+        g.classList.remove('ed--dim', 'ed--path');
+        var pe = g.querySelector('path.ed');
+        pe.classList.remove('ed--path');
+        pe.setAttribute('marker-end', e.pending ? 'url(#arw-pending)' : 'url(#arw)');
+      }
+    });
+    HF.$$('.nd').forEach(function (g) {
+      var id = g.getAttribute('data-id'), on = !!NODE_ON[id];
+      g.classList.toggle('is-off', !on);
+      if (hadPath) g.classList.remove('nd--dim', 'nd--path');
+      if (!on && g.getAttribute('aria-selected') === 'true') {
+        g.setAttribute('aria-selected', 'false'); g.setAttribute('tabindex', '-1');
+        selected = null; pathSet = null;
+        document.getElementById('detailPanel').hidden = true; syncDetailBtn();
+        if (!silent) HF.toast({ type: 'info', title: '所选对象不在当前筛选范围', desc: '已清除选中状态；放宽实体类型或时间范围后可重新选择。' });
+      }
+    });
+    document.getElementById('stripChips').innerHTML = narrowing === 0 ? '' :
+      '<span class="tag tag--accent">已筛选</span><span class="mono fs-11" style="white-space:nowrap">' + TYPES.map(function (t) {
+        return t[1] + ' ' + NODES.filter(function (n) { return n.t === t[0] && NODE_ON[n.id]; }).length;
+      }).join(' · ') + '</span>';
+    document.getElementById('loadedHint').textContent = nn + ' 对象 · ' + ne + ' 关系 · 上限 200';
+    document.getElementById('svg').setAttribute('aria-label', '数据图谱：' + nn + ' 个演示对象与 ' + ne + ' 条关系');
+    document.querySelector('.flt__count').textContent = nn + ' / ' + NODES.length;
+    document.querySelector('.flt__scope').innerHTML = '演示单位甲 · 演示库；2026-09-01 至 2026-10-02；已选 <b>' + types.length +
+      '</b> 类实体、<b>' + rels.length + '</b> 类关系。<br />当前显示 <b>' + nn + '</b> 个对象、<b>' + ne +
+      '</b> 条关系，关系上限 <b>200</b>。达到上限时可继续缩小时间范围。';
+    var badge = document.getElementById('fltCount');
+    badge.textContent = String(narrowing); badge.hidden = narrowing === 0;
+    buildPathOptions();
+    ensureGraphTabbable();
+    if (cvState === 'ok' && nn === 0) setCanvasState('empty');
+    else if (cvState === 'empty' && nn > 0) setCanvasState('ok');
+  }
+  function clearFilters() {
+    HF.$$('#fltType input').forEach(function (i) { i.checked = true; });
+    HF.$$('[data-rel-flt]').forEach(function (i) { i.checked = true; });
+    applyFilters(true);
+  }
+  HF.$$('#fltType input, [data-rel-flt]').forEach(function (i) {
+    i.addEventListener('change', function () { applyFilters(false); });
+  });
+  document.getElementById('btnClearFlt').onclick = function () {
+    clearFilters();
+    HF.toast({ type: 'info', title: '筛选条件已重置', desc: '当前显示范围内全部 ' + NODES.length + ' 个对象、' + EDGES.length + ' 条关系。' });
+  };
+  document.getElementById('btnApplyFlt').onclick = function () {
+    applyFilters(true);
+    if (narrow && narrow.matches) {              /* 窄屏下应用后收起覆盖式面板，把宽度还给画布 */
+      document.getElementById('filterPanel').hidden = true;
+      document.getElementById('btnFilter').setAttribute('aria-pressed', 'false');
+    }
+    HF.toast({ type: 'success', title: '筛选已应用', desc: '画布、检索结果与路径选项已按当前条件同步，计数随之更新。' });
+  };
+
+  /* ---------- 画布状态：正常 / 加载中 / 加载失败 / 无结果 ---------- */
+  var cvState = 'ok';
+  function setCanvasState(s) {
+    cvState = s;
+    document.getElementById('stage').setAttribute('data-state', s);
+    HF.$$('.cv__state').forEach(function (el) { el.hidden = el.getAttribute('data-cstate') !== s; });
+    HF.$$('[data-setstate]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-setstate') === s)); });
+    if (s !== 'ok') closeExpand();
+    if (s === 'ok') applyFilters(true);
+  }
+  HF.$$('[data-setstate]').forEach(function (b) {
+    b.onclick = function () { setCanvasState(b.getAttribute('data-setstate')); };
+  });
+  document.getElementById('btnReloadGraph').onclick = function () {
+    setCanvasState('ok');
+    HF.toast({ type: 'success', title: '图谱数据已加载', desc: '14 个对象、15 条关系；同步时间 2026-10-02 09:10。' });
+  };
+  document.getElementById('btnEmptyClear').onclick = function () {
+    clearFilters();
+    HF.toast({ type: 'info', title: '已清除筛选条件', desc: '画布恢复为当前查询范围内的全部对象。' });
+  };
+
+  /* ---------- 面板显隐 ---------- */
+  /* 1366–1439：次要面板默认折叠，画布优先；折叠后仍可从工具条随时打开 */
+  var narrow = window.matchMedia('(max-width: 1439px)');
+  function collapseOnNarrow() {
+    if (!narrow.matches) return;
+    document.getElementById('filterPanel').hidden = true;
+    document.getElementById('btnFilter').setAttribute('aria-pressed', 'false');
+  }
+  collapseOnNarrow();
+  if (narrow.addEventListener) narrow.addEventListener('change', collapseOnNarrow);
+  else if (narrow.addListener) narrow.addListener(collapseOnNarrow);
+
+  document.getElementById('btnFilter').onclick = function () {
+    var panel = document.getElementById('filterPanel');
+    panel.hidden = !panel.hidden;
+    this.setAttribute('aria-pressed', String(!panel.hidden));
+  };
+  document.getElementById('btnDetail').onclick = function () {
+    var panel = document.getElementById('detailPanel');
+    panel.hidden = !panel.hidden;
+    if (panel.hidden) {
+      selected = null; pathSet = null;
+      HF.$$('.nd').forEach(function (g) { g.setAttribute('aria-selected', 'false'); g.setAttribute('tabindex', '-1'); });
+      ensureGraphTabbable();
+    }
+    syncDetailBtn();
+  };
+  document.getElementById('dpClose').onclick = function () {
+    document.getElementById('detailPanel').hidden = true;
+    HF.$$('.nd').forEach(function (g) { g.setAttribute('aria-selected', 'false'); g.setAttribute('tabindex', '-1'); });
+    selected = null;
+    ensureGraphTabbable();
+    syncDetailBtn();
+  };
+
+  /* 初始：应用筛选（同步计数与查询范围）→ 选中演示人员甲并展示属性与来源 */
+  HF.tabs(document);
+  renderEv();
+  applyFilters(true);
+  selectNode('DEMO-P-001', false);
+  syncDetailBtn();
+})();
+</script>
+</body>
+</html>

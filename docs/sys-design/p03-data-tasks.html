@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>数据任务中心 · 海防研判工作台</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .tk { flex: 1 0 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--sp-3); padding: 0 var(--sp-4) var(--sp-4); }
+  .tk__table { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .tk__scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .row-note { font-size: var(--fs-12); color: var(--muted); line-height: 1.5; }
+  .diag { margin-top: var(--sp-2); }
+  .diag summary { cursor: pointer; font-size: var(--fs-12); color: var(--muted); }
+  .diag pre { margin-top: var(--sp-2); padding: var(--sp-3); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-2); font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); overflow: auto; line-height: 1.6; }
+  .fail-row { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-2) 0; border-bottom: 1px solid var(--border); font-size: var(--fs-12); }
+  .fail-row:last-child { border-bottom: 0; }
+</style>
+</head>
+<body data-page="task">
+<div class="app" id="app" data-nav="expanded">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="workspace">
+
+      <div class="page-head" style="padding:10px var(--sp-4) var(--sp-3);align-items:center">
+        <div class="page-head__main">
+          <h1 class="page-title" style="font-size:var(--fs-16)">数据任务中心</h1>
+          <p class="page-desc" style="margin-top:2px">资料是否已导入、图谱是否已更新、哪里失败以及如何恢复</p>
+        </div>
+        <div class="page-head__actions">
+          <button class="btn btn--default btn--sm" type="button" id="btnAutoRefresh">自动刷新：开</button>
+          <button class="btn btn--primary" type="button" id="btnNewTask">新建资料导入任务</button>
+        </div>
+      </div>
+
+      <div class="notice" style="margin:0 var(--sp-4) var(--sp-3)" data-od-id="p03-prereq">
+        <span id="icoPrereq"></span>
+        <div><b>图谱与 AI 研判的数据前提都在本页。</b>最近一次图谱同步（DEMO-T-0032，2026-10-02 09:10）为「部分失败」：12 条关系因来源缺口未写入图谱边，
+          因此数据图谱中对应关系显示为「待核对」虚线，AI 研判也不会把未写入的关系当作依据。
+          <a class="notice__link" href="p01-graph-workbench.html">查看数据图谱</a></div>
+      </div>
+
+      <div class="tk">
+        <!-- 搜索区 -->
+        <form class="search-bar" id="searchBar" data-expanded="false" data-od-id="p03-search" role="search">
+          <div class="field">
+            <label class="field__label" for="f-name">任务名称</label>
+            <input class="input" id="f-name" placeholder="输入任务名称关键字" />
+          </div>
+          <div class="field">
+            <label class="field__label" for="f-type">任务类型</label>
+            <div class="select-wrap"><select class="select" id="f-type">
+              <option value="">全部类型</option><option>资料导入</option><option>图谱同步</option></select></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="f-status">执行状态</label>
+            <div class="select-wrap"><select class="select" id="f-status">
+              <option value="">全部状态</option><option value="waiting">等待中</option><option value="running">执行中</option>
+              <option value="success">成功</option><option value="partial">部分失败</option><option value="failed">失败</option>
+              <option value="canceling">请求取消</option><option value="cancelled">已取消</option></select></div>
+          </div>
+          <div class="field search-bar__more">
+            <label class="field__label" for="f-from">时间范围</label>
+            <div class="row gap-2">
+              <input class="input" type="date" id="f-from" value="2026-09-01" aria-label="起始日期" />
+              <span class="muted">–</span>
+              <input class="input" type="date" id="f-to" value="2026-10-02" aria-label="结束日期" />
+            </div>
+          </div>
+          <div class="field search-bar__more">
+            <label class="field__label" for="f-batch">来源 / 批次</label>
+            <input class="input" id="f-batch" placeholder="DEMO-B-2026-10-02-A" />
+          </div>
+          <div class="search-bar__actions">
+            <button class="btn btn--primary" type="submit" id="btnQuery">查询</button>
+            <button class="btn btn--default" type="button" id="btnReset">重置</button>
+            <button class="btn btn--ghost" type="button" id="btnMore" aria-expanded="false">展开更多条件</button>
+          </div>
+        </form>
+
+        <div class="search-summary" id="applied" hidden data-od-id="p03-applied">
+          <span class="fs-12 fw-strong">已应用条件</span>
+          <span id="appliedChips" class="row gap-1 row--wrap"></span>
+          <span class="spacer"></span>
+          <button class="btn btn--text btn--sm" type="button" id="btnClearApplied">清除全部</button>
+        </div>
+
+        <!-- 表格 -->
+        <div class="tk__table">
+          <div class="table-toolbar">
+            <b class="fs-13">任务列表</b>
+            <span class="tag tag--neutral mono" id="resultCount">8</span>
+            <span class="fs-12 muted" id="resultHint">含 2 条未解决失败项</span>
+            <div class="table-toolbar__spacer"></div>
+            <span class="fs-12 muted" id="lastRefresh">数据更新于 2026-10-02 09:12</span>
+            <button class="btn btn--default btn--sm" type="button" id="btnRefresh"><span id="icoRefresh"></span>刷新</button>
+            <button class="btn btn--default btn--sm" type="button" id="btnExport">导出</button>
+          </div>
+          <div class="tk__scroll">
+            <table class="table" id="taskTable">
+              <thead>
+                <tr>
+                  <th style="width:230px">任务名称</th>
+                  <th style="width:96px">类型</th>
+                  <th style="width:186px">来源 / 批次</th>
+                  <th style="width:132px">执行状态</th>
+                  <th style="width:180px">处理进度</th>
+                  <th style="width:132px" class="col-num">成功 / 失败</th>
+                  <th style="width:150px" class="col-num">最近活动时间</th>
+                  <th class="col-actions">操作</th>
+                </tr>
+              </thead>
+              <tbody id="taskBody"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <span>共 8 条 · 每页 8 条 · 本页 1–8</span>
+            <div class="pager__pages" style="margin-left:auto">
+              <button class="pager__btn" type="button" disabled aria-label="上一页">‹</button>
+              <button class="pager__btn" aria-current="page" type="button">1</button>
+              <button class="pager__btn" type="button" disabled aria-label="下一页">›</button>
+            </div>
+            <span class="fs-12 muted">演示环境仅提供第 1 页数据</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 详情抽屉 -->
+      <div class="scrim" id="scrim"></div>
+      <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true" data-od-id="p03-drawer">
+        <div class="drawer__head">
+          <div style="flex:1 1 auto;min-width:0">
+            <div class="drawer__title" id="dwTitle">任务详情</div>
+            <div class="drawer__desc" id="dwDesc"></div>
+          </div>
+          <button class="btn btn--ghost btn--icon" type="button" id="dwClose" aria-label="关闭详情"></button>
+        </div>
+        <div class="drawer__body" id="dwBody"></div>
+        <div class="drawer__foot">
+          <button class="btn btn--default btn--sm" type="button" id="dwGraph">查看关联图谱</button>
+          <span class="spacer"></span>
+          <button class="btn btn--text btn--sm" type="button" id="dwClose2">关闭</button>
+          <button class="btn btn--primary btn--sm" type="button" id="dwRetry">重试失败项</button>
+        </div>
+      </aside>
+
+      <div class="scrim scrim--modal" id="modalScrim"></div>
+      <div class="modal" id="modal" role="alertdialog" aria-modal="true" aria-labelledby="mdTitle" aria-hidden="true">
+        <div class="modal__body">
+          <div class="modal__title"><span id="icoWarn"></span><span id="mdTitle">确认重试失败项</span></div>
+          <div class="modal__text" id="mdText"></div>
+        </div>
+        <div class="modal__foot">
+          <button class="btn btn--default btn--sm" type="button" id="mdCancel">取消</button>
+          <button class="btn btn--danger-solid btn--sm" type="button" id="mdOk">确认重试</button>
+        </div>
+      </div>
+
+      <!-- ============ 设计标注（非产品界面） ============ -->
+      <section class="doc" data-od-id="p03-doc">
+        <div class="doc__head"><span class="doc__badge">设计标注 · 非产品界面</span>
+          <h2 class="doc__title">P03 关键状态与交互</h2></div>
+        <p class="doc__desc">任务状态共 7 种，进度与结果分别表达：处理完毕不等于全部成功。以下为在真实组件上渲染的状态样张。</p>
+        <div class="doc__grid">
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S1</span><span class="doc__card-title">部分失败（主示例）</span></div>
+            <div class="doc__card-body">批次 A 共 1,000 条已处理完，998 成功、2 失败，状态必须是「部分失败」而不是「成功」。失败项在详情中逐条列出并保持在列表可追踪。</div>
+            <div class="doc__sample" style="width:100%">
+              <div class="progress-cell" style="width:100%">
+                <div class="bar"><span class="bar__seg bar__seg--ok" style="width:99.8%"></span><span class="bar__seg bar__seg--fail" style="width:0.2%"></span></div>
+                <div class="progress-cell__meta"><span>已处理 1,000 / 1,000</span><span>100%</span></div>
+              </div>
+              <div class="row gap-3 fs-12"><span class="mono" style="color:var(--success)">成功 998</span><span class="mono" style="color:var(--danger)">失败 2</span></div>
+            </div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S2</span><span class="doc__card-title">失败原因用业务语言</span></div>
+            <div class="doc__card-body">主界面写「来源编号重复，待核对」这类可理解原因；技术诊断（request id、上游状态）折叠在详情内，不堆砌堆栈。</div>
+            <div class="doc__sample" style="width:100%">
+              <div class="fail-row"><span class="tag tag--warning tag--dashed">待核对</span><span><b class="mono">DEMO-DECL-001</b> 演示停靠申报 · 来源编号重复，与既有记录 DEMO-DECL-000 冲突</span></div>
+            </div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S3</span><span class="doc__card-title">请求取消 ≠ 已取消</span></div>
+            <div class="doc__card-body">点击停止后先进入「请求取消」，收到服务端确认才变为「已取消」。长时间停在请求取消时给出可执行动作，且禁用重复触发。</div>
+            <div class="doc__sample"><span class="tag tag--warning tag--dashed">请求取消</span><span class="fs-12 muted">已等待停止确认 4 分钟 · 可再次请求停止</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S4</span><span class="doc__card-title">重试前的范围说明</span></div>
+            <div class="doc__card-body">重试只处理失败项，并明确说明范围与影响；执行中的任务禁用重试入口，避免重复触发。</div>
+            <div class="doc__sample"><span class="fs-12 muted">将重试批次 <b class="mono">DEMO-B-2026-10-02-A</b> 中 2 条失败资料，成功项不会重复导入。</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S5</span><span class="doc__card-title">空 / 加载 / 错误</span></div>
+            <div class="doc__card-body">三种状态共用一套组件，区别在于标题、原因与可用动作；错误态保留查询条件。</div>
+            <div class="doc__sample" style="width:100%">
+              <div class="state" style="padding:var(--sp-4) 0"><div class="state__title">当前条件下没有任务</div>
+                <div class="state__desc">可清除筛选条件后重试。</div></div>
+              <div class="skeleton" style="height:16px;width:70%"></div>
+              <div class="skeleton" style="height:16px;width:92%"></div>
+            </div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S6</span><span class="doc__card-title">抽屉保留底层列表位置</span></div>
+            <div class="doc__card-body">打开详情抽屉时，列表滚动位置、查询条件与分页均保留；焦点进入抽屉首个可聚焦元素，Esc 关闭后焦点回到触发行的按钮。</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  HF.shell.mount({ active: 'task', crumb: ['数据任务', '任务列表'],
+    sync: { level: 'warn', text: '资料导入 2026-10-02 08:47 · 2 条待核对' } });
+
+  document.getElementById('dwClose').innerHTML = HF.icon('close');
+  document.getElementById('icoPrereq').innerHTML = HF.icon('warning', '');
+  document.getElementById('icoRefresh').outerHTML = HF.icon('refresh', 'btn__icon');
+  document.getElementById('icoWarn').innerHTML = HF.icon('warning', 'btn__icon');
+  HF.$('#icoWarn').querySelector('svg').style.color = 'var(--warning)';
+
+  var TASKS = HF.data.TASKS;
+  var ST = {
+    waiting:   { t: '等待中', c: 'neutral', d: '' },
+    running:   { t: '执行中', c: 'accent', d: 'spin' },
+    success:   { t: '成功', c: 'success', d: 'check' },
+    partial:   { t: '部分失败', c: 'warning', d: 'warn' },
+    failed:    { t: '失败', c: 'danger', d: 'err' },
+    canceling: { t: '请求取消', c: 'warning', d: 'dash' },
+    cancelled: { t: '已取消', c: 'neutral', d: 'dash' }
+  };
+  function statusTag(k) {
+    var s = ST[k], extra = '';
+    if (s.d === 'spin') extra = '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>';
+    else if (s.d === 'check') extra = HF.icon('check', 'btn__icon');
+    else if (s.d === 'warn') extra = HF.icon('warning', 'btn__icon');
+    else if (s.d === 'err') extra = HF.icon('error', 'btn__icon');
+    else if (s.d === 'dash') return '<span class="tag tag--' + s.c + ' tag--dashed">' + s.t + '</span>';
+    return '<span class="tag tag--' + s.c + '">' + extra + s.t + '</span>';
+  }
+  function progress(t) {
+    var done = t.progress >= 100 ? t.total : (t.status === 'running' ? t.ok : (t.status === 'cancelled' ? Math.round(t.total * t.progress / 100) : t.ok + t.fail));
+    var okPct = t.total ? (t.ok / t.total * 100) : 0;
+    var failPct = t.total ? (t.fail / t.total * 100) : 0;
+    var runPct = Math.max(0, t.progress - okPct - failPct);
+    var st = ST[t.status];
+    var label = t.status === 'running' ? '处理中 ' + t.ok + ' / ' + t.total
+      : (t.status === 'waiting' ? '尚未开始' : (t.status === 'canceling' ? '等待停止确认' : '已处理 ' + (t.status === 'cancelled' ? done : t.total) + ' / ' + t.total));
+    return '<div class="progress-cell"><div class="bar">' +
+      (okPct ? '<span class="bar__seg bar__seg--ok" style="width:' + okPct + '%"></span>' : '') +
+      (failPct ? '<span class="bar__seg bar__seg--fail" style="width:' + Math.max(failPct, 0.8) + '%"></span>' : '') +
+      ((runPct > 0 && (t.status === 'running' || t.status === 'canceling')) ? '<span class="bar__seg bar__seg--run" style="width:' + Math.min(runPct, 100 - okPct - failPct) + '%"></span>' : '') +
+      '</div><div class="progress-cell__meta"><span>' + label + '</span><span>' + t.progress + '%</span></div></div>';
+  }
+  function actions(t) {
+    var b = '<button class="btn btn--text btn--sm" type="button" data-act="detail" data-id="' + t.id + '">查看详情</button>';
+    if (t.status === 'partial' || t.status === 'failed' || t.status === 'cancelled')
+      b += '<button class="btn btn--text btn--sm" type="button" data-act="retry" data-id="' + t.id + '">重试失败项</button>';
+    if (t.status === 'running') b += '<button class="btn btn--text btn--sm" type="button" data-act="stop" data-id="' + t.id + '">请求停止</button>';
+    if (t.status === 'canceling') b += '<button class="btn btn--text btn--sm" type="button" disabled title="已发出停止请求，等待确认">请求停止</button>';
+    if (t.status === 'waiting') b += '<button class="btn btn--text btn--sm" type="button" data-act="cancel" data-id="' + t.id + '">取消排队</button>';
+    if (t.status === 'success' || t.status === 'partial') b += '<button class="btn btn--text btn--sm" type="button" data-act="graph" data-id="' + t.id + '">查看关联图谱</button>';
+    return b;
+  }
+  function rows(list) {
+    return list.map(function (t) {
+      return '<tr data-row="' + t.id + '">' +
+        '<td><div class="cell-stack"><span class="cell-strong">' + t.name + '</span>' +
+        '<span class="cell-stack__sub">' + t.id + '</span></div></td>' +
+        '<td><span class="tag tag--neutral">' + t.type + '</span></td>' +
+        '<td><span class="mono fs-12">' + t.batch + '</span></td>' +
+        '<td>' + statusTag(t.status) + (t.note ? '<div class="row-note mt-2">' + t.note + '</div>' : '') + '</td>' +
+        '<td>' + progress(t) + '</td>' +
+        '<td class="col-num"><span class="mono" style="color:var(--success)">' + HF.fmt.num(t.ok) + '</span>' +
+        ' <span class="muted">/</span> <span class="mono" style="color:' + (t.fail ? 'var(--danger)' : 'var(--muted)') + '">' + HF.fmt.num(t.fail) + '</span></td>' +
+        '<td class="col-num"><span class="mono fs-12">' + t.last + '</span></td>' +
+        '<td class="col-actions">' + actions(t) + '</td></tr>';
+    }).join('');
+  }
+  var body = document.getElementById('taskBody');
+  function render(list) {
+    body.innerHTML = list.length ? rows(list)
+      : '<tr><td colspan="8"><div class="state"><div class="state__title">当前条件下没有任务</div>' +
+        '<div class="state__desc">已应用筛选条件。可清除条件后重新查询，或放宽时间范围。</div>' +
+        '<div class="state__actions"><button class="btn btn--default btn--sm" type="button" id="emptyClear">清除筛选条件</button></div></div></td></tr>';
+    document.getElementById('resultCount').textContent = String(list.length);
+    var fail = list.reduce(function (a, t) { return a + (t.status === 'partial' || t.status === 'failed' ? t.fail : 0); }, 0);
+    document.getElementById('resultHint').textContent = fail ? '含 ' + fail + ' 条未解决失败项' : '无未解决失败项';
+  }
+
+  /* 查询 */
+  var applied = [];
+  function runQuery() {
+    var name = document.getElementById('f-name').value.trim();
+    var type = document.getElementById('f-type').value;
+    var status = document.getElementById('f-status').value;
+    var batch = document.getElementById('f-batch').value.trim();
+    var list = TASKS.filter(function (t) {
+      if (name && t.name.indexOf(name) < 0) return false;
+      if (type && t.type !== type) return false;
+      if (status && t.status !== status) return false;
+      if (batch && t.batch.indexOf(batch) < 0) return false;
+      return true;
+    });
+    applied = [];
+    if (name) applied.push('任务名称：' + name);
+    if (type) applied.push('类型：' + type);
+    if (status) applied.push('状态：' + ST[status].t);
+    if (batch) applied.push('批次：' + batch);
+    applied.push('时间：2026-09-01 – 2026-10-02');
+    var chips = document.getElementById('appliedChips');
+    var box = document.getElementById('applied');
+    box.hidden = applied.length <= 1;
+    chips.innerHTML = applied.map(function (a) { return '<span class="tag tag--neutral">' + a + '</span>'; }).join('');
+    render(list);
+  }
+  document.getElementById('searchBar').addEventListener('submit', function (e) { e.preventDefault(); runQuery(); });
+  document.getElementById('btnReset').onclick = function () {
+    ['f-name', 'f-type', 'f-status', 'f-batch'].forEach(function (i) { document.getElementById(i).value = ''; });
+    document.getElementById('f-from').value = '2026-09-01'; document.getElementById('f-to').value = '2026-10-02';
+    document.getElementById('applied').hidden = true; applied = []; render(TASKS);
+    HF.toast({ type: 'info', title: '已重置查询条件', desc: '时间范围恢复为 2026-09-01 – 2026-10-02。' });
+  };
+  document.getElementById('btnMore').onclick = function () {
+    var bar = document.getElementById('searchBar');
+    var on = bar.getAttribute('data-expanded') === 'true';
+    bar.setAttribute('data-expanded', String(!on));
+    this.setAttribute('aria-expanded', String(!on));
+    this.textContent = on ? '展开更多条件' : '收起更多条件';
+  };
+  document.getElementById('btnClearApplied').onclick = function () { document.getElementById('btnReset').click(); };
+  document.getElementById('btnRefresh').onclick = function () {
+    document.getElementById('lastRefresh').textContent = '数据更新于 2026-10-02 09:14';
+    HF.toast({ type: 'success', title: '已刷新任务列表', desc: '当前 8 条任务状态无变化。' });
+  };
+  document.getElementById('btnExport').onclick = function () {
+    HF.toast({ type: 'info', title: '导出任务列表', desc: '将按当前筛选条件导出 8 条任务，含失败明细；不含未授权范围的任务。' });
+  };
+  document.getElementById('btnAutoRefresh').onclick = function () {
+    var on = this.textContent.indexOf('开') > 0;
+    this.textContent = '自动刷新：' + (on ? '关' : '开');
+    HF.toast({ type: 'info', title: '自动刷新已' + (on ? '关闭' : '开启'), desc: on ? '不会再自动更新任务状态。' : '每 30 秒更新执行中的任务。' });
+  };
+  document.getElementById('btnNewTask').onclick = function () {
+    HF.toast({ type: 'info', title: '新建资料导入任务', desc: '需先选择来源目录与批次命名规则，提交后进入排队状态。' });
+  };
+
+  /* 行内操作 */
+  body.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]'); if (!b) return;
+    var t = TASKS.filter(function (x) { return x.id === b.getAttribute('data-id'); })[0];
+    var act = b.getAttribute('data-act');
+    if (act === 'detail') openDrawer(t);
+    if (act === 'retry') confirmRetry(t);
+    if (act === 'graph') location.href = 'p01-graph-workbench.html';
+    if (act === 'stop') {
+      t.status = 'canceling'; t.note = '已等待停止确认，请勿重复触发';
+      render(TASKS);
+      HF.toast({ type: 'info', title: '已发出停止请求', desc: '等待服务端确认后将显示「已取消」。' });
+    }
+    if (act === 'cancel') {
+      t.status = 'cancelled'; t.note = '用户在排队阶段取消';
+      render(TASKS);
+      HF.toast({ type: 'info', title: '已取消排队', desc: '任务未开始执行，不产生任何处理结果。' });
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.target.id === 'emptyClear') document.getElementById('btnReset').click();
+  });
+
+  /* 抽屉 */
+  var drawer = document.getElementById('drawer');
+  function openDrawer(t) {
+    document.getElementById('dwTitle').textContent = t.name;
+    document.getElementById('dwDesc').innerHTML = '<span class="mono">' + t.id + '</span> · ' + t.type + ' · 批次 <span class="mono">' + t.batch + '</span>';
+    var failedRows = t.fail ? (
+      '<div class="mt-2">' +
+      '<div class="fail-row"><span class="tag tag--warning tag--dashed">待核对</span><div><b class="mono">DEMO-DECL-001</b> 演示停靠申报<br />' +
+      '<span class="muted">来源编号重复，与既有记录冲突；受影响关系 2 条，已标记待核对，未写入图谱边。</span></div></div>' +
+      (t.fail > 1 ? '<div class="fail-row"><span class="tag tag--warning tag--dashed">待核对</span><div><b class="mono">DEMO-DECL-002</b> 演示关联申报<br />' +
+      '<span class="muted">关联编号缺少来源字段，无法追溯原始登记；受影响关系 1 条。</span></div></div>' : '') +
+      '</div>') : '<p class="fs-12 muted mt-2">本次没有失败项。</p>';
+    document.getElementById('dwBody').innerHTML =
+      '<section><div class="section-title" style="margin-bottom:var(--sp-2)">本次范围</div>' +
+      '<dl class="kv kv--wide"><dt>任务类型</dt><dd>' + t.type + '</dd>' +
+      '<dt>来源 / 批次</dt><dd class="mono">' + t.batch + '</dd>' +
+      '<dt>处理数量</dt><dd class="mono">' + HF.fmt.num(t.total) + ' 条</dd>' +
+      '<dt>开始时间</dt><dd class="mono">2026-10-02 08:30</dd>' +
+      '<dt>结束时间</dt><dd class="mono">' + (t.status === 'running' || t.status === 'waiting' ? '—（未结束）' : t.last) + '</dd>' +
+      '<dt>最近活动</dt><dd class="mono">' + t.last + '</dd></dl></section>' +
+      '<section><div class="section-title" style="margin-bottom:var(--sp-2)">处理结果</div>' +
+      '<div class="bar mb-2" style="height:8px">' +
+        '<span class="bar__seg bar__seg--ok" style="width:' + (t.ok / t.total * 100) + '%"></span>' +
+        '<span class="bar__seg bar__seg--fail" style="width:' + Math.max(t.fail / t.total * 100, t.fail ? 0.8 : 0) + '%"></span></div>' +
+      '<div class="bar-legend"><span class="bar-legend__item"><i class="bar-legend__swatch" style="background:var(--success)"></i>成功 <b class="mono">' + HF.fmt.num(t.ok) + '</b></span>' +
+      '<span class="bar-legend__item"><i class="bar-legend__swatch" style="background:var(--danger)"></i>失败 <b class="mono">' + HF.fmt.num(t.fail) + '</b></span>' +
+      '<span class="bar-legend__item"><i class="bar-legend__swatch" style="background:var(--disabled-bg)"></i>未处理 <b class="mono">' + HF.fmt.num(Math.max(0, t.total - t.ok - t.fail)) + '</b></span>' +
+      '<span class="spacer"></span><span class="fs-12 muted">处理完毕不等于全部成功</span></div>' +
+      '<div class="notice ' + (t.fail ? '' : 'notice--success') + ' mt-3"><span>' + HF.icon(t.fail ? 'warning' : 'check', '') + '</span>' +
+      '<div>' + (t.fail ? '有 <b>' + t.fail + ' 条</b>资料未成功处理，原因见下方。未解决前不会并入图谱。' : '本次全部资料处理成功，已并入图谱。') + '</div></div></section>' +
+      '<section><div class="section-title" style="margin-bottom:var(--sp-2)">失败原因与受影响记录</div>' + failedRows +
+      '<details class="diag"><summary>展开技术诊断信息</summary><pre>task_id=' + t.id + '\nbatch=' + t.batch + '\nupstream=graph-sync\nstatus=' + t.status + '\nfailed_items=' + t.fail + '\nrequest_id=DEMO-REQ-9104\nretry_policy=item_level\nlast_checkpoint=986</pre></details></section>' +
+      '<section><div class="section-title" style="margin-bottom:var(--sp-2)">上一次确认完成的位置</div>' +
+      '<dl class="kv kv--wide"><dt>批次序号</dt><dd class="mono">第 986 条</dd>' +
+      '<dt>来源编号</dt><dd class="mono">DEMO-INOUT-003</dd>' +
+      '<dt>确认时间</dt><dd class="mono">2026-10-02 08:43</dd>' +
+      '<dt>说明</dt><dd>重试将从第 987 条开始，前 986 条不会重复导入。</dd></dl></section>' +
+      '<section><div class="section-title" style="margin-bottom:var(--sp-2)">操作记录</div>' +
+      '<div class="timeline"><div class="timeline__item timeline__item--accent"><span class="timeline__dot"></span>' +
+      '<div class="timeline__head"><span class="timeline__title">任务创建</span><span class="timeline__time">2026-10-02 08:30</span></div>' +
+      '<div class="timeline__desc">演示账号 · 管理丙 提交批次 ' + t.batch + '，共 ' + HF.fmt.num(t.total) + ' 条。</div></div>' +
+      '<div class="timeline__item"><span class="timeline__dot"></span>' +
+      '<div class="timeline__head"><span class="timeline__title">恢复点确认</span><span class="timeline__time">2026-10-02 08:43</span></div>' +
+      '<div class="timeline__desc">已处理 986 条，作为上一次确认完成的位置。</div></div>' +
+      '<div class="timeline__item ' + (t.fail ? 'timeline__item--warning' : 'timeline__item--success') + '"><span class="timeline__dot"></span>' +
+      '<div class="timeline__head"><span class="timeline__title">' + ST[t.status].t + '</span><span class="timeline__time">' + t.last + '</span></div>' +
+      '<div class="timeline__desc">' + (t.note || '任务处理完毕。') + '</div></div></div></section>';
+    var retryBtn = document.getElementById('dwRetry');
+    if (t.status === 'partial' || t.status === 'failed' || t.status === 'cancelled') {
+      retryBtn.hidden = false; retryBtn.onclick = function () { confirmRetry(t, true); };
+    } else { retryBtn.hidden = true; }
+    HF.layer.open(drawer, 'scrim');
+  }
+  document.getElementById('dwClose').onclick = function () { HF.layer.close(drawer, 'scrim'); };
+  document.getElementById('dwClose2').onclick = function () { HF.layer.close(drawer, 'scrim'); };
+  document.getElementById('dwGraph').onclick = function () { location.href = 'p01-graph-workbench.html'; };
+
+  /* 重试确认 */
+  var modal = document.getElementById('modal');
+  function confirmRetry(t, fromDrawer) {
+    document.getElementById('mdText').innerHTML =
+      '将重试批次 <b class="mono">' + t.batch + '</b> 中的 <b>' + t.fail + ' 条</b>失败资料，从第 987 条开始。<br />' +
+      '成功的 <b class="mono">' + HF.fmt.num(t.ok) + '</b> 条不会重复导入；重试期间该任务的其他操作不可用。';
+    HF.layer.open(modal, 'modalScrim');
+    document.getElementById('mdOk').onclick = function () {
+      HF.layer.close(modal, 'modalScrim');
+      if (fromDrawer) HF.layer.close(drawer, 'scrim');
+      t.status = 'running'; t.note = '正在重试 ' + t.fail + ' 条失败资料'; t.progress = 99;
+      render(TASKS);
+      HF.toast({ type: 'success', title: '已开始重试', desc: '范围：' + t.fail + ' 条失败资料。成功后状态将变为「成功」。' });
+    };
+    document.getElementById('mdCancel').onclick = function () { HF.layer.close(modal, 'modalScrim'); };
+  }
+
+  render(TASKS);
+})();
+</script>
+</body>
+</html>

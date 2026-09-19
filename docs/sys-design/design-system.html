@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>设计系统 · 海防研判工作台</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .ds { display: flex; min-height: 0; flex: 1 1 auto; }
+  .ds__side {
+    flex: 0 0 208px; width: 208px; padding: var(--sp-4);
+    border-right: 1px solid var(--border); position: sticky; top: var(--sp-5);
+    align-self: flex-start; max-height: calc(100vh - var(--topbar-h) - 40px); overflow: auto;
+  }
+  .ds__side a { display: block; padding: 6px var(--sp-2); border-radius: var(--r-2); color: var(--muted); font-size: var(--fs-13); }
+  .ds__side a:hover { background: var(--surface-hover); color: var(--fg); text-decoration: none; }
+  .ds__side a[aria-current="true"] { background: var(--surface-selected); color: var(--fg); font-weight: var(--fw-ui); }
+  .ds__body { flex: 1 1 auto; min-width: 0; padding: var(--sp-5) var(--sp-6) var(--sp-9); }
+  .ds__sec { margin-bottom: var(--sp-8); scroll-margin-top: calc(var(--topbar-h) + 16px); }
+  .ds__sec > h2 {
+    font-family: var(--font-display); font-size: var(--fs-18); font-weight: var(--fw-strong);
+    line-height: var(--lh-title); padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border);
+    margin-bottom: var(--sp-3); display: flex; align-items: baseline; gap: var(--sp-2);
+  }
+  .ds__sec > h2 .mono { font-size: var(--fs-12); color: var(--muted); }
+  .ds__note { font-size: var(--fs-12); color: var(--muted); line-height: var(--lh-body); margin-bottom: var(--sp-3); max-width: 92ch; }
+  .ds__grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: var(--sp-4); }
+  .ds__block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); padding: var(--sp-4); }
+  .ds__block > h3 { font-size: var(--fs-13); font-weight: var(--fw-strong); margin-bottom: var(--sp-3); color: var(--fg); }
+  .ds__swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: var(--sp-2); }
+  .ds__sw { border: 1px solid var(--border); border-radius: var(--r-3); overflow: hidden; }
+  .ds__sw-chip { height: 40px; }
+  .ds__sw-meta { padding: 6px var(--sp-2); font-size: var(--fs-11); font-family: var(--font-mono); color: var(--muted); line-height: 1.5; }
+  .ds__sw-meta b { display: block; color: var(--fg); font-family: var(--font-body); font-size: var(--fs-12); }
+  .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--sp-2); }
+  .icon-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--sp-2); border: 1px solid var(--border); border-radius: var(--r-3); }
+  .icon-cell svg { width: 22px; height: 22px; color: var(--fg); }
+  .icon-cell span { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); }
+  .type-row { display: flex; align-items: baseline; gap: var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px solid var(--border); }
+  .type-row:last-child { border-bottom: 0; }
+  .type-row__meta { flex: 0 0 148px; font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); }
+  .spec-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .spec-row { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-12); }
+  .spec-row__tag { flex: 0 0 168px; }
+  .spec-row__desc { color: var(--muted); }
+</style>
+</head>
+<body data-page="ds">
+<div class="app" id="app" data-nav="expanded">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="workspace">
+      <div class="page-head">
+        <div class="page-head__main">
+          <h1 class="page-title">设计系统</h1>
+          <p class="page-desc">亮色 / 暗黑双主题共享同一套语义、布局与状态含义。本页所有样例都是可直接在 P01–P05 中复用的公共组件，切换右上角主题即可对照两套 token 的实际渲染。</p>
+        </div>
+      </div>
+      <div class="ds">
+        <nav class="ds__side" aria-label="设计系统目录" data-od-id="ds-toc">
+          <a href="#tokens" aria-current="true">1 主题 token</a>
+          <a href="#contrast">2 对比度实测</a>
+          <a href="#type">3 排版</a>
+          <a href="#space">4 间距与圆角</a>
+          <a href="#icons">5 图标</a>
+          <a href="#entity">6 实体类型</a>
+          <a href="#status">7 状态规范</a>
+          <a href="#controls">8 按钮与表单</a>
+          <a href="#table">9 表格与分页</a>
+          <a href="#evidence">10 来源引用</a>
+          <a href="#perm">11 权限选择</a>
+          <a href="#feedback">12 空 / 加载 / 错误</a>
+          <a href="#antd">13 AntD 对应</a>
+          <a href="#narrow">14 1366 收缩规则</a>
+        </nav>
+        <div class="ds__body">
+
+          <section class="ds__sec" id="tokens" data-od-id="ds-tokens">
+            <h2>1 主题 token <span class="mono">--bg --surface --fg --muted --border --accent</span></h2>
+            <p class="ds__note">Hex 为业务方给定的起始值原样保留；派生色由 OKLch 推导后转回 sRGB，注释中保留推导式。切换主题时右侧色块会实时变化，两套主题的同一状态含义完全一致。</p>
+            <div class="ds__swatches" id="swatches"></div>
+            <div class="ds__block mt-4">
+              <h3>AntD 主题变量对应（ConfigProvider theme.token）</h3>
+              <table class="doc__table">
+                <thead><tr><th style="width:34%">AntD token</th><th style="width:33%">本项目 token</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">colorBgLayout</td><td class="mono">--bg</td><td>页面背景</td></tr>
+                  <tr><td class="mono">colorBgContainer / colorBgElevated</td><td class="mono">--surface</td><td>卡片、表格、抽屉、弹窗</td></tr>
+                  <tr><td class="mono">colorFillQuaternary</td><td class="mono">--row-hover</td><td>表格行悬停</td></tr>
+                  <tr><td class="mono">colorFillTertiary</td><td class="mono">--surface-active</td><td>控件按下</td></tr>
+                  <tr><td class="mono">colorText</td><td class="mono">--fg</td><td>正文</td></tr>
+                  <tr><td class="mono">colorTextSecondary</td><td class="mono">--muted</td><td>次级文字</td></tr>
+                  <tr><td class="mono">colorTextTertiary</td><td class="mono">--fg-placeholder</td><td>占位符</td></tr>
+                  <tr><td class="mono">colorTextDisabled</td><td class="mono">--disabled-fg</td><td>禁用文字（唯一允许降低对比的态）</td></tr>
+                  <tr><td class="mono">colorBorder</td><td class="mono">--border-control</td><td><b>控件识别边界</b>，≥3:1</td></tr>
+                  <tr><td class="mono">colorBorderSecondary</td><td class="mono">--border</td><td>仅装饰分隔线</td></tr>
+                  <tr><td class="mono">colorPrimary / Hover / Active / Bg</td><td class="mono">--accent / -hover / -active / --accent-soft</td><td>品牌强调与主操作</td></tr>
+                  <tr><td class="mono">colorSuccess / Warning / Error</td><td class="mono">--success / --warning / --danger</td><td>状态色，与实体色分工</td></tr>
+                  <tr><td class="mono">borderRadius / SM / LG</td><td class="mono">--r-3 / --r-2 / --r-4</td><td>6 / 4 / 8 px</td></tr>
+                  <tr><td class="mono">controlHeight</td><td class="mono">32px</td><td>表格行 44px，顶栏 56px</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="contrast" data-oid="ds-contrast">
+            <h2>2 对比度实测 <span class="mono">WCAG 2.2 §1.4.3 / §1.4.11</span></h2>
+            <p class="ds__note">以下为静态色值计算（相对亮度公式），<b>不是</b>真实屏幕取样，也不构成无障碍验收结论。正文目标 ≥4.5:1，控件识别与图形信息目标 ≥3:1。</p>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>亮色主题 · 关键组合</h3><table class="doc__table" id="cv-light"></table></div>
+              <div class="ds__block"><h3>暗黑主题 · 关键组合</h3><table class="doc__table" id="cv-dark"></table></div>
+            </div>
+            <div class="notice mt-3" style="max-width:96ch">
+              <span id="cv-note-icon"></span>
+              <div><b>装饰分隔线不等于控件边界。</b>#DCE3EE（亮）/ #2C3E57（暗）在卡片表面仅 1.29:1 / 1.57:1，只用于分区，不作为输入框、可选择区域、可点击行的唯一识别依据——这些位置一律使用 <span class="mono">--border-control</span>。</div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="type" data-od-id="ds-type">
+            <h2>3 排版</h2>
+            <p class="ds__note">一个中文无衬线超家族 + 等宽数字。中文标题字距恒为 0；仅拉丁全大写加 0.06em。业务编号、时间、计数一律等宽以便竖向比对。</p>
+            <div class="ds__block">
+              <div class="type-row"><div class="type-row__meta">20 / 1.4 / 600</div><div style="font-family:var(--font-display);font-size:var(--fs-20);font-weight:600;line-height:var(--lh-title)">页面标题 · 数据任务中心</div></div>
+              <div class="type-row"><div class="type-row__meta">16 / 1.4 / 600</div><div style="font-family:var(--font-display);font-size:var(--fs-16);font-weight:600;line-height:var(--lh-title)">面板标题 · 来源记录</div></div>
+              <div class="type-row"><div class="type-row__meta">14 / 1.75 / 400</div><div class="body-text">正文 14px。来源事实：演示人员甲与演示人员乙出现在同一条出港登记中，对应船舶为演示海船甲，登记时间为 2026-09-18 14:20。</div></div>
+              <div class="type-row"><div class="type-row__meta">13 / 1.5 / 500</div><div style="font-size:var(--fs-13)">表格正文与控件文字，单行行高 1.5</div></div>
+              <div class="type-row"><div class="type-row__meta">12 / 1.5 / 400</div><div class="fs-12 muted">标签、meta、辅助说明</div></div>
+              <div class="type-row"><div class="type-row__meta">11 / 1.5 / 400 · mono</div><div class="mono muted">DEMO-P-001 · 2026-10-02 09:10</div></div>
+              <div class="type-row"><div class="type-row__meta">12 / 600 / caps</div><div style="font-size:var(--fs-12);letter-spacing:var(--ls-caps);text-transform:uppercase;font-weight:600">Section · 拉丁全大写需要 0.06em 字距</div></div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="space" data-od-id="ds-space">
+            <h2>4 间距与圆角</h2>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>4 / 8 px 间距阶梯</h3><div class="spec-list" id="space-list"></div></div>
+              <div class="ds__block"><h3>圆角与阴影</h3>
+                <div class="spec-list">
+                  <div class="spec-row"><span class="spec-row__tag mono">--r-2 · 4px</span><span class="spec-row__desc">标签、小控件、引用编号</span></div>
+                  <div class="spec-row"><span class="spec-row__tag mono">--r-3 · 6px</span><span class="spec-row__desc">按钮、输入框、来源卡</span></div>
+                  <div class="spec-row"><span class="spec-row__tag mono">--r-4 · 8px</span><span class="spec-row__desc">面板、抽屉、表格容器</span></div>
+                  <div class="spec-row"><span class="spec-row__tag mono">--shadow-1</span><span class="spec-row__desc">仅分段控件选中态</span></div>
+                  <div class="spec-row"><span class="spec-row__tag mono">--shadow-3</span><span class="spec-row__desc">抽屉与弹窗；页面内不用投影分层</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="icons" data-od-id="ds-icons">
+            <h2>5 图标 <span class="mono">24×24 · 描边 1.7 · currentColor</span></h2>
+            <p class="ds__note">全部为单色线性图标，随文字颜色变化，不使用 emoji 作为功能图标。图标一律配文字标签；仅图标按钮必须有 aria-label 与可见焦点环。</p>
+            <div class="icon-grid" id="icon-grid"></div>
+          </section>
+
+          <section class="ds__sec" id="entity" data-od-id="ds-entity">
+            <h2>6 实体类型</h2>
+            <p class="ds__note">形状 + 颜色 + 汉字标 + 文字标签四重编码，不依赖颜色单一通道。图谱节点、表格芯片、引用卡、情报详情全部复用同一套形状语言。</p>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>形状语言</h3>
+                <div class="spec-list">
+                  <div class="spec-row"><span class="spec-row__tag"><span class="tag tag--person"><i class="eg eg--person"></i>人员</span></span><span class="spec-row__desc">圆形 · 图谱节点内汉字标「人」</span></div>
+                  <div class="spec-row"><span class="spec-row__tag"><span class="tag tag--vessel"><i class="eg eg--vessel"></i>船舶</span></span><span class="spec-row__desc">圆角矩形 · 汉字标「船」</span></div>
+                  <div class="spec-row"><span class="spec-row__tag"><span class="tag tag--place"><i class="eg eg--place"></i>地点</span></span><span class="spec-row__desc">方形 · 汉字标「港」</span></div>
+                  <div class="spec-row"><span class="spec-row__tag"><span class="tag tag--event"><i class="eg eg--event"></i>事件</span></span><span class="spec-row__desc">菱形 · 汉字标「事」</span></div>
+                </div>
+                <h3 class="mt-4">图谱连线语义</h3>
+                <div class="spec-list">
+                  <div class="spec-row"><span class="spec-row__tag" style="flex-basis:120px"><svg width="88" height="12" viewBox="0 0 88 12" aria-hidden="true"><path d="M2 6h70" stroke="var(--graph-edge)" stroke-width="1.6"/><path d="M72 2.5l6 3.5-6 3.5z" fill="var(--graph-edge)"/></svg></span><span class="spec-row__desc">实线：来源记录支持的关系</span></div>
+                  <div class="spec-row"><span class="spec-row__tag" style="flex-basis:120px"><svg width="88" height="12" viewBox="0 0 88 12" aria-hidden="true"><path d="M2 6h70" stroke="var(--warning)" stroke-width="1.6" stroke-dasharray="6 4"/><path d="M72 2.5l6 3.5-6 3.5z" fill="var(--warning)"/></svg></span><span class="spec-row__desc">虚线：待核对，边标签必须写明状态</span></div>
+                  <div class="spec-row"><span class="spec-row__tag" style="flex-basis:120px"><svg width="88" height="12" viewBox="0 0 88 12" aria-hidden="true"><path d="M2 6h70" stroke="var(--accent)" stroke-width="2.6"/><path d="M72 1.5l7 4.5-7 4.5z" fill="var(--accent)"/></svg></span><span class="spec-row__desc">加粗实线：当前查询路径；非路径对象的图形降至 38% 不透明度，名称改用次级文字色，因此弱化后仍保持 ≥4.5:1</span></div>
+                </div>
+              </div>
+              <div class="ds__block"><h3>图谱节点示意</h3>
+                <div class="doc__sample doc__sample--canvas" id="node-demo" style="padding:var(--sp-4)"></div>
+                <p class="ds__note mt-3">节点 = 形状标记 + 名称（13px/600）+ 等宽编号（10.5px）。选中态叠加品牌色描边环；路径命中仍保留实体形状与颜色，因此弱化后依然能辨认类型。</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="status" data-od-id="ds-status">
+            <h2>7 状态规范</h2>
+            <p class="ds__note">状态同时用颜色 + 图标 + 文字表达。两套主题的同一状态含义一致；颜色只是第三重冗余编码。</p>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>数据任务状态</h3><div class="spec-list" id="st-task"></div></div>
+              <div class="ds__block"><h3>AI 生成状态</h3><div class="spec-list" id="st-ai"></div></div>
+              <div class="ds__block"><h3>附件处理状态</h3><div class="spec-list" id="st-attach"></div></div>
+              <div class="ds__block"><h3>情报协同状态</h3><div class="spec-list" id="st-intel"></div></div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="controls" data-od-id="ds-controls">
+            <h2>8 按钮与表单</h2>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>按钮层级</h3>
+                <p class="ds__note">同一视口内只允许一个实心主操作按钮；次级一律为描边或文字按钮，且文案不逐字重复。</p>
+                <div class="row row--wrap gap-2">
+                  <button class="btn btn--primary" type="button">加入证据清单</button>
+                  <button class="btn btn--default" type="button">重置</button>
+                  <button class="btn btn--ghost" type="button">展开更多条件</button>
+                  <button class="btn btn--text" type="button">查看全文</button>
+                  <button class="btn btn--danger-outline" type="button">禁用账号</button>
+                  <button class="btn btn--primary" type="button" disabled>不可用</button>
+                </div>
+                <div class="row row--wrap gap-2 mt-3">
+                  <button class="btn btn--default btn--sm" type="button">小尺寸 28</button>
+                  <button class="btn btn--default" type="button">默认 32</button>
+                  <button class="btn btn--default btn--lg" type="button">主操作 40</button>
+                </div>
+              </div>
+              <div class="ds__block"><h3>表单与校验</h3>
+                <div class="col gap-3">
+                  <div class="field">
+                    <label class="field__label" for="ds-i1">账号 <span class="field__req">*</span></label>
+                    <input class="input" id="ds-i1" value="demo.yanpan.a" />
+                    <div class="field__hint">仅允许小写字母、数字与点，长度 4–32。</div>
+                  </div>
+                  <div class="field">
+                    <label class="field__label" for="ds-i2">所属单位 <span class="field__req">*</span></label>
+                    <div class="select-wrap"><select class="select" id="ds-i2"><option>演示单位甲</option><option>演示单位乙</option><option>演示单位丙</option></select></div>
+                  </div>
+                  <div class="field">
+                    <label class="field__label" for="ds-i3">姓名 <span class="field__req">*</span></label>
+                    <input class="input" id="ds-i3" value="演示人员甲" aria-invalid="true" aria-describedby="ds-i3-err" />
+                    <div class="field__error" id="ds-i3-err"><span id="err-icon"></span>该单位下已存在同名用户，请确认后再保存。</div>
+                  </div>
+                  <div class="row gap-4">
+                    <label class="check"><input type="checkbox" checked /><span class="check__text">启用账号</span></label>
+                    <label class="switch"><input type="checkbox" checked /><span>接收签收提醒</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="table" data-od-id="ds-table">
+            <h2>9 表格与分页</h2>
+            <p class="ds__note">列表页统一结构：页面标题 / 主操作 → 搜索区 → 表格工具栏 → 表格 → 分页。表头 40px、行 44px、正文 13px。</p>
+            <div class="panel">
+              <div class="table-toolbar">
+                <b class="fs-13">演示用户（示例 3 行）</b>
+                <div class="table-toolbar__spacer"></div>
+                <span class="muted fs-12">已选 0 项</span>
+                <button class="btn btn--default btn--sm" type="button">导出</button>
+              </div>
+              <table class="table">
+                <thead><tr>
+                  <th style="width:40px"><input type="checkbox" aria-label="全选" /></th>
+                  <th>账号</th><th>姓名</th><th>所属单位</th><th>角色</th><th>状态</th>
+                  <th class="col-num">最近登录</th><th class="col-actions">操作</th>
+                </tr></thead>
+                <tbody>
+                  <tr>
+                    <td><input type="checkbox" aria-label="选择该行" /></td>
+                    <td class="mono">demo.yanpan.a</td><td>演示人员甲</td><td>演示单位甲</td>
+                    <td><span class="tag tag--neutral">单位业务人员</span></td>
+                    <td><span class="tag tag--success"><span class="tag__dot"></span>启用</span></td>
+                    <td class="col-num">2026-10-02 09:12</td>
+                    <td class="col-actions"><button class="btn btn--text btn--sm" type="button">编辑</button><button class="btn btn--text btn--sm" type="button">禁用</button></td>
+                  </tr>
+                  <tr aria-selected="true">
+                    <td><input type="checkbox" checked aria-label="选择该行" /></td>
+                    <td class="mono">demo.view.d</td><td>演示人员丁</td><td>演示单位丙</td>
+                    <td><span class="tag tag--neutral">普通账号</span></td>
+                    <td><span class="tag tag--neutral"><span class="tag__dot"></span>已禁用</span></td>
+                    <td class="col-num">2026-09-25 11:30</td>
+                    <td class="col-actions"><button class="btn btn--text btn--sm" type="button">编辑</button><button class="btn btn--text btn--sm" type="button">启用</button></td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox" aria-label="选择该行" /></td>
+                    <td class="mono">demo.admin.c</td><td>演示人员丙</td><td>演示单位甲</td>
+                    <td><span class="tag tag--neutral">系统管理员</span></td>
+                    <td><span class="tag tag--success"><span class="tag__dot"></span>启用</span></td>
+                    <td class="col-num">2026-10-02 08:05</td>
+                    <td class="col-actions"><button class="btn btn--text btn--sm" type="button">编辑</button><button class="btn btn--text btn--sm" type="button">禁用</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="pager">
+                <span>共 24 条 · 每页 8 条</span>
+                <div class="pager__pages" style="margin-left:auto">
+                  <button class="pager__btn" type="button" aria-label="上一页">‹</button>
+                  <button class="pager__btn" aria-current="page" type="button">1</button>
+                  <button class="pager__btn" type="button">2</button>
+                  <button class="pager__btn" type="button">3</button>
+                  <button class="pager__btn" type="button" aria-label="下一页">›</button>
+                </div>
+              </div>
+            </div>
+            <p class="ds__note mt-3">长文本一律省略显示并提供全文入口：按钮直接展开单元格，不使用仅靠 hover 才出现的提示。</p>
+          </section>
+
+          <section class="ds__sec" id="evidence" data-od-id="ds-evidence">
+            <h2>10 来源引用与证据</h2>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>引用卡片（可打开核对）</h3>
+                <div class="col gap-2" id="src-demo"></div>
+              </div>
+              <div class="ds__block"><h3>正文引用编号</h3>
+                <p class="body-text">来源事实：演示人员甲与演示人员乙出现在同一条出港登记中，对应船舶为演示海船甲，登记时间为 2026-09-18 14:20。<button class="cite" type="button" aria-pressed="true">1</button> 该条出港登记同时关联演示港口甲与演示海船甲。<button class="cite" type="button">2</button></p>
+                <p class="ds__note mt-2">引用编号是按钮而非装饰：点击后右侧展开对应片段并高亮，Esc 返回正文。</p>
+                <h3 class="mt-4">证据清单项</h3>
+                <div class="col gap-2">
+                  <div class="source-card"><div class="source-card__head"><span class="tag tag--person"><i class="eg eg--person"></i>对象</span><span class="source-card__title">演示人员甲</span><button class="btn btn--ghost btn--sm" type="button" aria-label="移除">移除</button></div><div class="source-card__meta">DEMO-P-001 · 来自图谱选中</div></div>
+                  <div class="source-card"><div class="source-card__head"><span class="tag tag--warning tag--dashed">关系 · 待核对</span><span class="source-card__title">演示海船甲 —停靠申报→ 演示停靠记录</span><button class="btn btn--ghost btn--sm" type="button" aria-label="移除">移除</button></div><div class="source-card__meta">来源 [4] DEMO-DECL-001 · 编号重复待核对</div></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="perm" data-oid="ds-perm">
+            <h2>11 权限选择（P04 局部组件）</h2>
+            <p class="ds__note">功能权限与数据范围必须在视觉上分开：左列决定「能使用什么功能」，右列决定「能访问哪些业务数据」。账号管理权限不包含业务资料访问范围，界面必须写出这一点。</p>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>角色（功能权限）</h3>
+                <div class="col gap-3" data-od-id="ds-role-select">
+                  <label class="check" style="align-items:flex-start">
+                    <input type="radio" name="dsrole" />
+                    <span class="check__text"><b>普通账号</b><br /><span class="fs-12 muted">可查看分配给本单位的情报，可签收与反馈；不能新建研判会话。</span></span>
+                  </label>
+                  <label class="check" style="align-items:flex-start">
+                    <input type="radio" name="dsrole" checked />
+                    <span class="check__text"><b>单位业务人员</b><br /><span class="fs-12 muted">数据图谱检索与探索、AI 研判、数据任务查看、情报发送与签收。</span></span>
+                  </label>
+                  <label class="check" style="align-items:flex-start">
+                    <input type="radio" name="dsrole" />
+                    <span class="check__text"><b>系统管理员</b><br /><span class="fs-12 muted">用户、角色、单位与任务运维。<span class="warn">不含</span>跨单位业务资料访问范围。</span></span>
+                  </label>
+                </div>
+              </div>
+              <div class="ds__block"><h3>数据范围（单位树）</h3>
+                <div data-od-id="ds-unit-tree">
+                  <div class="col gap-2">
+                    <label class="check"><input type="checkbox" checked /><span class="check__text fw-strong">演示单位甲</span></label>
+                    <div class="col gap-2" style="padding-left:var(--sp-5)">
+                      <label class="check"><input type="checkbox" checked /><span class="check__text">演示部门一 · 全部批次</span></label>
+                      <label class="check"><input type="checkbox" /><span class="check__text">演示部门二 · 指定批次</span></label>
+                    </div>
+                    <label class="check"><input type="checkbox" /><span class="check__text fw-strong">演示单位乙</span></label>
+                    <div class="col gap-2" style="padding-left:var(--sp-5)">
+                      <label class="check"><input type="checkbox" disabled /><span class="check__text muted">演示部门三 · 无权限分配</span></label>
+                    </div>
+                    <label class="check"><input type="checkbox" disabled /><span class="check__text muted">演示单位丙 · 当前角色不可分配</span></label>
+                  </div>
+                  <div class="notice notice--info mt-3"><span id="perm-icon"></span><div>无权限的对象不会出现在数据图谱中，也不会提示其名称、数量或隐藏路径。</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="ds__block mt-4" style="max-width:760px">
+              <h3>权限摘要（保存前必须可读）</h3>
+              <dl class="kv kv--wide">
+                <dt>角色</dt><dd>单位业务人员</dd>
+                <dt>可使用功能</dt><dd>数据图谱（检索 / 探索 / 加入研判）、AI 研判（新建与复核）、数据任务（查看）、情报协同（发送 / 签收 / 反馈）</dd>
+                <dt>可访问业务数据</dt><dd>演示单位甲 · 全部批次（含 41 条待核对关系）；演示部门一 · 全部批次</dd>
+                <dt>变更影响</dt><dd>保存后该账号的现有会话将失效，需重新登录并按新权限访问。</dd>
+              </dl>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="feedback" data-od-id="ds-feedback">
+            <h2>12 空 / 加载 / 错误状态</h2>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>空状态</h3><div class="state" style="padding:var(--sp-6)"><span id="empty-icon"></span><div class="state__title">当前条件下没有对象</div><div class="state__desc">已应用 3 个筛选条件。可放宽时间范围，或清除筛选后重新检索。</div><div class="state__actions"><button class="btn btn--default btn--sm" type="button">清除筛选条件</button></div></div></div>
+              <div class="ds__block"><h3>加载状态</h3>
+                <div class="col gap-2"><div class="skeleton" style="height:20px;width:62%"></div><div class="skeleton" style="height:20px;width:88%"></div><div class="skeleton" style="height:20px;width:74%"></div></div>
+                <div class="row gap-2 mt-3 fs-12 muted"><span class="spinner"></span>正在加载图谱数据…</div>
+              </div>
+              <div class="ds__block"><h3>错误状态</h3><div class="state state--error" style="padding:var(--sp-6)"><span id="err-icon-2"></span><div class="state__title">图谱数据加载失败</div><div class="state__desc">请求未完成（编号 DEMO-REQ-8821）。已保留当前筛选条件与已加载对象。</div><div class="state__actions"><button class="btn btn--default btn--sm" type="button">重新加载</button><button class="btn btn--text btn--sm" type="button">查看诊断信息</button></div></div></div>
+              <div class="ds__block"><h3>达到上限</h3>
+                <div class="notice"><span id="limit-icon"></span><div><b>已达到关系加载上限（200 条）。</b>当前显示 14 个对象、15 条关系。继续缩小区筛选范围可加载更多，或对单个节点手动展开。</div></div>
+                <div class="notice notice--info mt-2"><span id="limit-icon2"></span><div>弱化显示的关系为待核对项：共 3 条，来自 2 条来源缺口记录。</div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="antd" data-od-id="ds-antd">
+            <h2>13 组件对应关系</h2>
+            <div class="ds__block">
+              <table class="doc__table">
+                <thead><tr><th style="width:26%">本项目组件</th><th style="width:30%">AntD 组件</th><th>说明</th></tr></thead>
+                <tbody>
+                  <tr><td>搜索区</td><td class="mono">Form + Input + Select + RangePicker</td><td>查询 / 重置 / 展开更多条件，条件变化后显示已应用条件摘要</td></tr>
+                  <tr><td>数据表格</td><td class="mono">Table + Pagination</td><td>13px 正文、44px 行高、sticky 表头；操作列右对齐</td></tr>
+                  <tr><td>状态标签</td><td class="mono">Tag</td><td>颜色 + 图标 + 文字三重编码，不用纯色块表示状态</td></tr>
+                  <tr><td>详情抽屉</td><td class="mono">Drawer</td><td>打开时保留底层列表滚动位置与查询条件；焦点进入抽屉首元素</td></tr>
+                  <tr><td>确认弹窗</td><td class="mono">Modal.confirm</td><td>仅用于集中完成的短操作；禁用账号、权限变更必须写清影响</td></tr>
+                  <tr><td>权限选择</td><td class="mono">Radio.Group + Tree + Descriptions</td><td>功能权限与数据范围分离</td></tr>
+                  <tr><td>来源引用卡</td><td class="mono">Card + Typography.Paragraph</td><td>名称 / 时间 / 片段 / 来源标识，可打开核对</td></tr>
+                  <tr><td>任务进度</td><td class="mono">Progress + Tooltip</td><td>进度与结果分开表达；成功 / 失败 / 待处理用分段条</td></tr>
+                  <tr><td>结果提示</td><td class="mono">Alert + message</td><td>业务原因在主界面，技术诊断折叠在详情内</td></tr>
+                  <tr><td>图谱画布</td><td class="mono">G6 Graph（自定义节点 + 边）</td><td>四项形状语言；边实线 / 虚线表示依据状态</td></tr>
+                  <tr><td>AI 流式输出</td><td class="mono">自研 SSE 容器 + Segmented</td><td>显示可观察步骤（检索资料 / 整理结果），不展示模型内部推理</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="ds__sec" id="narrow" data-od-id="ds-narrow">
+            <h2>14 1366 × 768 收缩规则</h2>
+            <div class="ds__grid2">
+              <div class="ds__block"><h3>收缩优先级（由先到后）</h3>
+                <ol class="col gap-2 fs-13" style="list-style:decimal;padding-left:1.2em">
+                  <li>左侧导航折叠为 64px 图标栏，悬停显示名称。</li>
+                  <li>筛选面板折叠为工具条上的「筛选」按钮，按钮上显示已应用条件数。</li>
+                  <li>右侧详情 / 证据面板折叠，改为覆盖在画布右侧的浮层，关闭后回到原视图。</li>
+                  <li>表格隐藏次要列（如「来源 / 批次」），主操作保留在表头右侧不动。</li>
+                  <li>图谱画布保持可用宽度优先，<b>永不</b>把画布压到 480px 以下；必要时允许画布区域横向滚动。</li>
+                </ol>
+              </div>
+              <div class="ds__block"><h3>不得牺牲的内容</h3>
+                <ul class="col gap-2 fs-13" style="list-style:disc;padding-left:1.2em">
+                  <li>主操作按钮与当前状态标签。</li>
+                  <li>图谱画布的检索栏与视图控制。</li>
+                  <li>AI 研判正文的引用编号与复核区入口。</li>
+                  <li>任务表中「成功 / 失败数」与「部分失败」标签。</li>
+                  <li>情报详情中的签收 / 反馈汇总与主操作。</li>
+                </ul>
+                <p class="ds__note mt-3">本次交付的 HTML 已按此规则实现：窗口宽度 ≤1439px 时导航自动折叠（见 <span class="doc__code">@media (max-width:1439px)</span>），面板折叠由工具栏按钮手动控制。</p>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  HF.shell.mount({ active: 'admin', crumb: ['交付件', '设计系统'], sync: { level: 'warn', text: '图谱数据 2026-10-02 09:10 · 12 条待核对' } });
+
+  /* ---- 主题色板 ---- */
+  var SW = [
+    ['--bg', '#F4F6FA', '#0B1220', '页面背景'],
+    ['--surface', '#FFFFFF', '#111C2D', '主要表面 / 卡片'],
+    ['--surface-2', '#F8FAFD', '#19263B', '次级表面'],
+    ['--fg', '#172033', '#E5EDF8', '主要文字'],
+    ['--muted', '#59677A', '#A7B4C8', '次级文字'],
+    ['--border', '#DCE3EE', '#2C3E57', '装饰分隔线'],
+    ['--border-control', '#7E8AA0', '#5E7396', '控件识别边界'],
+    ['--accent', '#2563EB', '#60A5FA', '品牌强调 / 主要操作'],
+    ['--on-accent', '#FFFFFF', '#0B1220', '主要按钮文字'],
+    ['--accent-hover', '#1D4FD0', '#8CBDFB', '强调悬停'],
+    ['--accent-soft', '#EAF1FE', '#16294A', '强调浅底'],
+    ['--surface-hover', '#EDF1F8', '#1B2942', '悬停表面'],
+    ['--surface-selected', '#E4EDFD', '#1E3355', '选中行'],
+    ['--row-hover', '#F3F6FB', '#1A2740', '表格行悬停'],
+    ['--focus', '#2563EB', '#93C5FD', '焦点环'],
+    ['--disabled-bg', '#EEF1F6', '#1E2A3D', '禁用底'],
+    ['--disabled-fg', '#9BA5B4', '#586A85', '禁用文字'],
+    ['--fg-placeholder', '#6C7789', '#8395AE', '占位符'],
+    ['--entity-person', '#10707F', '#4FC3D4', '人员'],
+    ['--entity-vessel', '#5B3FB0', '#B49BF0', '船舶'],
+    ['--entity-place', '#4C5A70', '#9CACC2', '地点'],
+    ['--entity-event', '#B03061', '#F09CBB', '事件'],
+    ['--success', '#1A7A45', '#57CE8A', '成功'],
+    ['--warning', '#8A5A08', '#F0BC5A', '警告 / 待核对'],
+    ['--danger', '#B3261E', '#F58C84', '错误'],
+    ['--graph-canvas', '#FFFFFF', '#0E1829', '图谱画布'],
+    ['--graph-edge', '#6F7C93', '#66799A', '图谱连线'],
+    ['--graph-grid', '#E9EDF4', '#252E3D', '画布网格（装饰）']
+  ];
+  document.getElementById('swatches').innerHTML = SW.map(function (s) {
+    return '<div class="ds__sw"><div class="ds__sw-chip" style="background:var(' + s[0] + ')"></div>' +
+      '<div class="ds__sw-meta"><b>' + s[3] + '</b>' + s[0] + '<br />亮 ' + s[1] + '<br />暗 ' + s[2] + '</div></div>';
+  }).join('');
+
+  /* ---- 对比度实测表 ---- */
+  var CV = [
+    ['正文 fg × 页面 bg', '#172033 / #F4F6FA', '15.04', '4.5'],
+    ['正文 fg × 卡片 surface', '#172033 / #FFFFFF', '16.27', '4.5'],
+    ['次级 muted × 卡片 surface', '#59677A / #FFFFFF', '5.76', '4.5'],
+    ['次级 muted × 页面 bg', '#59677A / #F4F6FA', '5.32', '4.5'],
+    ['强调 accent × 卡片 surface', '#2563EB / #FFFFFF', '5.17', '4.5'],
+    ['按钮文字 on-accent × accent', '#FFFFFF / #2563EB', '5.17', '4.5'],
+    ['按钮文字 × accent-hover', '#FFFFFF / #1D4FD0', '6.81', '4.5'],
+    ['占位符 × 卡片 surface', '#6C7789 / #FFFFFF', '4.53', '4.5'],
+    ['正文 × 选中行 surface-selected', '#172033 / #E4EDFD', '13.81', '4.5'],
+    ['成功文字 × 成功标签底', '#1A7A45 / #E6F4EA', '4.73', '4.5'],
+    ['警告文字 × 警告标签底', '#8A5A08 / #FBF1DF', '5.29', '4.5'],
+    ['错误文字 × 错误标签底', '#B3261E / #FCEAE8', '5.63', '4.5'],
+    ['输入框边界 × 卡片 surface', '#7E8AA0 / #FFFFFF', '3.48', '3.0'],
+    ['输入框边界 × 页面 bg', '#7E8AA0 / #F4F6FA', '3.22', '3.0'],
+    ['焦点环 × 卡片 surface', '#2563EB / #FFFFFF', '5.17', '3.0'],
+    ['图谱连线 × 画布', '#6F7C93 / #FFFFFF', '4.22', '3.0'],
+    ['人员节点色 × 画布', '#10707F / #FFFFFF', '5.76', '3.0'],
+    ['船舶节点色 × 画布', '#5B3FB0 / #FFFFFF', '7.55', '3.0'],
+    ['地点节点色 × 画布', '#4C5A70 / #FFFFFF', '6.99', '3.0'],
+    ['事件节点色 × 画布', '#B03061 / #FFFFFF', '6.10', '3.0'],
+    ['装饰分隔线 × 卡片 surface', '#DCE3EE / #FFFFFF', '1.29', '仅装饰']
+  ];
+  var CVD = CV.map(function (r) {
+    var map = {
+      '#172033 / #F4F6FA': ['#E5EDF8 / #0B1220', '15.87'], '#172033 / #FFFFFF': ['#E5EDF8 / #111C2D', '14.50'],
+      '#59677A / #FFFFFF': ['#A7B4C8 / #111C2D', '8.15'], '#59677A / #F4F6FA': ['#A7B4C8 / #0B1220', '8.92'],
+      '#2563EB / #FFFFFF': ['#60A5FA / #111C2D', '6.73'], '#FFFFFF / #2563EB': ['#0B1220 / #60A5FA', '7.36'],
+      '#FFFFFF / #1D4FD0': ['#0B1220 / #8CBDFB', '9.62'], '#6C7789 / #FFFFFF': ['#8395AE / #111C2D', '5.60'],
+      '#172033 / #E4EDFD': ['#E5EDF8 / #1E3355', '10.72'], '#1A7A45 / #E6F4EA': ['#57CE8A / #17352A', '6.71'],
+      '#8A5A08 / #FBF1DF': ['#F0BC5A / #3A2C14', '7.77'], '#B3261E / #FCEAE8': ['#F58C84 / #3D1E1C', '6.40'],
+      '#7E8AA0 / #FFFFFF': ['#5E7396 / #111C2D', '3.56'], '#7E8AA0 / #F4F6FA': ['#5E7396 / #0B1220', '3.89'],
+      '#2563EB / #FFFFFF': ['#93C5FD / #111C2D', '9.48'], '#6F7C93 / #FFFFFF': ['#66799A / #0E1829', '4.03'],
+      '#10707F / #FFFFFF': ['#4FC3D4 / #0E1829', '8.54'], '#5B3FB0 / #FFFFFF': ['#B49BF0 / #0E1829', '7.52'],
+      '#4C5A70 / #FFFFFF': ['#9CACC2 / #0E1829', '7.70'], '#B03061 / #FFFFFF': ['#F09CBB / #0E1829', '8.62'],
+      '#DCE3EE / #FFFFFF': ['#2C3E57 / #111C2D', '1.57']
+    };
+    var m = map[r[1]] || ['—', '—'];
+    return [r[0], m[0], m[1], r[3]];
+  });
+  function cvTable(rows) {
+    return '<thead><tr><th>组合</th><th>色值</th><th style="width:76px">实测</th><th style="width:56px">门槛</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        var ok = r[3] === '仅装饰';
+        var num = parseFloat(r[2]);
+        return '<tr><td>' + r[0] + '</td><td class="mono">' + r[1] + '</td><td class="mono">' + r[2] + ':1</td>' +
+          '<td class="' + (ok ? 'muted' : (num >= parseFloat(r[3]) ? 'pass' : 'warn')) + '">' + (ok ? '仅装饰' : '≥' + r[3] + ' ✓') + '</td></tr>';
+      }).join('') + '</tbody>';
+  }
+  document.getElementById('cv-light').innerHTML = cvTable(CV);
+  document.getElementById('cv-dark').innerHTML = cvTable(CVD);
+
+  /* ---- 间距 ---- */
+  document.getElementById('space-list').innerHTML = [
+    ['--sp-1 · 4', 4], ['--sp-2 · 8', 8], ['--sp-3 · 12', 12], ['--sp-4 · 16', 16],
+    ['--sp-5 · 20', 20], ['--sp-6 · 24', 24], ['--sp-7 · 32', 32], ['--sp-8 · 40', 40]
+  ].map(function (s) {
+    return '<div class="spec-row"><span class="spec-row__tag mono">' + s[0] + 'px</span>' +
+      '<span style="height:10px;background:var(--accent-soft-border);border-radius:2px;width:' + (s[1] * 2.4) + 'px"></span>' +
+      '<span class="spec-row__desc">' + s[1] + 'px</span></div>';
+  }).join('');
+
+  /* ---- 图标 ---- */
+  document.getElementById('icon-grid').innerHTML = Object.keys(HF.icons).map(function (k) {
+    return '<div class="icon-cell">' + HF.icon(k) + '<span>' + k + '</span></div>';
+  }).join('');
+
+  /* ---- 实体节点示意 ---- */
+  function nodeSVG(x, y, type, name, id) {
+    var color = 'var(--entity-' + type + ')', soft = 'var(--entity-' + type + '-soft)';
+    var shape = '', ch = { person: '人', vessel: '船', place: '港', event: '事' }[type];
+    if (type === 'person') shape = '<circle cx="' + x + '" cy="' + y + '" r="24" fill="' + soft + '" stroke="' + color + '" stroke-width="2"/>';
+    if (type === 'vessel') shape = '<rect x="' + (x - 26) + '" y="' + (y - 20) + '" width="52" height="40" rx="9" fill="' + soft + '" stroke="' + color + '" stroke-width="2"/>';
+    if (type === 'place') shape = '<rect x="' + (x - 22) + '" y="' + (y - 22) + '" width="44" height="44" rx="2" fill="' + soft + '" stroke="' + color + '" stroke-width="2"/>';
+    if (type === 'event') shape = '<path d="M' + x + ' ' + (y - 24) + ' L' + (x + 26) + ' ' + y + ' L' + x + ' ' + (y + 24) + ' L' + (x - 26) + ' ' + y + ' Z" fill="' + soft + '" stroke="' + color + '" stroke-width="2"/>';
+    return '<g>' + shape +
+      '<text x="' + x + '" y="' + (y + 5) + '" text-anchor="middle" font-size="14" font-weight="600" fill="' + color + '" font-family="var(--font-display)">' + ch + '</text>' +
+      '<text x="' + x + '" y="' + (y + 44) + '" text-anchor="middle" font-size="13" font-weight="600" fill="var(--fg)" font-family="var(--font-display)">' + name + '</text>' +
+      '<text x="' + x + '" y="' + (y + 60) + '" text-anchor="middle" font-size="10.5" fill="var(--muted)" font-family="var(--font-mono)" letter-spacing="0.02em">' + id + '</text></g>';
+  }
+  document.getElementById('node-demo').innerHTML =
+    '<svg viewBox="0 0 420 120" width="100%" height="150" role="img" aria-label="四种实体节点示意：圆形人员、圆角矩形船舶、方形地点、菱形事件">' +
+    nodeSVG(60, 40, 'person', '演示人员甲', 'DEMO-P-001') +
+    nodeSVG(170, 40, 'vessel', '演示海船甲', 'DEMO-S-001') +
+    nodeSVG(280, 40, 'place', '演示港口甲', 'DEMO-L-001') +
+    nodeSVG(382, 40, 'event', '演示出港记录', 'DEMO-E-001') + '</svg>';
+
+  /* ---- 状态规范 ---- */
+  var T = function (cls) { return '<span class="' + cls + '">'; };
+  function st(list) {
+    return list.map(function (r) {
+      return '<div class="spec-row"><span class="spec-row__tag">' + r[0] + '</span><span class="spec-row__desc">' + r[1] + '</span></div>';
+    }).join('');
+  }
+  document.getElementById('st-task').innerHTML = st([
+    [T('tag tag--neutral') + '<span class="tag__dot tag__dot--o" style="background:transparent;border:1.5px solid currentColor"></span>等待中</span>', '排在队列中，尚未开始'],
+    [T('tag tag--accent') + '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>执行中</span>', '显示当前进度与当前处理条目'],
+    [T('tag tag--success') + HF.icon('check', 'btn__icon') + '成功</span>', '全部条目处理成功'],
+    [T('tag tag--warning') + HF.icon('warning', 'btn__icon') + '部分失败</span>', '进度已完成，但成功 / 失败数分别列出'],
+    [T('tag tag--danger') + HF.icon('error', 'btn__icon') + '失败</span>', '任务中止，主界面写明业务原因'],
+    [T('tag tag--warning tag--dashed') + '请求取消</span>', '已发出停止请求，等待确认；此状态不保留历史不应超过数分钟'],
+    [T('tag tag--neutral tag--dashed') + '已取消</span>', '收到取消确认，已处理部分保留']
+  ]);
+  document.getElementById('st-ai').innerHTML = st([
+    [T('tag tag--neutral') + '排队</span>', '任务已受理，未开始生成'],
+    [T('tag tag--accent') + '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>生成中</span>', '显示可观察步骤：检索资料 / 整理结果 / 标注引用'],
+    [T('tag tag--success') + HF.icon('check', 'btn__icon') + '已完成</span>', '结果可进入人工复核'],
+    [T('tag tag--danger') + HF.icon('error', 'btn__icon') + '失败</span>', '保留已接收内容并说明失败原因'],
+    [T('tag tag--warning tag--dashed') + '请求取消</span>', '已点击停止，界面文案为「正在请求停止」'],
+    [T('tag tag--neutral tag--dashed') + '已取消</span>', '已接收内容保留，并标记「未完成」'],
+    [T('tag tag--warning') + HF.icon('warning', 'btn__icon') + '结果待确认</span>', '连接中断后重新进入，需先与服务端核对结果'],
+    [T('tag tag--neutral') + HF.icon('info', 'btn__icon') + '资料不足</span>', '不生成伪结论，提供补充资料入口']
+  ]);
+  document.getElementById('st-attach').innerHTML = st([
+    [T('tag tag--neutral') + '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>上传中</span>', '本地到服务端传输中，可取消'],
+    [T('tag tag--accent') + '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>处理中</span>', '服务端解析与抽取，不计入上下文'],
+    [T('tag tag--success') + HF.icon('check', 'btn__icon') + '可用</span>', '已进入上下文清单'],
+    [T('tag tag--danger') + HF.icon('error', 'btn__icon') + '失败</span>', '写明失败原因，提供重新上传']
+  ]);
+  document.getElementById('st-intel').innerHTML = st([
+    [T('tag tag--neutral tag--dashed') + '草稿</span>', '正文可修改，未发送；发送后快照只读'],
+    [T('tag tag--accent') + '已发送</span>', '等待接收单位签收'],
+    [T('tag tag--success') + HF.icon('check', 'btn__icon') + '已签收</span>', '接收单位确认收到'],
+    [T('tag tag--success') + '已反馈</span>', '追加反馈不覆盖原正文，也不等于办结'],
+    [T('tag tag--neutral') + '<span class="tag__dot" style="background:transparent;border:1.5px solid currentColor"></span>待签收</span>', '接收单位尚未确认']
+  ]);
+
+  /* ---- 引用卡 ---- */
+  document.getElementById('src-demo').innerHTML = ['1', '2'].map(function (k) {
+    var s = HF.data.SOURCES[k];
+    return '<div class="source-card' + (k === '1' ? ' source-card--active' : '') + '">' +
+      '<div class="source-card__head"><span class="source-card__idx">[' + s.idx + ']</span>' +
+      '<span class="source-card__title">' + s.name + '</span>' +
+      '<button class="btn btn--text btn--sm" type="button">打开核对</button></div>' +
+      '<div class="source-card__quote">' + s.quote + '</div>' +
+      '<div class="source-card__meta"><span>' + s.id + '</span><span>' + s.at + '</span><span>' + s.origin + '</span></div></div>';
+  }).join('');
+
+  /* ---- 图标占位 ---- */
+  document.getElementById('err-icon').innerHTML = HF.icon('error', '');
+  ['empty-icon', 'err-icon-2', 'limit-icon', 'limit-icon2', 'perm-icon', 'cv-note-icon'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var name = id === 'empty-icon' ? 'search' : (id === 'err-icon-2' ? 'error' : (id === 'perm-icon' ? 'lock' : (id === 'cv-note-icon' ? 'info' : 'warning')));
+    el.innerHTML = HF.icon(name, id === 'empty-icon' ? 'state__icon' : '');
+    var svg = el.querySelector('svg');
+    if (svg && id !== 'empty-icon') { svg.setAttribute('width', '14'); svg.setAttribute('height', '14'); svg.style.flex = '0 0 14px'; }
+  });
+
+  /* ---- 目录高亮 ---- */
+  var links = HF.$$('.ds__side a');
+  var secs = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  var obs = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var i = secs.indexOf(e.target);
+      if (i < 0) return;
+      links.forEach(function (a, j) { a.setAttribute('aria-current', String(i === j)); });
+    });
+  }, { rootMargin: '-72px 0px -70% 0px' });
+  secs.forEach(function (s) { if (s) obs.observe(s); });
+})();
+</script>
+</body>
+</html>

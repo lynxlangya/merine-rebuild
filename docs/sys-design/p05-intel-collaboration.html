@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>情报协同详情 · 演示航次资料核对</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .iv { flex: 1 0 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--sp-3); padding: 0 var(--sp-4) var(--sp-4); }
+  .iv__head { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); padding: var(--sp-4); }
+  .iv__cols { display: flex; gap: var(--sp-3); align-items: flex-start; min-height: 0; }
+  .iv__main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+  .iv__side { flex: 0 0 384px; width: 384px; display: flex; flex-direction: column; gap: var(--sp-3); position: sticky; top: 0; }
+  .iv__title { font-family: var(--font-display); font-size: var(--fs-24); font-weight: var(--fw-strong); line-height: var(--lh-display); }
+  .meta-grid { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-6); margin-top: var(--sp-3); }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-item dt { font-size: var(--fs-11); color: var(--muted); }
+  .meta-item dd { font-size: var(--fs-13); color: var(--fg); margin: 0; }
+  .body-doc { font-size: var(--fs-14); line-height: var(--lh-body); max-width: 66ch; }
+  .body-doc p { margin-bottom: var(--sp-3); }
+  .body-doc p:last-child { margin-bottom: 0; }
+  .obj-list { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .receipt { width: 100%; border-collapse: collapse; font-size: var(--fs-12); }
+  .receipt th, .receipt td { text-align: left; padding: 8px var(--sp-2); border-bottom: 1px solid var(--border); }
+  .receipt th { color: var(--muted); font-weight: var(--fw-ui); font-size: var(--fs-11); white-space: nowrap; }
+  .receipt tr:last-child td { border-bottom: 0; }
+  .snap-lock { display: flex; align-items: center; gap: 6px; font-size: var(--fs-12); color: var(--muted); }
+  @media (max-width: 1439px) { .iv__side { flex-basis: 320px; width: 320px; } }
+</style>
+</head>
+<body data-page="intel">
+<div class="app" id="app" data-nav="expanded">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="workspace">
+
+      <div class="page-head" style="padding:10px var(--sp-4) var(--sp-3);align-items:center">
+        <div class="page-head__main row gap-3">
+          <a class="btn btn--ghost btn--sm" href="p02-ai-workbench.html" id="btnBack"><span id="icoBack"></span>返回来源会话</a>
+          <span class="muted fs-12">已人工复核的研判结果接入可追踪的协同流程</span>
+        </div>
+        <div class="page-head__actions">
+          <a class="btn btn--default btn--sm" href="p05b-intel-receiving.html">查看接收方视角（演示单位乙）</a>
+        </div>
+      </div>
+
+      <div class="iv">
+        <!-- 顶部信息卡 -->
+        <section class="iv__head" data-od-id="p05-head">
+          <div class="row row--wrap gap-2">
+            <span class="tag" id="stTag">已发送</span>
+            <span class="tag tag--neutral mono" id="stVer">v2 · 正文快照</span>
+            <span class="spacer"></span>
+            <span class="snap-lock" id="snapLock"></span>
+          </div>
+          <h1 class="iv__title mt-3" id="ivTitle">演示航次资料核对</h1>
+          <dl class="meta-grid">
+            <div class="meta-item"><dt>情报编号</dt><dd class="mono">DEMO-INTEL-2026-0007</dd></div>
+            <div class="meta-item"><dt>发送单位</dt><dd>演示单位甲</dd></div>
+            <div class="meta-item"><dt>状态</dt><dd id="mdStatus">已发送</dd></div>
+            <div class="meta-item"><dt>版本</dt><dd class="mono" id="mdVer">v2</dd></div>
+            <div class="meta-item"><dt>创建时间</dt><dd class="mono">2026-10-02 10:05</dd></div>
+            <div class="meta-item"><dt>发送时间</dt><dd class="mono" id="mdSent">2026-10-02 10:20</dd></div>
+            <div class="meta-item"><dt>最近操作</dt><dd class="mono" id="mdLast">2026-10-02 14:30</dd></div>
+          </dl>
+          <div class="row row--wrap gap-2 mt-4" id="headActions"></div>
+        </section>
+
+        <div class="iv__cols">
+          <!-- 主内容 -->
+          <div class="iv__main">
+            <section class="panel" data-od-id="p05-body">
+              <div class="panel__head">
+                <span class="panel__title">情报正文</span>
+                <span class="panel__spacer"></span>
+                <span class="fs-12 muted" id="bodyHint">发送后为只读快照，追加反馈不覆盖本正文</span>
+              </div>
+              <div class="panel__body">
+                <div class="body-doc" id="ivBody"></div>
+                <div class="notice notice--info mt-4" id="aiTrace">
+                  <span id="icoTrace"></span>
+                  <div>本正文由 AI 研判工作台的 <b>v2 已复核</b> 结果生成，全部结论可追溯到所用来源与复核人。AI 完成不等于情报已发送，发送需由人工确认。</div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel" data-od-id="p05-objects">
+              <div class="panel__head"><span class="panel__title">关联对象</span>
+                <span class="panel__spacer"></span>
+                <a class="btn btn--text btn--sm" href="p01-graph-workbench.html">在数据图谱中查看</a></div>
+              <div class="panel__body"><div class="obj-list" id="objList"></div>
+                <p class="fs-12 muted mt-3">关联对象只表示来源记录支持的关系；同船登记关系不足以得出其他行为或风险结论。</p></div>
+            </section>
+
+            <section class="panel" data-od-id="p05-sources">
+              <div class="panel__head"><span class="panel__title">引用资料</span>
+                <span class="panel__spacer"></span><span class="fs-12 muted">共 2 条</span></div>
+              <div class="panel__body"><div class="col gap-2" id="srcList"></div></div>
+            </section>
+
+            <section class="panel" data-od-id="p05-review">
+              <div class="panel__head"><span class="panel__title">人工复核摘要</span>
+                <span class="panel__spacer"></span><span class="tag tag--success"><span class="tag__dot"></span>v2 已复核</span></div>
+              <div class="panel__body">
+                <dl class="kv kv--wide">
+                  <dt>复核人</dt><dd>演示账号 · 研判甲（演示单位甲）</dd>
+                  <dt>复核时间</dt><dd class="mono">2026-10-02 10:05</dd>
+                  <dt>复核版本</dt><dd class="mono">v2</dd>
+                  <dt>复核意见</dt><dd>已核对引用 [1][2] 与图谱边来源，保留待核实项表述。未对人物行为作任何定性。</dd>
+                  <dt>待核实项</dt><dd>两人的实际活动背景；需补充能说明背景的记录后再次研判。</dd>
+                </dl>
+              </div>
+            </section>
+          </div>
+
+          <!-- 协同区 -->
+          <div class="iv__side">
+            <section class="panel" data-od-id="p05-collab">
+              <div class="panel__head"><span class="panel__title">协同状态</span>
+                <span class="panel__spacer"></span><button class="btn btn--text btn--sm" type="button" id="btnRemind">提醒未签收单位</button></div>
+              <div class="panel__body">
+                <div class="row gap-4" id="collabSum"></div>
+                <hr class="divider" />
+                <table class="receipt">
+                  <thead><tr><th>接收单位</th><th>签收</th><th>反馈</th><th>最近操作</th></tr></thead>
+                  <tbody id="receiptBody"></tbody>
+                </table>
+                <p class="fs-12 muted mt-3">「已反馈」不自动等于「已办结」。办结需由发送单位显式操作，并单独记录。</p>
+              </div>
+            </section>
+
+            <section class="panel" data-od-id="p05-history">
+              <div class="panel__head"><span class="panel__title">协同历史</span>
+                <span class="panel__spacer"></span><span class="fs-12 muted">按时间正序</span></div>
+              <div class="panel__body">
+                <div class="timeline" id="timeline"></div>
+              </div>
+            </section>
+
+            <section class="panel" data-od-id="p05-export">
+              <div class="panel__head"><span class="panel__title">导出</span></div>
+              <div class="panel__body">
+                <p class="fs-12 muted" style="line-height:var(--lh-body)">导出前先确认范围。导出内容会记录操作单位与时间，进入协同历史。</p>
+                <div class="row gap-2 mt-3">
+                  <button class="btn btn--default btn--sm" type="button" data-export="body">导出情报正文</button>
+                  <button class="btn btn--default btn--sm" type="button" data-export="record">导出协同记录</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- 确认弹窗 -->
+      <div class="scrim scrim--modal" id="modalScrim"></div>
+      <div class="modal" id="modal" role="alertdialog" aria-modal="true" aria-labelledby="mdTitle" aria-hidden="true">
+        <div class="modal__body">
+          <div class="modal__title"><span id="icoMd"></span><span id="mdTitle">确认</span></div>
+          <div class="modal__text" id="mdText"></div>
+          <div id="mdExtra" class="mt-3"></div>
+        </div>
+        <div class="modal__foot">
+          <button class="btn btn--default btn--sm" type="button" id="mdCancel">取消</button>
+          <button class="btn btn--primary btn--sm" type="button" id="mdOk">确认</button>
+        </div>
+      </div>
+
+      <!-- ============ 设计标注（非产品界面） ============ -->
+      <section class="doc" data-od-id="p05-doc">
+        <div class="doc__head"><span class="doc__badge">设计标注 · 非产品界面</span>
+          <h2 class="doc__title">P05 关键状态与交互</h2></div>
+        <p class="doc__desc">本页为发送方（演示单位甲）视角。草稿状态与接收方视角是两个独立的页面变体，链接如下。</p>
+        <div class="doc__grid">
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">V1</span><span class="doc__card-title">草稿状态</span></div>
+            <div class="doc__card-body">从 AI 工作台生成后进入。正文可修改、接收单位可调整，复核状态可见。用户<b>主动发送</b>后才产生快照，AI 完成不等于已发送。</div>
+            <div class="doc__sample"><a class="btn btn--default btn--sm" href="p05-intel-collaboration.html?draft=1">打开草稿状态</a></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">V2</span><span class="doc__card-title">接收方视角（演示单位乙）</span></div>
+            <div class="doc__card-body">只展示本单位有权访问的本分支内容与历史，<b>不展示</b>其他单位的记录与汇总。未签收时可签收，签收后可追加反馈。</div>
+            <div class="doc__sample"><a class="btn btn--default btn--sm" href="p05b-intel-receiving.html">打开接收方视角</a>
+              <a class="btn btn--text btn--sm" href="p05b-intel-receiving.html?pending=1">未签收状态</a></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">V3</span><span class="doc__card-title">正文快照只读</span></div>
+            <div class="doc__card-body">发送后的正文锁定为该次发送的历史快照，此后任何追加反馈、转发或导出都不会改动它。快照与版本的对应关系在顶部信息卡中始终可见。</div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">V4</span><span class="doc__card-title">按钮显隐与不可操作原因</span></div>
+            <div class="doc__card-body">操作按当前状态与身份显示；不可操作时禁用并写明原因（如「已发出停止请求」），不隐藏也不静默失败。</div>
+            <div class="doc__sample"><button class="btn btn--default btn--sm" type="button" disabled>发送情报</button>
+              <span class="fs-12 muted">草稿已发送，正文转为只读快照</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">V5</span><span class="doc__card-title">导出先声明范围</span></div>
+            <div class="doc__card-body">两个导出入口分别说明导出内容与权限影响，确认后才执行，并在协同历史中留痕。</div>
+            <div class="doc__sample"><span class="fs-12 muted">导出协同记录：含 2 个接收单位的签收与反馈时间，不含正文。</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">V6</span><span class="doc__card-title">流程用标签与回执表表达</span></div>
+            <div class="doc__card-body">签收率与反馈率用数字汇总，逐单位明细用回执表，事件用时间线。不为简单协作强加流程画布。</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var draft = new URLSearchParams(location.search).get('draft') === '1';
+  HF.shell.mount({ active: 'intel', crumb: ['情报协同', '演示航次资料核对'],
+    sync: { level: 'ok', text: '账号数据 2026-10-02 09:05 同步完成' },
+    user: { initial: '甲', name: '演示账号 · 研判甲', meta: '演示单位甲 · 单位业务人员' } });
+
+  var I = HF.data.INTEL, SRC = HF.data.SOURCES;
+  document.getElementById('icoBack').outerHTML = HF.icon('arrowLeft', 'btn__icon');
+  document.getElementById('icoTrace').innerHTML = HF.icon('info', '');
+  document.getElementById('icoMd').innerHTML = HF.icon('warning', 'btn__icon');
+  HF.$('#icoMd svg').style.color = 'var(--warning)';
+  document.getElementById('snapLock').innerHTML = HF.icon('lock', 'btn__icon') + '<span id="lockText">正文快照已锁定</span>';
+  HF.$('#snapLock svg').style.width = '13px'; HF.$('#snapLock svg').style.height = '13px';
+
+  function bodyHTML(editable) {
+    return I.body.map(function (p) {
+      return '<p>' + p.replace(/\[(\d)\]/g, function (m, n) {
+        return '<button class="cite" type="button" data-cite="' + n + '" aria-pressed="false">' + n + '</button>';
+      }) + '</p>';
+    }).join('');
+  }
+  document.getElementById('ivBody').innerHTML = bodyHTML(false);
+
+  document.getElementById('objList').innerHTML =
+    ['DEMO-P-001', 'DEMO-P-002', 'DEMO-S-001', 'DEMO-L-001', 'DEMO-E-001'].map(function (id) {
+      var o = HF.data.OBJECTS[id];
+      return '<span class="tag tag--' + o.type + '"><i class="eg eg--' + o.type + '"></i>' + o.name + ' · <span class="mono" style="font-size:0.92em">' + id + '</span></span>';
+    }).join('');
+
+  document.getElementById('srcList').innerHTML = I.sources.map(function (k) {
+    var s = SRC[k];
+    return '<div class="source-card"><div class="source-card__head"><span class="source-card__idx">[' + s.idx + ']</span>' +
+      '<span class="source-card__title">' + s.name + '</span><span class="spacer"></span>' +
+      '<button class="btn btn--text btn--sm" type="button" data-open-src="' + k + '">打开核对</button></div>' +
+      '<div class="source-card__quote">' + s.quote + '</div>' +
+      '<div class="source-card__meta"><span>' + s.id + '</span><span>' + s.at + '</span><span>' + s.origin + '</span></div></div>';
+  }).join('');
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-open-src]');
+    if (b) {
+      var s = SRC[b.getAttribute('data-open-src')];
+      HF.toast({ type: 'info', title: '打开来源 [' + s.idx + '] ' + s.name, desc: s.id + ' · ' + s.at + ' · ' + s.origin });
+    }
+    var c = e.target.closest('[data-cite]');
+    if (c) {
+      HF.$$('[data-cite]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === c)); });
+      var k = c.getAttribute('data-cite'), t = document.querySelector('[data-open-src="' + k + '"]');
+      if (t) { var card = t.closest('.source-card'); card.classList.add('source-card--active'); card.scrollTop = 0; }
+    }
+  });
+
+  function collabSum(signed, fb, total) {
+    return '<div class="meta-item"><dt>签收</dt><dd style="font-size:var(--fs-20);font-family:var(--font-mono)">' + signed + ' / ' + total + '</dd></div>' +
+      '<div class="meta-item"><dt>反馈</dt><dd style="font-size:var(--fs-20);font-family:var(--font-mono)">' + fb + ' / ' + total + '</dd></div>';
+  }
+  function receipts() {
+    return I.receipts.map(function (r) {
+      return '<tr><td>' + r.unit + '</td>' +
+        '<td>' + (r.sign === '已签收'
+          ? '<span class="tag tag--success" style="height:20px;padding:0 6px">已签收</span>'
+          : '<span class="tag tag--neutral" style="height:20px;padding:0 6px"><span class="tag__dot" style="background:transparent;border:1.5px solid currentColor"></span>待签收</span>') + '</td>' +
+        '<td>' + (r.fb === '已反馈'
+          ? '<span class="tag tag--success" style="height:20px;padding:0 6px">已反馈</span>'
+          : '<span class="tag tag--neutral" style="height:20px;padding:0 6px">未反馈</span>') + '</td>' +
+        '<td class="mono">' + (r.fbAt !== '—' ? r.fbAt : r.signAt) + '</td></tr>';
+    }).join('');
+  }
+  function timelineHTML(list) {
+    return list.map(function (t) {
+      return '<div class="timeline__item ' + (t.kind ? 'timeline__item--' + t.kind : '') + '"><span class="timeline__dot"></span>' +
+        '<div class="timeline__head"><span class="timeline__title">' + t.action + ' · ' + t.unit + '</span>' +
+        '<span class="timeline__time">' + t.t + '</span></div>' +
+        '<div class="timeline__desc">' + t.desc + '<br /><span class="mono">' + t.actor + '</span></div></div>';
+    }).join('');
+  }
+
+  function renderSent() {
+    document.getElementById('stTag').textContent = '已发送';
+    document.getElementById('stTag').className = 'tag tag--accent';
+    document.getElementById('stVer').textContent = 'v2 · 正文快照';
+    document.getElementById('mdStatus').textContent = '已发送 · 等待签收';
+    document.getElementById('mdSent').textContent = I.sentAt;
+    document.getElementById('lockText').textContent = '正文快照已锁定 · 追加反馈不覆盖';
+    document.getElementById('bodyHint').textContent = '发送后为只读快照，追加反馈不覆盖本正文';
+    document.getElementById('ivBody').setAttribute('contenteditable', 'false');
+    document.getElementById('headActions').innerHTML =
+      '<button class="btn btn--default btn--sm" type="button" id="btnNote">追加说明</button>' +
+      '<button class="btn btn--default btn--sm" type="button" id="btnForward">转发</button>' +
+      '<button class="btn btn--default btn--sm" type="button" id="btnClose2">标记办结</button>' +
+      '<span class="spacer"></span><span class="fs-12 muted" id="actHint">已反馈不自动等于已办结，需由发送单位显式操作</span>';
+    document.getElementById('collabSum').innerHTML = collabSum(1, 1, 2);
+    document.getElementById('receiptBody').innerHTML = receipts();
+    document.getElementById('timeline').innerHTML = timelineHTML(I.timeline);
+    bindHeadActions();
+  }
+
+  function renderDraft() {
+    document.getElementById('stTag').textContent = '草稿';
+    document.getElementById('stTag').className = 'tag tag--neutral tag--dashed';
+    document.getElementById('stVer').textContent = 'v2 · 待发送';
+    document.getElementById('mdStatus').textContent = '草稿 · 未发送';
+    document.getElementById('mdSent').textContent = '—（未发送）';
+    document.getElementById('mdLast').textContent = '2026-10-02 10:05';
+    document.getElementById('lockText').textContent = '草稿可修改；发送后转为只读快照';
+    document.getElementById('bodyHint').textContent = '草稿正文可修改；发送后本条正文转为只读快照';
+    document.getElementById('ivBody').innerHTML = bodyHTML(true);
+    document.getElementById('headActions').innerHTML =
+      '<button class="btn btn--default btn--sm" type="button" id="btnEditBody">修改正文</button>' +
+      '<button class="btn btn--default btn--sm" type="button" id="btnRecipients">接收单位（已选 2）</button>' +
+      '<button class="btn btn--danger-outline btn--sm" type="button" id="btnDiscard">删除草稿</button>' +
+      '<span class="spacer"></span><span class="fs-12 muted">AI 完成不等于情报已发送</span>' +
+      '<button class="btn btn--primary btn--sm" type="button" id="btnSend">发送情报</button>';
+    document.getElementById('collabSum').innerHTML =
+      '<div class="meta-item"><dt>签收</dt><dd style="font-size:var(--fs-20);font-family:var(--font-mono);color:var(--muted)">— / 2</dd></div>' +
+      '<div class="meta-item"><dt>反馈</dt><dd style="font-size:var(--fs-20);font-family:var(--font-mono);color:var(--muted)">— / 2</dd></div>';
+    document.getElementById('receiptBody').innerHTML = I.receipts.map(function (r) {
+      return '<tr><td>' + r.unit + '</td><td><span class="tag tag--neutral tag--dashed" style="height:20px;padding:0 6px">未发送</span></td>' +
+        '<td><span class="tag tag--neutral" style="height:20px;padding:0 6px">—</span></td><td class="mono">—</td></tr>';
+    }).join('');
+    document.getElementById('timeline').innerHTML = timelineHTML([
+      { t: '2026-10-02 10:05', unit: '演示单位甲', actor: '演示账号 · 研判甲', action: '生成情报草稿', desc: '由 AI 研判工作台 v2 已复核结果生成，正文与引用已带入。', kind: 'warning' },
+      { t: '2026-10-02 10:05', unit: '演示单位甲', actor: '演示账号 · 研判甲', action: '检查正文与接收单位', desc: '接收单位默认为演示单位乙、演示单位丙；发送前仍可调整。', kind: '' }
+    ]);
+    bindHeadActions();
+  }
+
+  function bindHeadActions() {
+    var e, sendTo = ['演示单位乙', '演示单位丙'];
+    if ((e = document.getElementById('btnSend'))) e.onclick = function () {
+      confirmModal('确认发送情报',
+        '将向 <b>' + sendTo.join('</b>、<b>') + '</b> 发送本情报，正文以当前 v2 内容作为<b>只读快照</b>锁定。<br />' +
+        '发送后正文不可再修改，后续说明将作为追加反馈单独记录。',
+        '确认发送', function () {
+          renderSent();
+          document.getElementById('timeline').insertAdjacentHTML('afterbegin',
+            '<div class="timeline__item timeline__item--accent"><span class="timeline__dot"></span>' +
+            '<div class="timeline__head"><span class="timeline__title">发送情报 · 演示单位甲</span><span class="timeline__time">2026-10-02 10:20</span></div>' +
+            '<div class="timeline__desc">已发送至演示单位乙、演示单位丙，正文快照 v2 已锁定。<br /><span class="mono">演示账号 · 研判甲</span></div></div>');
+          HF.toast({ type: 'success', title: '情报已发送', desc: '正文 v2 已作为只读快照锁定，等待接收单位签收。' });
+        }, false);
+    };
+    if ((e = document.getElementById('btnEditBody'))) e.onclick = function () {
+      var b = document.getElementById('ivBody');
+      var on = b.getAttribute('contenteditable') === 'true';
+      b.setAttribute('contenteditable', on ? 'false' : 'true');
+      if (!on) b.focus();
+      this.textContent = on ? '修改正文' : '完成修改';
+      if (on) HF.toast({ type: 'warning', title: '草稿正文已修改', desc: '发送时将作为新的快照版本 v3，需确认复核状态仍有效。' });
+    };
+    if ((e = document.getElementById('btnRecipients'))) e.onclick = function () {
+      confirmModal('接收单位', '当前已选择 <b>演示单位乙</b>、<b>演示单位丙</b>。你可以移除不需要的单位，或增加本单位有权发送的其他单位。',
+        '保存选择', function () { HF.toast({ type: 'success', title: '接收单位已更新', desc: '保持 2 个单位不变。' }); }, false);
+    };
+    if ((e = document.getElementById('btnDiscard'))) e.onclick = function () {
+      confirmModal('删除草稿', '删除后本草稿及其引用关系将不可恢复，<b>不会</b>影响 AI 工作台中的研判结果。', '确认删除',
+        function () { HF.toast({ type: 'info', title: '草稿已删除', desc: '研判结果仍保留在 AI 研判工作台中。' }); }, true);
+    };
+    if ((e = document.getElementById('btnNote'))) e.onclick = function () {
+      confirmModal('追加说明', '追加说明将作为独立记录追加到协同历史，<b>不覆盖</b>已发送的正文快照，接收单位会在其历史中看到该条记录。',
+        '提交说明', function () { HF.toast({ type: 'success', title: '追加说明已提交' }); }, false);
+    };
+    if ((e = document.getElementById('btnForward'))) e.onclick = function () {
+      confirmModal('转发情报', '转发将把本情报的<b>当前快照</b>与协同历史一并转发，你所在单位的原始发送记录不会被修改。',
+        '确认转发', function () { HF.toast({ type: 'success', title: '已转发' }); }, false);
+    };
+    if ((e = document.getElementById('btnClose2'))) e.onclick = function () {
+      confirmModal('标记办结', '标记办结表示本单位认为该情报的协同已完成。当前签收 1/2、反馈 1/2，<b>演示单位丙尚未签收</b>，建议先提醒后再办结。',
+        '仍然办结', function () {
+          document.getElementById('mdStatus').textContent = '已办结';
+          document.getElementById('stTag').textContent = '已办结';
+          document.getElementById('stTag').className = 'tag tag--success';
+          HF.toast({ type: 'success', title: '已标记办结', desc: '办结记录已进入协同历史。' });
+        }, true);
+    };
+    if ((e = document.getElementById('btnRemind'))) e.onclick = function () {
+      HF.toast({ type: 'info', title: '已提醒演示单位丙', desc: '提醒记录将在协同历史中留痕。' });
+    };
+  }
+
+  function confirmModal(title, text, okLabel, onOk, danger) {
+    document.getElementById('mdTitle').textContent = title;
+    document.getElementById('mdText').innerHTML = text;
+    document.getElementById('mdExtra').innerHTML = '';
+    var ok = document.getElementById('mdOk');
+    ok.textContent = okLabel;
+    ok.className = (danger ? 'btn btn--danger-solid' : 'btn btn--primary') + ' btn--sm';
+    HF.layer.open(document.getElementById('modal'), 'modalScrim');
+    ok.onclick = function () { HF.layer.close(document.getElementById('modal'), 'modalScrim'); onOk(); };
+    document.getElementById('mdCancel').onclick = function () { HF.layer.close(document.getElementById('modal'), 'modalScrim'); };
+  }
+
+  document.querySelectorAll('[data-export]').forEach(function (b) {
+    b.onclick = function () {
+      var kind = b.getAttribute('data-export');
+      confirmModal(kind === 'body' ? '导出情报正文' : '导出协同记录',
+        kind === 'body'
+          ? '将导出：情报编号、标题、发送单位、版本与正文快照（v2）。<b>不含</b>接收单位的内部反馈内容。'
+          : '将导出：接收单位、签收与反馈状态、时间与操作单位，以及协同历史。不含情报正文。',
+        '确认导出', function () { HF.toast({ type: 'success', title: '已导出', desc: '导出记录已写入协同历史（演示单位甲 · ' + new Date().toLocaleString('zh-CN') + '）。' }); }, false);
+    };
+  });
+
+  if (draft) { renderDraft(); } else { renderSent(); }
+  if (draft) {
+    HF.toast({ type: 'info', title: '已从 AI 研判工作台生成草稿', desc: '检查正文与接收单位后，由你决定何时发送。' });
+  }
+})();
+</script>
+</body>
+</html>

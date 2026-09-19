@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>AI 研判工作台 · 海防研判工作台</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .ai { display: flex; flex: 1 0 auto; min-height: 0; gap: var(--sp-3); padding: 0 var(--sp-4) var(--sp-4); }
+  .ai__side { flex: 0 0 240px; width: 240px; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .ai__side[hidden] { display: none; }
+  .ai__main { flex: 1 1 auto; min-width: 460px; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .ai__evid { flex: 0 0 var(--panel-w); width: var(--panel-w); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .ai__evid[hidden] { display: none; }
+
+  .sess { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; overflow-y: auto; padding: var(--sp-2); }
+  .sess__item { display: block; width: 100%; text-align: left; padding: var(--sp-2) var(--sp-3); border: 1px solid transparent; border-radius: var(--r-3); background: transparent; cursor: pointer; }
+  .sess__item:hover { background: var(--surface-hover); }
+  .sess__item[aria-current="true"] { background: var(--surface-selected); border-color: var(--accent-soft-border); }
+  .sess__title { font-size: var(--fs-13); font-weight: var(--fw-ui); color: var(--fg); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sess__meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+  .sess__time { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); margin-left: auto; }
+
+  .ai__head { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); }
+  .ai__title { font-family: var(--font-display); font-size: var(--fs-16); font-weight: var(--fw-strong); line-height: var(--lh-title); }
+  .ai__ctx { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--border); background: var(--surface-2); overflow-x: auto; }
+  .ai__stream { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
+  .ai__input { border-top: 1px solid var(--border); padding: var(--sp-3) var(--sp-4); background: var(--surface); }
+  .ai__input .textarea { min-height: 60px; max-height: 160px; }
+
+  .msg-user { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-3); padding: var(--sp-3); }
+  .msg-user__head { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-12); color: var(--muted); margin-bottom: 6px; }
+  .msg-user__body { font-size: var(--fs-13); line-height: var(--lh-body); }
+
+  .steps { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-3); font-size: var(--fs-12); }
+  .step { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  .step svg { width: 14px; height: 14px; }
+  .step--done { color: var(--success); }
+  .step--run { color: var(--fg); font-weight: var(--fw-ui); }
+
+  .res { border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .res__block { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); }
+  .res__block:last-child { border-bottom: 0; }
+  .res__h { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-12); font-weight: var(--fw-strong); letter-spacing: var(--ls-mono); color: var(--muted); margin-bottom: var(--sp-2); text-transform: uppercase; }
+  .res__h .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .res__block--fact .res__h .dot { background: var(--success); }
+  .res__block--pending { background: var(--tag-warning-bg); }
+  .res__block--pending .res__h .dot { background: var(--warning); }
+  .res__p { font-size: var(--fs-14); line-height: var(--lh-body); max-width: 68ch; }
+  .res__cursor { display: inline-block; width: 7px; height: 15px; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .res__foot { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-4); background: var(--surface-2); border-top: 1px solid var(--border); font-size: var(--fs-12); color: var(--muted); flex-wrap: wrap; }
+
+  .review { border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .review__head { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border); background: var(--surface-2); flex-wrap: wrap; }
+  .review__body { padding: var(--sp-3) var(--sp-4); }
+  .review__foot { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .editable[contenteditable="true"] { outline: 2px dashed var(--accent-soft-border); outline-offset: 6px; border-radius: var(--r-2); }
+  .editable[contenteditable="true"]:focus-visible { outline-color: var(--focus); }
+
+  .att { display: flex; align-items: center; gap: var(--sp-2); padding: 7px var(--sp-2); border-radius: var(--r-2); font-size: var(--fs-12); }
+  .att:hover { background: var(--surface-hover); }
+  .att__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 1439px) { .ai__evid { flex-basis: 300px; width: 300px; } }
+</style>
+</head>
+<body data-page="ai">
+<div class="app" id="app" data-nav="expanded">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="workspace">
+
+      <div class="page-head" style="padding:10px var(--sp-4);align-items:center">
+        <div class="page-head__main row gap-3">
+          <h1 class="page-title" style="font-size:var(--fs-16)">AI 研判工作台</h1>
+          <span class="muted fs-12">承接图谱证据，生成带引用的整理结果，并交人工复核</span>
+        </div>
+        <div class="page-head__actions">
+          <span class="tag tag--warning" data-od-id="p02-mock-flag">模拟服务 · 未接入真实模型</span>
+        </div>
+      </div>
+
+      <div class="ai">
+        <!-- 会话列表 -->
+        <aside class="ai__side" data-od-id="p02-sessions" aria-label="会话列表">
+          <div class="panel__head">
+            <span class="panel__title">会话</span>
+            <span class="panel__spacer"></span>
+            <button class="btn btn--default btn--sm" type="button" id="btnNewSess">新建会话</button>
+          </div>
+          <div class="sess" id="sessList" role="list"></div>
+          <div class="panel__foot" style="justify-content:space-between">
+            <span class="fs-11 muted">仅显示本账号 · 演示单位甲</span>
+            <button class="btn btn--text btn--sm" type="button" id="btnMoreSess">加载更早</button>
+          </div>
+        </aside>
+
+        <!-- 主研判区 -->
+        <section class="ai__main" data-od-id="p02-main">
+          <div class="ai__head">
+            <div class="row gap-2 row--wrap">
+              <h2 class="ai__title" id="thTitle">演示航次资料核对</h2>
+              <span class="tag tag--neutral" id="thStatus">已完成</span>
+              <span class="spacer"></span>
+              <span class="fs-12 muted">智能体</span>
+              <div class="select-wrap" style="width:172px">
+                <select class="select" id="agentSel" aria-label="选择智能体">
+                  <option>研判助手 v0.9 · 演示</option>
+                  <option>资料摘要助手 v0.4 · 演示</option>
+                </select>
+              </div>
+              <span class="tag tag--success"><span class="tag__dot"></span>可用</span>
+            </div>
+            <div class="row gap-2 mt-2">
+              <span class="fs-11 muted mono">会话 DEMO-SES-0007 · 演示单位甲 · 创建于 2026-10-02 09:42</span>
+            </div>
+          </div>
+
+          <div class="ai__ctx" data-od-id="p02-context">
+            <span class="fs-12 fw-strong" style="white-space:nowrap">上下文</span>
+            <span class="tag tag--neutral mono" id="ctxCount">5</span>
+            <span id="ctxChips" class="row gap-1" style="min-width:0"></span>
+            <span class="spacer"></span>
+            <button class="btn btn--ghost btn--sm" type="button" id="btnCtxPanel">管理上下文</button>
+          </div>
+
+          <div class="ai__stream" id="stream"></div>
+
+          <div class="ai__input">
+            <label class="sr-only" for="prompt">输入研判要求</label>
+            <textarea class="textarea" id="prompt" placeholder="补充要求，例如：只保留有来源支持的内容，并把待核实项单独列出。"></textarea>
+            <div class="row gap-2 mt-2">
+              <button class="btn btn--ghost btn--sm" type="button" id="btnAttach"><span id="icoClip"></span>补充附件</button>
+              <span class="spacer"></span>
+              <span class="fs-11 muted">Enter 换行 · Ctrl + Enter 发送</span>
+              <button class="btn btn--default btn--sm" type="button" id="btnStop" hidden>停止生成</button>
+              <button class="btn btn--primary btn--sm" type="button" id="btnSend">发送</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 证据面板 -->
+        <aside class="ai__evid" id="evidPanel" data-od-id="p02-evidence" aria-label="引用与上下文">
+          <div class="tabs" data-tabs="evPanels" id="evTabs" role="tablist">
+            <button class="tabs__btn" role="tab" data-tab="cite" aria-selected="true" id="tab-cite">引用 <span class="tabs__count" id="cntCite">2</span></button>
+            <button class="tabs__btn" role="tab" data-tab="ctx" aria-selected="false" id="tab-ctx">上下文 <span class="tabs__count">5</span></button>
+            <button class="tabs__btn" role="tab" data-tab="graph" aria-selected="false" id="tab-graph">图谱关系 <span class="tabs__count">4</span></button>
+          </div>
+          <div class="dp__body" id="evPanels" style="padding:var(--sp-3);gap:var(--sp-2)">
+            <div data-tab-panel="cite" id="p-cite" class="col gap-2"></div>
+            <div data-tab-panel="ctx" id="p-ctx" class="col gap-1" hidden></div>
+            <div data-tab-panel="graph" id="p-graph" class="col gap-2" hidden></div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- ============ 设计标注（非产品界面） ============ -->
+      <section class="doc" data-od-id="p02-doc">
+        <div class="doc__head"><span class="doc__badge">设计标注 · 非产品界面</span>
+          <h2 class="doc__title">P02 关键状态与交互</h2></div>
+        <p class="doc__desc">左侧会话列表中的 4 个会话分别对应下表中的状态，点击即可在主区域查看真实渲染结果。</p>
+        <div class="doc__grid">
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S1</span><span class="doc__card-title">流式生成与停止</span></div>
+            <div class="doc__card-body">生成中显示<b>可观察步骤</b>（检索资料 / 整理结果 / 标注引用），不展示或编造模型内部推理。点击「停止生成」后状态先变为「正在请求停止」，收到确认才显示「已取消」。</div>
+            <div class="doc__sample"><span class="tag tag--warning tag--dashed">请求取消</span><span class="fs-12 muted">已发出停止请求，等待确认…</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S2</span><span class="doc__card-title">中断后保留片段</span></div>
+            <div class="doc__card-body">取消后已接收内容<b>不删除</b>，整体标记「未完成」，并说明「片段不能当作完整结果使用」；重新生成会新建版本而不是覆盖。</div>
+            <div class="doc__sample"><span class="tag tag--neutral tag--dashed">已取消 · 未完成</span><span class="fs-12 muted">已保留 62% 内容</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S3</span><span class="doc__card-title">引用编号可点开</span></div>
+            <div class="doc__card-body">正文中的 [1] [2] 是可聚焦按钮，点击后右侧展开对应来源卡并高亮；引用编号只在确有来源时生成，<b>没有依据不生成伪引用</b>。</div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S4</span><span class="doc__card-title">资料不足</span></div>
+            <div class="doc__card-body">不生成推测性结论，给出补充资料入口，并说明缺什么：缺少能说明活动背景的记录。</div>
+            <div class="doc__sample"><span class="tag tag--neutral">资料不足，暂不能回答</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S5</span><span class="doc__card-title">失败与重试</span></div>
+            <div class="doc__card-body">保留已接收内容与上下文，失败原因用业务语言表达，技术诊断折叠在详情中。</div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S6</span><span class="doc__card-title">断连后「结果待确认」</span></div>
+            <div class="doc__card-body">重新进入会话时，若服务端可能已产生结果，先显示「结果待确认」，提供核对入口，避免重复生成或误用旧片段。</div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S7</span><span class="doc__card-title">人工复核</span></div>
+            <div class="doc__card-body">版本、复核人、复核时间必须可见；修改或重新生成后该版本立即标记「需重新复核」，在此之前的复核记录不覆盖。</div>
+            <div class="doc__sample"><span class="tag tag--warning">已修改 · 需重新复核</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S8</span><span class="doc__card-title">用量与权限</span></div>
+            <div class="doc__card-body">服务端未返回用量时显示「暂无用量信息」，<b>不编造</b>准确率、置信度或费用。权限不足时只解释当前可执行的下一步，不展示其他账号的会话与资料。</div>
+            <div class="doc__sample"><span class="tag tag--neutral">暂无用量信息</span><button class="btn btn--text btn--sm" type="button">申请数据范围</button></div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  HF.shell.mount({ active: 'ai', crumb: ['AI 研判', '演示航次资料核对'],
+    sync: { level: 'warn', text: '图谱数据 2026-10-02 09:10 · 12 条待核对' } });
+
+  var SRC = HF.data.SOURCES;
+  HF.$('#icoClip').outerHTML = HF.icon('paperclip', '');
+
+  var SESSIONS = {
+    main:    { title: '演示航次资料核对', status: { t: '已完成', c: 'success' }, time: '10:05', kind: 'done' },
+    short:   { title: '停靠申报口径咨询', status: { t: '资料不足', c: 'neutral' }, time: '昨天', kind: 'short' },
+    failed:  { title: '图谱同步缺口确认', status: { t: '失败', c: 'danger' }, time: '10-01', kind: 'failed' },
+    pending: { title: '出港记录关联复核', status: { t: '结果待确认', c: 'warning' }, time: '09-30', kind: 'pending' }
+  };
+  var current = 'main';
+
+  /* ---------------- 会话列表 ---------------- */
+  function sessStatus(s) {
+    if (s.kind === 'failed') return '<span class="tag tag--danger" style="height:18px;padding:0 6px">失败</span>';
+    if (s.kind === 'short') return '<span class="tag tag--neutral" style="height:18px;padding:0 6px">资料不足</span>';
+    if (s.kind === 'pending') return '<span class="tag tag--warning tag--dashed" style="height:18px;padding:0 6px">待确认</span>';
+    return '<span class="tag tag--success" style="height:18px;padding:0 6px">已复核 ' + (s.kind === 'done' ? 'v2' : '') + '</span>';
+  }
+  function renderSessions() {
+    document.getElementById('sessList').innerHTML = Object.keys(SESSIONS).map(function (k) {
+      var s = SESSIONS[k];
+      return '<button class="sess__item" type="button" role="listitem" data-sess="' + k + '" aria-current="' + (k === current) + '">' +
+        '<span class="sess__title">' + s.title + '</span>' +
+        '<span class="sess__meta">' + sessStatus(s) + '<span class="sess__time">' + s.time + '</span></span></button>';
+    }).join('');
+  }
+  document.getElementById('sessList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sess]'); if (!b) return;
+    current = b.getAttribute('data-sess');
+    renderSessions(); renderThread();
+    HF.store.set('session', current);
+  });
+  document.getElementById('btnNewSess').onclick = function () {
+    HF.toast({ type: 'info', title: '新建会话', desc: '新会话默认继承上次的上下文清单，可在发送前调整。' });
+  };
+  document.getElementById('btnMoreSess').onclick = function () {
+    HF.toast({ type: 'info', title: '已加载全部会话', desc: '当前账号共 4 个会话，仅展示演示单位甲范围内的记录。' });
+  };
+
+  /* ---------------- 引用 / 上下文 / 图谱关系 ---------------- */
+  function citeCard(k, active) {
+    var s = SRC[k];
+    return '<div class="source-card' + (active ? ' source-card--active' : '') + '" data-cite-card="' + k + '" id="cite-' + k + '">' +
+      '<div class="source-card__head"><span class="source-card__idx">[' + s.idx + ']</span>' +
+      '<span class="source-card__title">' + s.name + '</span></div>' +
+      '<div class="source-card__quote">' + s.quote + '</div>' +
+      '<div class="source-card__meta"><span>' + s.id + '</span><span>' + s.at + '</span></div>' +
+      '<div class="source-card__meta"><span>' + s.origin + '</span></div></div>';
+  }
+  function renderEvidence() {
+    document.getElementById('p-cite').innerHTML =
+      citeCard('1', true) + citeCard('2', false) +
+      '<div class="notice notice--info"><span>' + HF.icon('info', '') + '</span><div>引用编号只在确有来源时生成。本会话未使用来源 [3]–[6]，因此正文不出现对应编号。</div></div>';
+    document.getElementById('p-ctx').innerHTML =
+      '<div class="row gap-2" style="padding:0 var(--sp-2) 6px"><span class="fs-12 fw-strong">来自数据图谱</span><span class="spacer"></span>' +
+      '<button class="btn btn--text btn--sm" type="button" id="ctxClear">全部移除</button></div>' +
+      ctxRows() +
+      '<div class="row gap-2" style="padding:var(--sp-3) var(--sp-2) 6px"><span class="fs-12 fw-strong">附件</span><span class="spacer"></span>' +
+      '<button class="btn btn--text btn--sm" type="button" id="attAdd">添加</button></div>' +
+      '<div class="att"><span class="spinner"></span><span class="att__name">演示材料丙（上传中）</span><span class="muted">62%</span></div>' +
+      '<div class="att"><span class="tag tag--accent" style="height:18px;padding:0 6px">处理中</span><span class="att__name">演示材料丁 · 正在解析</span></div>' +
+      '<div class="att"><span class="tag tag--success" style="height:18px;padding:0 6px">可用</span><span class="att__name">演示航次说明 DEMO-DOC-001</span></div>' +
+      '<div class="att"><span class="tag tag--danger" style="height:18px;padding:0 6px">失败</span><span class="att__name">演示材料戊 · 格式无法解析</span>' +
+      '<button class="btn btn--text btn--sm" type="button" id="attRetry">重新上传</button></div>';
+    document.getElementById('p-graph').innerHTML =
+      graphCard('同船登记', '演示人员甲 → 演示出港记录', '1', false) +
+      graphCard('同船登记', '演示人员乙 → 演示出港记录', '1', false) +
+      graphCard('对应船舶', '演示出港记录 → 演示海船甲', '1', false) +
+      graphCard('出港于', '演示出港记录 → 演示港口甲', '1', false) +
+      '<a class="btn btn--default btn--sm btn--block" href="p01-graph-workbench.html">回到数据图谱查看</a>' +
+      '<p class="fs-11 muted" style="line-height:1.6">返回后本会话的上下文清单、版本与复核状态均保留。同船登记为由来源记录派生的关联，不代表其他结论。</p>';
+    var cl = document.getElementById('ctxClear');
+    if (cl) cl.onclick = function () { HF.toast({ type: 'warning', title: '移除后需重新发起生成', desc: '当前结果基于这些上下文，移除后引用编号可能失效。' }); };
+    var ar = document.getElementById('attRetry');
+    if (ar) ar.onclick = function () { HF.toast({ type: 'info', title: '重新上传演示材料戊', desc: '请使用 .pdf / .docx / .txt 格式。' }); };
+    var aa = document.getElementById('attAdd');
+    if (aa) aa.onclick = function () { HF.toast({ type: 'info', title: '选择本地文件', desc: '单个文件不超过 50 MB，上传后仍需确认是否加入上下文。' }); };
+  }
+  function ctxRows() {
+    var ev = HF.evidence.get();
+    var items = ev.filter(function (x) { return x.type !== 'warning'; });
+    if (!items.length) items = [
+      { kind: '人员', type: 'person', label: '演示人员甲' }, { kind: '人员', type: 'person', label: '演示人员乙' },
+      { kind: '船舶', type: 'vessel', label: '演示海船甲' }, { kind: '事件', type: 'event', label: '演示出港记录' },
+      { kind: '来源', type: 'accent', label: '[1] 演示出港登记' }
+    ];
+    return items.map(function (x) {
+      return '<div class="att"><span class="tag tag--' + (x.type || 'neutral') + '" style="height:18px;padding:0 6px">' + x.kind + '</span>' +
+        '<span class="att__name">' + x.label + '</span><button class="btn btn--ghost btn--sm" type="button" data-ctx-del="' + x.label + '" aria-label="移除 ' + x.label + '">移除</button></div>';
+    }).join('');
+  }
+  function graphCard(rel, flow, src, pending) {
+    return '<div class="source-card"><div class="source-card__head">' +
+      '<span class="tag ' + (pending ? 'tag--warning tag--dashed' : 'tag--neutral') + '">' + rel + '</span></div>' +
+      '<div class="fs-12">' + flow + '</div>' +
+      '<div class="source-card__meta"><span>来源 [' + src + ']</span>' + (pending ? '<span>待核对</span>' : '<span>记录支持</span>') + '</div></div>';
+  }
+  document.getElementById('ctxChips').innerHTML = ctxChips();
+  function ctxChips() {
+    var ev = HF.evidence.get().filter(function (x) { return x.type !== 'warning'; });
+    var items = ev.length ? ev : [
+      { kind: '人员', type: 'person', label: '演示人员甲' }, { kind: '人员', type: 'person', label: '演示人员乙' },
+      { kind: '船舶', type: 'vessel', label: '演示海船甲' }, { kind: '事件', type: 'event', label: '演示出港记录' },
+      { kind: '来源', type: 'accent', label: '[1] 演示出港登记' }
+    ];
+    return items.map(function (x) {
+      return '<span class="tag tag--' + (x.type || 'neutral') + '" style="white-space:nowrap">' + x.kind + ' · ' + x.label + '</span>';
+    }).join('');
+  }
+  document.getElementById('evPanels').addEventListener('click', function (e) {
+    var d = e.target.closest('[data-ctx-del]');
+    if (d) HF.toast({ type: 'info', title: '已从上下文移除 ' + d.getAttribute('data-ctx-del'), desc: '再次生成时不会引用该对象。' });
+  });
+  document.body.addEventListener('click', function (e) {
+    var c = e.target.closest('.cite'); if (!c) return;
+    var n = c.textContent.trim();
+    document.getElementById('tab-cite').click();
+    HF.$$('[data-cite-card]').forEach(function (el) { el.classList.toggle('source-card--active', el.getAttribute('data-cite-card') === n); });
+    var t = document.getElementById('cite-' + n);
+    if (t) t.scrollTop = 0;
+    HF.$$('.cite').forEach(function (x) { x.setAttribute('aria-pressed', String(x === c)); });
+  });
+  HF.tabs(document);
+
+  /* ---------------- 主区域线程 ---------------- */
+  var stream = document.getElementById('stream');
+  var block = '<div class="res__block res__block--fact"><div class="res__h"><span class="dot"></span>来源事实</div>' +
+    '<p class="res__p">演示人员甲与演示人员乙出现在同一条出港登记中，对应船舶为演示海船甲，登记时间为 2026-09-18 14:20。' +
+    '<button class="cite" type="button" aria-pressed="false">1</button></p></div>' +
+    '<div class="res__block"><div class="res__h"><span class="dot"></span>整理摘要</div>' +
+    '<p class="res__p">该条出港登记同时关联演示港口甲与演示海船甲；演示航次说明为教学用合成资料，不证明实际活动性质。' +
+    '<button class="cite" type="button" aria-pressed="false">1</button><button class="cite" type="button" aria-pressed="false">2</button></p></div>' +
+    '<div class="res__block res__block--pending"><div class="res__h"><span class="dot"></span>推断与待核实项</div>' +
+    '<p class="res__p">现有资料未说明两人的实际活动背景；同船登记关系不足以得出其他行为或风险结论。</p></div>';
+
+  function userMsg(text, fromGraph) {
+    return '<div class="msg-user"><div class="msg-user__head">' +
+      '<span class="avatar" style="width:20px;height:20px;font-size:10px">甲</span><b>演示账号 · 研判甲</b>' +
+      '<span class="mono">2026-10-02 09:42</span>' +
+      (fromGraph ? '<span class="tag tag--accent" style="height:18px">来自数据图谱证据 · 5 项</span>' : '') +
+      '</div><div class="msg-user__body">' + text + '</div></div>';
+  }
+  function steps(list) {
+    return '<div class="steps" role="status">' + list.map(function (s) {
+      var ic = s[0] === 'done' ? HF.icon('check') : (s[0] === 'run' ? '<span class="spinner" style="width:13px;height:13px"></span>' : HF.icon('clock'));
+      return '<span class="step step--' + s[0] + '">' + ic + s[1] + '</span>';
+    }).join('') + '</div>';
+  }
+  function reviewBlock(state) {
+    var banner = {
+      ok: '<span class="tag tag--success"><span class="tag__dot"></span>v2 已复核</span>',
+      edited: '<span class="tag tag--warning">已修改 · 需重新复核</span>',
+      cancelled: '<span class="tag tag--neutral tag--dashed">已取消 · 未完成</span>'
+    }[state];
+    return '<div class="review" data-od-id="p02-review">' +
+      '<div class="review__head"><b class="fs-13">人工复核区</b>' + banner +
+      '<span class="spacer"></span><span class="fs-12 muted">版本 <b class="mono">v2</b> · 复核人 演示账号 · 研判甲 · 2026-10-02 10:05</span></div>' +
+      '<div class="review__body"><p class="res__p editable" id="editable" contenteditable="false">已核对引用 [1][2] 与图谱边来源，保留待核实项表述；正文中的出处与时间与来源记录一致。</p></div>' +
+      '<div class="review__foot">' +
+      '<button class="btn btn--default btn--sm" type="button" id="btnEdit">修改结果</button>' +
+      '<button class="btn btn--default btn--sm" type="button" id="btnMark">标记待补充</button>' +
+      '<button class="btn btn--default btn--sm" type="button" id="btnRegen">重新生成</button>' +
+      '<span class="spacer"></span>' +
+      '<button class="btn btn--default btn--sm" type="button" id="btnSaveDraft">保存研判草稿</button>' +
+      '<button class="btn btn--primary btn--sm" type="button" id="btnMakeIntel">生成情报草稿</button>' +
+      '</div></div>';
+  }
+
+  function renderThread() {
+    var k = current, h = '';
+    document.getElementById('thTitle').textContent = SESSIONS[k].title;
+    var st = document.getElementById('thStatus');
+    st.textContent = SESSIONS[k].status.t;
+    st.className = 'tag tag--' + SESSIONS[k].status.c;
+    if (k === 'main') {
+      h = userMsg('请把演示人员甲与演示人员乙的同船登记记录整理成可复核的说明，逐条标注引用来源，并把需要人工确认的部分单独列出。', true);
+      h += steps([['done', '检索资料 2 条'], ['done', '整理结果'], ['done', '标注引用 2 处']]);
+      h += '<div class="res">' + block +
+        '<div class="res__foot"><span>' + HF.icon('info', 'btn__icon') + ' 本结果为模拟服务生成，仅供演示</span><span class="spacer"></span>' +
+        '<span>生成耗时 <b class="mono">00:12</b></span><span class="crumb-sep">|</span><span>暂无用量信息（服务端未返回）</span></div></div>';
+      h += reviewBlock('ok');
+    } else if (k === 'short') {
+      h = userMsg('这两名演示人员的实际活动背景是什么？', false);
+      h += steps([['done', '检索资料 2 条'], ['done', '判断依据'], ['done', '标注缺口']]);
+      h += '<div class="res"><div class="res__block"><div class="res__h"><span class="dot"></span>资料不足，暂不能回答</div>' +
+        '<p class="res__p">当前上下文中的 2 条来源只记录了人员出现在同一条出港登记，未包含能说明活动背景的字段。为避免生成没有依据的结论，本次不作推断。</p></div>' +
+        '<div class="res__block res__block--pending"><div class="res__h"><span class="dot"></span>需要补充的资料</div>' +
+        '<p class="res__p">能说明人员活动背景的记录（例如演示行程说明、演示任务指派），或包含同批次其他登记记录的演示批次。</p></div>' +
+        '<div class="res__foot"><button class="btn btn--default btn--sm" type="button" id="btnAddCtx">补充资料并重新提问</button>' +
+        '<a class="btn btn--text btn--sm" href="p01-graph-workbench.html">回到图谱查找相关记录</a>' +
+        '<span class="spacer"></span><span>暂无用量信息</span></div></div>';
+    } else if (k === 'failed') {
+      h = userMsg('核对 2026-10-02 图谱同步中 12 条待核对关系的来源缺口。', false);
+      h += steps([['done', '检索资料 12 条'], ['run', '整理结果 — 中断']]);
+      h += '<div class="state state--error" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-4);padding:var(--sp-6)">' +
+        '<span class="state__icon">' + HF.icon('error') + '</span>' +
+        '<div class="state__title">生成失败：上游任务未返回完整结果</div>' +
+        '<div class="state__desc">图谱同步任务 DEMO-T-0032 有 12 条关系因来源缺口未写入图谱边，本次生成缺少对应依据，已中止。<br />已接收内容与上下文均已保留，可直接重试。</div>' +
+        '<div class="state__actions"><button class="btn btn--primary btn--sm" type="button" id="btnRetryGen">重试生成</button>' +
+        '<button class="btn btn--default btn--sm" type="button" id="btnDiag">查看诊断信息</button>' +
+        '<a class="btn btn--text btn--sm" href="p03-data-tasks.html">查看数据任务</a></div></div>';
+    } else {
+      h = userMsg('复核演示人员丙、演示人员丁在 09-21 与 10-02 两条记录中的关联。', false);
+      h += steps([['done', '检索资料 3 条'], ['run', '连接中断']]);
+      h += '<div class="res"><div class="res__block res__block--pending"><div class="res__h"><span class="dot"></span>结果待确认</div>' +
+        '<p class="res__p">上次生成在 2026-09-30 16:12 因连接中断结束。服务端可能已产生完整结果，本页暂不展示片段，避免把未完成内容当作结论。</p></div>' +
+        '<div class="res__block"><div class="res__h"><span class="dot"></span>可执行的下一步</div>' +
+        '<p class="res__p">向服务端核对本次生成结果；若已生成则加载完整结果，否则重新生成。</p></div>' +
+        '<div class="res__foot"><button class="btn btn--primary btn--sm" type="button" id="btnCheck">向服务端核对结果</button>' +
+        '<button class="btn btn--default btn--sm" type="button" id="btnRegen2">重新生成</button>' +
+        '<span class="spacer"></span><span class="muted">断连时间 2026-09-30 16:12</span></div></div>';
+    }
+    stream.innerHTML = h;
+    stream.scrollTop = 0;
+    bindThread();
+  }
+
+  function bindThread() {
+    var e;
+    if ((e = document.getElementById('btnEdit'))) e.onclick = function () {
+      var ed = document.getElementById('editable');
+      var on = ed.getAttribute('contenteditable') === 'true';
+      if (!on) {
+        ed.setAttribute('contenteditable', 'true'); ed.focus(); this.textContent = '完成修改';
+        HF.toast({ type: 'info', title: '进入编辑状态', desc: '修改后需重新复核该版本，原复核记录不会被覆盖。' });
+      } else {
+        ed.setAttribute('contenteditable', 'false'); this.textContent = '修改结果';
+        var head = document.querySelector('.review__head');
+        head.innerHTML = '<b class="fs-13">人工复核区</b><span class="tag tag--warning">已修改 · 需重新复核</span>' +
+          '<span class="spacer"></span><span class="fs-12 muted">版本 <b class="mono">v3（待复核）</b> · 上一复核 v2 由 演示账号 · 研判甲 于 2026-10-02 10:05 完成</span>';
+        HF.toast({ type: 'warning', title: '已保存为 v3，需重新复核', desc: '在重新复核完成前，该版本不能生成情报草稿。' });
+      }
+    };
+    if ((e = document.getElementById('btnMark'))) e.onclick = function () {
+      HF.toast({ type: 'info', title: '已标记待补充', desc: '已加入复核待办：补充能说明两人活动背景的记录。' });
+    };
+    if ((e = document.getElementById('btnRegen'))) e.onclick = runGeneration;
+    if ((e = document.getElementById('btnRegen2'))) e.onclick = runGeneration;
+    if ((e = document.getElementById('btnRetryGen'))) e.onclick = runGeneration;
+    if ((e = document.getElementById('btnDiag'))) e.onclick = function () {
+      HF.toast({ type: 'info', title: '诊断信息', desc: 'upstream=graph-sync status=partial missing_edges=12 request=DEMO-REQ-9104' });
+    };
+    if ((e = document.getElementById('btnCheck'))) e.onclick = function () {
+      HF.toast({ type: 'success', title: '服务端已返回完整结果', desc: '已加载 2026-09-30 16:12 的完整结果，可继续人工复核。' });
+      SESSIONS.pending.status = { t: '已完成', c: 'success' }; SESSIONS.pending.kind = 'done';
+      renderSessions();
+    };
+    if ((e = document.getElementById('btnAddCtx'))) e.onclick = function () {
+      document.getElementById('tab-ctx').click();
+      HF.toast({ type: 'info', title: '请在上下文面板补充资料', desc: '补充后重新提问，本次不作推断的结论会保留。' });
+    };
+    if ((e = document.getElementById('btnSaveDraft'))) e.onclick = function () {
+      HF.draft.save({ from: 'p02', at: '2026-10-02 10:05', version: 'v2' });
+      HF.toast({ type: 'success', title: '研判草稿已保存', desc: '草稿保留当前版本与复核状态，未发送。' });
+    };
+    if ((e = document.getElementById('btnMakeIntel'))) e.onclick = function () {
+      HF.draft.save({ from: 'p02', at: '2026-10-02 10:05', version: 'v2', ref: HF.data.INTEL.id });
+      HF.toast({ type: 'success', title: '已生成待发送情报草稿',
+        desc: '草稿编号 DEMO-INTEL-2026-0007。AI 完成不等于情报已发送，仍需检查正文与接收单位后手动发送。' });
+      setTimeout(function () { location.href = 'p05-intel-collaboration.html?draft=1'; }, 900);
+    };
+  }
+
+  /* ---------------- 流式生成演示 ---------------- */
+  var running = null;
+  function runGeneration() {
+    if (running) return;
+    var chunks = [
+      '来源事实：演示人员甲与演示人员乙出现在同一条出港登记中，对应船舶为演示海船甲，登记时间为 2026-09-18 14:20。[1]\n',
+      '整理摘要：该条出港登记同时关联演示港口甲与演示海船甲；演示航次说明为教学用合成资料，不证明实际活动性质。[1][2]\n',
+      '待核实项：现有资料未说明两人的实际活动背景；同船登记关系不足以得出其他行为或风险结论。'
+    ];
+    var text = '', ci = 0, finished = false;
+    HF.$('#thStatus').textContent = '生成中'; HF.$('#thStatus').className = 'tag tag--accent';
+    document.getElementById('btnStop').hidden = false;
+    document.getElementById('btnStop').disabled = false;
+    document.getElementById('btnSend').disabled = true;
+    stream.innerHTML = userMsg('请重新生成一次，并保留引用编号。', false) +
+      '<div id="runSteps">' + steps([['run', '检索资料…'], ['wait', '整理结果'], ['wait', '标注引用']]) + '</div>' +
+      '<div class="res"><div class="res__block"><div class="res__h"><span class="dot"></span>生成中</div>' +
+      '<p class="res__p" id="runText"></p></div>' +
+      '<div class="res__foot"><span class="spinner"></span><span>正在接收内容…</span><span class="spacer"></span>' +
+      '<span class="mono" id="runPct">0%</span></div></div>';
+    document.getElementById('btnStop').onclick = function () {
+      this.disabled = true;
+      HF.$('#thStatus').textContent = '请求取消'; HF.$('#thStatus').className = 'tag tag--warning tag--dashed';
+      document.getElementById('runSteps').innerHTML = steps([['done', '检索资料 2 条'], ['run', '正在请求停止…'], ['wait', '标注引用']]);
+      HF.toast({ type: 'info', title: '已发出停止请求', desc: '正在等待服务端确认，确认前不会显示为已取消。' });
+      setTimeout(function () {
+        if (finished) return;
+        clearInterval(timer);
+        finished = true;
+        HF.$('#thStatus').textContent = '已取消'; HF.$('#thStatus').className = 'tag tag--neutral tag--dashed';
+        document.getElementById('btnStop').hidden = true;
+        document.getElementById('btnSend').disabled = false;
+        var pct = Math.round((text.length / chunks.join('').length) * 100);
+        document.getElementById('runSteps').innerHTML = steps([['done', '检索资料 2 条'], ['done', '已停止'], ['wait', '标注引用']]);
+        document.getElementById('runText').innerHTML = text.replace(/\n/g, '<br />') +
+          '<br /><span class="tag tag--neutral tag--dashed">未完成片段</span>';
+        document.querySelector('.res__foot').innerHTML =
+          '<span>' + HF.icon('warning', 'btn__icon') + ' 已保留已接收内容（' + pct + '%），不能当作完整结果使用</span>' +
+          '<span class="spacer"></span><button class="btn btn--default btn--sm" type="button" id="btnRegen3">重新生成</button>';
+        document.getElementById('btnRegen3').onclick = runGeneration;
+        HF.toast({ type: 'warning', title: '已取消', desc: '已接收内容已保留并标记为未完成，重新生成会新建版本。' });
+        running = null;
+      }, 1400);
+    };
+    var timer = setInterval(function () {
+      if (finished) return;
+      var c = chunks[ci];
+      var step = Math.min(6, Math.ceil(c.length / 6));
+      text += c.slice(0, step);
+      chunks[ci] = c.slice(step);
+      if (!chunks[ci].length) {
+        ci++;
+        if (ci === 1) document.getElementById('runSteps').innerHTML = steps([['done', '检索资料 2 条'], ['run', '整理结果…'], ['wait', '标注引用']]);
+        if (ci === 2) document.getElementById('runSteps').innerHTML = steps([['done', '检索资料 2 条'], ['done', '整理结果'], ['run', '标注引用…']]);
+        if (ci >= chunks.length) {
+          clearInterval(timer); finished = true;
+          document.getElementById('runSteps').innerHTML = steps([['done', '检索资料 2 条'], ['done', '整理结果'], ['done', '标注引用 2 处']]);
+          document.getElementById('runText').innerHTML = text.replace(/\n/g, '<br />');
+          document.querySelector('.res__foot').innerHTML =
+            '<span>' + HF.icon('info', 'btn__icon') + ' 本结果为模拟服务生成，仅供演示</span><span class="spacer"></span>' +
+            '<span>生成耗时 <b class="mono">00:11</b></span><span class="crumb-sep">|</span><span>暂无用量信息</span>';
+          HF.$('#thStatus').textContent = '已完成'; HF.$('#thStatus').className = 'tag tag--success';
+          document.getElementById('btnStop').hidden = true;
+          document.getElementById('btnSend').disabled = false;
+          stream.insertAdjacentHTML('beforeend', reviewBlock('edited'));
+          bindThread();
+          running = null;
+        }
+      }
+      var el = document.getElementById('runText');
+      if (el) el.innerHTML = text.replace(/\n/g, '<br />') + '<span class="res__cursor"></span>';
+      var pctEl = document.getElementById('runPct');
+      if (pctEl) pctEl.textContent = Math.round((text.length / (text.length + chunks.slice(ci).join('').length)) * 100) + '%';
+    }, 90);
+    running = true;
+  }
+
+  document.getElementById('btnSend').onclick = function () {
+    var v = document.getElementById('prompt').value.trim();
+    document.getElementById('prompt').value = '';
+    if (v) stream.insertAdjacentHTML('beforeend', userMsg(v, false));
+    runGeneration();
+  };
+  document.getElementById('prompt').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); document.getElementById('btnSend').click(); }
+  });
+  document.getElementById('btnAttach').onclick = function () {
+    HF.toast({ type: 'info', title: '选择本地文件', desc: '上传后先显示「上传中」，解析完成后才计入上下文。' });
+  };
+  document.getElementById('btnCtxPanel').onclick = function () { document.getElementById('tab-ctx').click(); };
+
+  /* ---------------- 初始化 ---------------- */
+  var fromGraph = new URLSearchParams(location.search).get('from') === 'graph';
+  renderSessions();
+  renderEvidence();
+  renderThread();
+  if (fromGraph) {
+    var ev = HF.evidence.get();
+    stream.insertAdjacentHTML('afterbegin', '<div class="notice notice--info" data-od-id="p02-from-graph">' +
+      '<span>' + HF.icon('info', '') + '</span><div>已从数据图谱带入 <b>' + (ev.length || 5) + ' 项</b>证据，已加入上下文清单。' +
+      '生成结果中的引用编号只对应这些来源。<a class="notice__link" href="p01-graph-workbench.html">返回图谱</a></div></div>');
+  }
+})();
+</script>
+</body>
+</html>

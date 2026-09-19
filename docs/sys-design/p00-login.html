@@ -1,0 +1,1954 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>登录 · 海防研判工作台</title>
+<script>
+  /* 主题预置：登录页是首屏，先落 data-theme 再渲染样式，避免暗黑用户看到一次亮色闪烁。
+     取值规则与 assets/app.js 的 currentTheme() 一致：查询串 ?theme= 优先于本地存储。 */
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search).get('theme');
+      var t = (q === 'dark' || q === 'light') ? q : localStorage.getItem('hf.theme');
+      document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+  })();
+</script>
+<style data-od-inline-asset="assets/tokens.css">
+/* =============================================================================
+   海防研判工作台 · 设计 token（双主题共享一套语义）
+   -----------------------------------------------------------------------------
+   约定：
+   1. 六个种子色值由业务方给定，原样保留（--bg --surface --fg --muted
+      --border --accent）。其余派生色全部由 oklch() 推导后转回 sRGB，
+      注释内保留推导式，便于后续按同一规则微调。
+   2. 亮色为默认主题（写在 :root），暗黑写在 :root[data-theme="dark"]。
+      JS 未执行时仍有一套可用配色。
+   3. 语义命名，不出现 blue-500 / gray-200 这类色相名。
+   4. 装饰分隔线（--border）不具备控件识别能力，控件边界必须使用
+      --border-control（在卡片表面实测 3.48:1 / 3.56:1）。
+   ============================================================================= */
+
+:root {
+  /* ---------- 字体：一个超家族 + 等宽数字，字重与字号拉层级 ---------- */
+  /* 中文无衬线与系统中文优先，避免首屏 FOUT；数字/编号/时间统一等宽，便于竖向比对 */
+  --font-display: "HarmonyOS Sans SC", "Source Han Sans SC", "PingFang SC",
+                  "Microsoft YaHei UI", "Noto Sans SC", system-ui, sans-serif;
+  --font-body:    "PingFang SC", "HarmonyOS Sans SC", "Source Han Sans SC",
+                  "Microsoft YaHei UI", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --font-mono:    "JetBrains Mono", "SF Mono", "Cascadia Mono", "Roboto Mono",
+                  "Noto Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---------- 字号（1.2 比例，界面内最多出现 8 级） ---------- */
+  --fs-11: 11px;  /* 表格辅助、编号 */
+  --fs-12: 12px;  /* 标签、meta */
+  --fs-13: 13px;  /* 表格正文、控件 */
+  --fs-14: 14px;  /* 正文基准 */
+  --fs-16: 16px;  /* 面板标题 */
+  --fs-18: 18px;  /* 区块标题 */
+  --fs-20: 20px;  /* 页面标题 */
+  --fs-24: 24px;  /* 详情页标题 */
+
+  /* ---------- 行高：中日韩正文高于拉丁，标题不低于 1.3 ---------- */
+  --lh-display: 1.36;   /* 中文大标题，禁止使用 1.0–1.2 */
+  --lh-title: 1.4;      /* 18–24px 标题 */
+  --lh-ui: 1.5;         /* 单行控件与表格单元 */
+  --lh-body: 1.75;      /* 成段正文 */
+
+  /* ---------- 字距：中文为 0；仅拉丁全大写与等宽编号加正字距 ---------- */
+  --ls-caps: 0.06em;
+  --ls-mono: 0.02em;
+  --ls-title: 0;
+
+  /* ---------- 字重（三档制） ---------- */
+  --fw-read: 400;
+  --fw-ui: 500;
+  --fw-strong: 600;
+
+  /* ---------- 间距：4 / 8 px 体系 ---------- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px;
+  --sp-9: 48px; --sp-10: 64px;
+
+  /* ---------- 圆角：克制的方形感，仅控件与表面使用 ---------- */
+  --r-1: 2px; --r-2: 4px; --r-3: 6px; --r-4: 8px; --r-pill: 999px;
+
+  /* ---------- 阴影：分层靠边界，不靠投影 ---------- */
+  --shadow-1: 0 1px 2px rgba(23, 32, 51, 0.06);
+  --shadow-2: 0 2px 8px rgba(23, 32, 51, 0.08), 0 0 0 1px rgba(23, 32, 51, 0.04);
+  --shadow-3: 0 12px 32px rgba(23, 32, 51, 0.16), 0 0 0 1px rgba(23, 32, 51, 0.06);
+
+  /* ---------- 布局骨架尺寸（1440×900 基准，1366×768 收缩） ---------- */
+  --nav-w: 224px;
+  --nav-w-min: 64px;
+  --topbar-h: 56px;
+  --panel-w: 320px;   /* 1440 三栏全开时给画布留出足够宽度 */
+  --filter-w: 216px;
+  --session-w: 240px;
+  --z-drawer: 60; --z-modal: 70; --z-toast: 90;
+
+  /* =========================== 亮色主题 =========================== */
+  --bg: #F4F6FA;              /* 给定 oklch(0.973 0.006 264.5) */
+  --surface: #FFFFFF;         /* 给定 oklch(1 0 0) */
+  --surface-2: #F8FAFD;       /* 给定 oklch(0.984 0.005 258.3) */
+  --fg: #172033;              /* 给定 oklch(0.245 0.039 264.4) */
+  --muted: #59677A;           /* 给定 oklch(0.509 0.035 256.1) */
+  --border: #DCE3EE;          /* 给定 oklch(0.914 0.017 259.4) —— 仅作装饰分隔 */
+  --accent: #2563EB;          /* 给定 oklch(0.546 0.215 262.9) */
+  --on-accent: #FFFFFF;       /* 给定 */
+
+  /* 控件识别边界：装饰线不能承担控件识别，另立一组 ≥3:1 */
+  --border-control: #7E8AA0;  /* oklch(0.631 0.036 262.6) */
+  --border-strong: #4C5A70;   /* oklch(0.500 0.030 250) */
+
+  /* 交互表面 */
+  --surface-hover: #EDF1F8;   /* oklch(0.955 0.010 259) */
+  --surface-active: #E4EAF4;  /* oklch(0.933 0.015 259) */
+  --surface-selected: #E4EDFD;/* oklch(0.938 0.030 258) */
+  --row-hover: #F3F6FB;       /* oklch(0.970 0.007 259) */
+  --scrim: rgba(11, 18, 32, 0.42);
+
+  /* 强调色状态 */
+  --accent-hover: #1D4FD0;    /* oklch(0.480 0.200 263) */
+  --accent-active: #173FA8;   /* oklch(0.410 0.180 263) */
+  --accent-soft: #EAF1FE;     /* oklch(0.948 0.028 258) */
+  --accent-soft-border: #A9C4F5; /* oklch(0.802 0.078 258) */
+
+  /* 焦点与禁用 */
+  --focus: #2563EB;           /* oklch(0.546 0.215 263) */
+  --focus-halo: rgba(37, 99, 235, 0.28);
+  --disabled-bg: #EEF1F6;     /* oklch(0.950 0.008 258) */
+  --disabled-fg: #9BA5B4;     /* oklch(0.700 0.018 258) —— 仅禁用态允许降低对比 */
+  --fg-placeholder: #6C7789;  /* oklch(0.560 0.026 258)，实测 4.53:1 */
+
+  /* 实体分类色：与品牌色、状态色三方分工，不互相借用 */
+  --entity-person: #10707F;   /* oklch(0.500 0.085 205) */
+  --entity-vessel: #5B3FB0;   /* oklch(0.480 0.155 295) */
+  --entity-place: #4C5A70;    /* oklch(0.500 0.030 250) */
+  --entity-event: #B03061;    /* oklch(0.500 0.155 358) */
+  --entity-person-soft: #E1F6F8;
+  --entity-vessel-soft: #F2EFFF;
+  --entity-place-soft: #E6F3FF;
+  --entity-event-soft: #FFEBF1;
+
+  /* 状态色 */
+  --success: #1A7A45;         /* oklch(0.500 0.115 152) */
+  --warning: #8A5A08;         /* oklch(0.500 0.110 72) */
+  --danger: #B3261E;          /* oklch(0.500 0.185 27) */
+  --tag-success-bg: #E6F4EA;
+  --tag-warning-bg: #FBF1DF;
+  --tag-danger-bg: #FCEAE8;
+  --tag-neutral-bg: #EEF1F6;
+  --tag-accent-bg: #EAF1FE;
+  --tag-border: rgba(23, 32, 51, 0.10);
+
+  /* 图谱专用 */
+  --graph-canvas: #FFFFFF;    /* oklch(1 0 0) */
+  --graph-grid: #E9EDF4;      /* oklch(0.945 0.010 258)，纯装饰 */
+  --graph-edge: #6F7C93;      /* oklch(0.584 0.039 261.9)，实测 4.22:1 */
+  --graph-node-fill: #FFFFFF;
+  --graph-node-stroke: #7E8AA0;
+  --graph-dim: 0.38;          /* 路径查询时非路径对象的图形不透明度（文字另用 --muted 弱化，保持可读） */
+
+  /* 导航 */
+  --nav-bg: #F8FAFD;
+  --nav-selected: #E4EDFD;    /* oklch(0.938 0.030 258)，选中态文字用 --fg，accent 只用在图标 */
+  --nav-hover: #EDF1F8;
+}
+
+/* =========================== 暗黑主题 =========================== */
+:root[data-theme="dark"] {
+  --bg: #0B1220;              /* 给定 oklch(0.183 0.031 263.4) */
+  --surface: #111C2D;         /* 给定 oklch(0.225 0.037 258.8) */
+  --surface-2: #19263B;       /* 给定 oklch(0.268 0.043 259.7) */
+  --fg: #E5EDF8;              /* 给定 oklch(0.943 0.017 256.3) */
+  --muted: #A7B4C8;           /* 给定 oklch(0.766 0.032 258.9) */
+  --border: #2C3E57;          /* 给定 oklch(0.360 0.049 256.7) */
+  --accent: #60A5FA;          /* 给定 oklch(0.714 0.143 254.6) */
+  --on-accent: #0B1220;       /* 给定 */
+
+  --border-control: #5E7396;  /* oklch(0.553 0.060 260.5) */
+  --border-strong: #7C8FAE;   /* oklch(0.640 0.045 259) */
+
+  --surface-hover: #1B2942;   /* oklch(0.283 0.041 259) */
+  --surface-active: #22314D;  /* oklch(0.313 0.045 259) */
+  --surface-selected: #1E3355;/* oklch(0.303 0.056 258) */
+  --row-hover: #1A2740;       /* oklch(0.272 0.037 259) */
+  --scrim: rgba(4, 8, 16, 0.62);
+
+  --accent-hover: #8CBDFB;    /* oklch(0.780 0.105 254) */
+  --accent-active: #A9CFFC;   /* oklch(0.845 0.075 254) */
+  --accent-soft: #16294A;     /* oklch(0.288 0.055 258) */
+  --accent-soft-border: #3C5C93; /* oklch(0.474 0.093 259) */
+
+  --focus: #93C5FD;           /* oklch(0.815 0.088 254) */
+  --focus-halo: rgba(147, 197, 253, 0.30);
+  --disabled-bg: #1E2A3D;     /* oklch(0.290 0.032 259) */
+  --disabled-fg: #586A85;     /* oklch(0.500 0.038 258) */
+  --fg-placeholder: #8395AE;  /* oklch(0.652 0.036 258)，实测 5.60:1 */
+
+  --entity-person: #4FC3D4;   /* oklch(0.780 0.095 200) */
+  --entity-vessel: #B49BF0;   /* oklch(0.775 0.095 295) */
+  --entity-place: #9CACC2;    /* oklch(0.740 0.028 250) */
+  --entity-event: #F09CBB;    /* oklch(0.790 0.085 358) */
+  --entity-person-soft: #0E3438;
+  --entity-vessel-soft: #2F2A41;
+  --entity-place-soft: #1D2F42;
+  --entity-event-soft: #3F252E;
+
+  --success: #57CE8A;         /* oklch(0.775 0.125 152) */
+  --warning: #F0BC5A;         /* oklch(0.815 0.115 78) */
+  --danger: #F58C84;          /* oklch(0.740 0.130 27) */
+  --tag-success-bg: #17352A;
+  --tag-warning-bg: #3A2C14;
+  --tag-danger-bg: #3D1E1C;
+  --tag-neutral-bg: #232F44;
+  --tag-accent-bg: #16294A;
+  --tag-border: rgba(229, 237, 248, 0.12);
+
+  --graph-canvas: #0E1829;    /* oklch(0.205 0.030 259) */
+  --graph-grid: #252E3D;      /* oklch(0.300 0.030 259) */
+  --graph-edge: #66799A;      /* oklch(0.570 0.055 260)，实测 4.03:1 */
+  --graph-node-fill: #152134;
+  --graph-node-stroke: #66799A;
+  --graph-dim: 0.34;
+
+  --nav-bg: #0E1829;
+  --nav-selected: #1C2E49;    /* oklch(0.300 0.055 258) */
+  --nav-hover: #16233A;
+}
+
+/* =============================================================================
+   AntD ConfigProvider 映射（React 落地时按此对应，避免再抄一遍色值）
+   -----------------------------------------------------------------------------
+   colorBgLayout        --bg                 colorText             --fg
+   colorBgContainer     --surface            colorTextSecondary    --muted
+   colorBgElevated      --surface            colorTextTertiary     --fg-placeholder
+   colorBorderSecondary --border（仅分隔）     colorTextQuaternary   --disabled-fg
+   colorBorder          --border-control     colorTextDisabled     --disabled-fg
+   colorPrimary         --accent             colorBgContainerDisabled --disabled-bg
+   colorPrimaryHover    --accent-hover       colorSuccess          --success
+   colorPrimaryActive   --accent-active      colorWarning          --warning
+   colorPrimaryBg       --accent-soft        colorError            --danger
+   colorFillQuaternary  --row-hover          borderRadius          6（SM 4 / LG 8）
+   colorFillTertiary    --surface-active     控制高度 32 / 表格行 40 / 顶栏 56
+   ============================================================================= */
+
+</style>
+<style data-od-inline-asset="assets/app.css">
+/* =============================================================================
+   海防研判工作台 · 公共组件与布局骨架
+   依赖 tokens.css。所有颜色只允许引用 var(--token)，页面内联样式仅允许布局数值。
+   ============================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  line-height: var(--lh-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+h1, h2, h3, h4, p, figure, ul, ol, dl, dd { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+/* hidden 必须真的隐藏：组件类里的 display:flex / inline-flex 会盖掉浏览器默认的 [hidden] 规则 */
+[hidden] { display: none !important; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, input, select, textarea { font: inherit; color: inherit; }
+svg { display: block; }
+
+/* 键盘可见焦点：所有可聚焦元素统一 2px 焦点环 + 2px 偏移 */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-2);
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: fixed; top: 8px; left: 8px; z-index: 200;
+  padding: 8px 12px; background: var(--accent); color: var(--on-accent);
+  border-radius: var(--r-2); transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; }
+
+/* ============================== 应用骨架 ============================== */
+.app {
+  display: flex;
+  height: 100vh;              /* 工作台固定视口高度，页面内容在 .workspace 内滚动 */
+  overflow: hidden;
+  min-width: 1366px;          /* 首轮只交付桌面工作台，低于 1366 由页面横向滚动 */
+  background: var(--bg);
+}
+.nav {
+  flex: 0 0 var(--nav-w);
+  width: var(--nav-w);
+  background: var(--nav-bg);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  transition: width .16s ease, flex-basis .16s ease;
+  overflow: hidden;
+}
+.app[data-nav="collapsed"] .nav { flex-basis: var(--nav-w-min); width: var(--nav-w-min); }
+.nav__head {
+  height: var(--topbar-h); flex: 0 0 var(--topbar-h);
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 0 var(--sp-3); border-bottom: 1px solid var(--border);
+}
+.nav__mark {
+  width: 28px; height: 28px; flex: 0 0 28px;
+  border: 1.5px solid var(--accent); border-radius: var(--r-2);
+  display: grid; place-items: center;
+  color: var(--accent); font-family: var(--font-mono);
+  font-size: var(--fs-11); letter-spacing: var(--ls-mono);
+}
+.nav__title { font-family: var(--font-display); font-size: var(--fs-14); font-weight: var(--fw-strong); white-space: nowrap; }
+.nav__sub { font-size: var(--fs-11); color: var(--muted); white-space: nowrap; }
+.app[data-nav="collapsed"] .nav__title,
+.app[data-nav="collapsed"] .nav__sub,
+.app[data-nav="collapsed"] .nav__group-label,
+.app[data-nav="collapsed"] .nav__label,
+.app[data-nav="collapsed"] .nav__badge { display: none; }
+.nav__body { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-2) var(--sp-2) var(--sp-4); }
+.nav__group { margin-top: var(--sp-4); }
+.nav__group-label {
+  padding: 0 var(--sp-3) var(--sp-1);
+  font-size: var(--fs-11); letter-spacing: var(--ls-caps);
+  color: var(--muted); text-transform: uppercase;
+}
+.nav__item {
+  display: flex; align-items: center; gap: var(--sp-3);
+  height: 36px; padding: 0 var(--sp-3); border-radius: var(--r-3);
+  color: var(--muted); font-size: var(--fs-13); font-weight: var(--fw-ui);
+  cursor: pointer; border: 0; background: transparent; width: 100%; text-align: left;
+}
+.nav__item:hover { background: var(--nav-hover); color: var(--fg); }
+.nav__item[aria-current="page"] { background: var(--nav-selected); color: var(--fg); font-weight: var(--fw-strong); }
+.nav__item[aria-current="page"] .nav__icon { color: var(--accent); }
+.nav__icon { flex: 0 0 18px; width: 18px; height: 18px; color: currentColor; }
+.nav__item .nav__icon { color: var(--muted); }
+.nav__label { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav__badge {
+  font-family: var(--font-mono); font-size: var(--fs-11);
+  padding: 0 6px; border-radius: var(--r-pill);
+  background: var(--tag-neutral-bg); color: var(--muted);
+}
+.nav__item--sub { height: 32px; padding-left: 45px; font-size: var(--fs-13); font-weight: var(--fw-read); }
+.app[data-nav="collapsed"] .nav__item { justify-content: center; padding: 0; }
+.nav__foot { border-top: 1px solid var(--border); padding: var(--sp-2); }
+
+.main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  height: var(--topbar-h); flex: 0 0 var(--topbar-h);
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: 0 var(--sp-4);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 30;
+}
+.topbar__crumbs { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-13); color: var(--muted); min-width: 0; }
+.topbar__crumbs b { color: var(--fg); font-weight: var(--fw-strong); }
+.topbar__spacer { flex: 1 1 auto; }
+.topbar__right { display: flex; align-items: center; gap: var(--sp-3); }
+.topbar__user {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding-left: var(--sp-3); border-left: 1px solid var(--border);
+}
+.avatar {
+  width: 28px; height: 28px; border-radius: var(--r-2);
+  background: var(--accent-soft); color: var(--accent);
+  display: grid; place-items: center;
+  font-size: var(--fs-12); font-weight: var(--fw-strong);
+}
+.workspace { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+.page-head {
+  display: flex; align-items: flex-start; gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+}
+.page-head__main { flex: 1 1 auto; min-width: 0; }
+.page-title { font-family: var(--font-display); font-size: var(--fs-20); font-weight: var(--fw-strong); line-height: var(--lh-title); }
+.page-desc { margin-top: var(--sp-1); color: var(--muted); font-size: var(--fs-13); line-height: var(--lh-body); max-width: 78ch; }
+.page-head__actions { display: flex; align-items: center; gap: var(--sp-2); flex: 0 0 auto; padding-top: 2px; }
+
+/* ============================== 按钮 ============================== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 var(--sp-3);
+  border-radius: var(--r-3); border: 1px solid transparent;
+  background: transparent; color: var(--fg);
+  font-size: var(--fs-13); font-weight: var(--fw-ui); letter-spacing: var(--ls-mono);
+  cursor: pointer; white-space: nowrap;
+}
+.btn__icon { width: 15px; height: 15px; flex: 0 0 15px; }
+.btn--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: var(--fw-strong); }
+.btn--primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); }
+.btn--primary:active { background: var(--accent-active); border-color: var(--accent-active); color: var(--on-accent); }
+.btn--default { background: var(--surface); border-color: var(--border-control); color: var(--fg); }
+.btn--default:hover { background: var(--surface-hover); border-color: var(--border-strong); color: var(--fg); }
+.btn--default:active { background: var(--surface-active); color: var(--fg); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn--ghost:hover { background: var(--surface-hover); color: var(--fg); }
+.btn--text { background: transparent; border-color: transparent; color: var(--fg); padding: 0 var(--sp-1); }
+.btn--text:hover { color: var(--accent); background: transparent; text-decoration: underline; }
+.btn--danger-outline { background: var(--surface); border-color: var(--danger); color: var(--danger); }
+.btn--danger-outline:hover { background: var(--tag-danger-bg); color: var(--danger); }
+.btn--danger-solid { background: var(--danger); border-color: var(--danger); color: #FFFFFF; font-weight: var(--fw-strong); }
+:root[data-theme="dark"] .btn--danger-solid { color: #2A0E0B; }
+.btn--danger-solid:hover { filter: brightness(1.08); }
+.btn[disabled], .btn[aria-disabled="true"] {
+  background: var(--disabled-bg); border-color: var(--border); color: var(--disabled-fg);
+  cursor: not-allowed; text-decoration: none;
+}
+.btn--sm { height: 28px; padding: 0 var(--sp-2); font-size: var(--fs-12); }
+.btn--lg { height: 40px; padding: 0 var(--sp-5); font-size: var(--fs-14); }
+.btn--block { width: 100%; }
+.btn--icon { width: 32px; padding: 0; }
+.btn--icon.btn--sm { width: 28px; }
+.btn-group { display: inline-flex; }
+.btn-group .btn { border-radius: 0; margin-left: -1px; }
+.btn-group .btn:first-child { border-radius: var(--r-3) 0 0 var(--r-3); margin-left: 0; }
+.btn-group .btn:last-child { border-radius: 0 var(--r-3) var(--r-3) 0; }
+.btn-group .btn:only-child { border-radius: var(--r-3); }
+.btn-group .btn[aria-pressed="true"] { background: var(--surface-selected); border-color: var(--accent-soft-border); color: var(--fg); font-weight: var(--fw-strong); }
+
+/* ============================== 表单控件 ============================== */
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field__label { font-size: var(--fs-13); font-weight: var(--fw-ui); color: var(--fg); display: flex; align-items: center; gap: 4px; }
+.field__req { color: var(--danger); font-family: var(--font-mono); font-size: var(--fs-12); }
+.field__hint { font-size: var(--fs-12); color: var(--muted); line-height: var(--lh-body); }
+.field__error { font-size: var(--fs-12); color: var(--danger); display: flex; align-items: center; gap: 5px; }
+.field__error svg { width: 13px; height: 13px; flex: 0 0 13px; }
+.input, .select, .textarea {
+  height: 32px; width: 100%; padding: 0 var(--sp-3);
+  background: var(--surface); color: var(--fg);
+  border: 1px solid var(--border-control); border-radius: var(--r-3);
+  font-size: var(--fs-13); line-height: 30px;
+}
+.textarea { height: auto; min-height: 88px; padding: var(--sp-2) var(--sp-3); line-height: var(--lh-body); resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--fg-placeholder); }
+.input:hover, .select:hover, .textarea:hover { border-color: var(--border-strong); }
+.input:focus-visible, .select:focus-visible, .textarea:focus-visible {
+  border-color: var(--focus); outline: 2px solid var(--focus-halo); outline-offset: 0;
+}
+.input[aria-invalid="true"], .select[aria-invalid="true"] { border-color: var(--danger); }
+.input[disabled], .select[disabled], .textarea[disabled] {
+  background: var(--disabled-bg); border-color: var(--border); color: var(--disabled-fg); cursor: not-allowed;
+}
+.select { appearance: none; padding-right: 28px; background-image: none; cursor: pointer; }
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: ""; position: absolute; right: 11px; top: 50%; width: 6px; height: 6px;
+  border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-70%) rotate(45deg); pointer-events: none;
+}
+.input-affix { position: relative; }
+.input-affix .input { padding-right: 32px; }
+.input-affix__btn {
+  position: absolute; right: 2px; top: 2px; width: 28px; height: 28px;
+  border: 0; background: transparent; color: var(--muted); border-radius: var(--r-2); cursor: pointer;
+}
+.input-affix__btn:hover { background: var(--surface-hover); color: var(--fg); }
+.check { display: inline-flex; align-items: flex-start; gap: var(--sp-2); cursor: pointer; font-size: var(--fs-13); }
+.check input { appearance: none; width: 16px; height: 16px; flex: 0 0 16px; margin: 2px 0 0; border: 1.5px solid var(--border-control); border-radius: var(--r-1); background: var(--surface); cursor: pointer; }
+.check input[type="radio"] { border-radius: 50%; }
+.check input:checked { background: var(--accent); border-color: var(--accent); }
+.check input[type="checkbox"]:checked {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.4l3 3 6-6.4' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-size: 16px 16px;
+}
+.check input[type="radio"]:checked { box-shadow: inset 0 0 0 3.5px var(--surface); }
+.check input:disabled { background: var(--disabled-bg); border-color: var(--border); cursor: not-allowed; }
+.check__text { line-height: 1.5; }
+.switch { display: inline-flex; align-items: center; gap: var(--sp-2); cursor: pointer; font-size: var(--fs-13); }
+.switch input { appearance: none; width: 36px; height: 20px; border-radius: var(--r-pill); background: var(--disabled-bg); border: 1px solid var(--border-control); position: relative; cursor: pointer; flex: 0 0 36px; }
+.switch input::after { content: ""; position: absolute; top: 1px; left: 1px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); box-shadow: var(--shadow-1); transition: transform .14s; }
+.switch input:checked { background: var(--accent); border-color: var(--accent); }
+.switch input:checked::after { transform: translateX(16px); }
+.seg { display: inline-flex; padding: 2px; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-3); }
+.seg__btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 var(--sp-3);
+  border: 0; background: transparent; color: var(--muted);
+  font-size: var(--fs-12); font-weight: var(--fw-ui); border-radius: var(--r-2); cursor: pointer;
+}
+.seg__btn:hover { background: var(--surface-hover); color: var(--fg); }
+.seg__btn[aria-pressed="true"] { background: var(--surface); color: var(--fg); font-weight: var(--fw-strong); box-shadow: var(--shadow-1); }
+.seg__btn svg { width: 14px; height: 14px; }
+
+/* ============================== 实体与状态标签 ============================== */
+.eg { display: inline-block; width: 13px; height: 13px; flex: 0 0 13px; position: relative; color: currentColor; }
+.eg::before { content: ""; position: absolute; inset: 1.5px; border: 1.5px solid currentColor; }
+.eg--person::before { border-radius: 50%; }
+.eg--vessel::before { border-radius: 3px; }
+.eg--place::before { border-radius: 0; }
+.eg--event::before { border-radius: 0; transform: rotate(45deg); inset: 2px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 22px; padding: 0 8px; border-radius: var(--r-2);
+  font-size: var(--fs-12); font-weight: var(--fw-ui); letter-spacing: var(--ls-mono);
+  border: 1px solid transparent; white-space: nowrap;
+}
+.tag--neutral { background: var(--tag-neutral-bg); color: var(--fg); border-color: var(--tag-border); }
+.tag--accent { background: var(--tag-accent-bg); color: var(--accent); border-color: var(--accent-soft-border); }
+.tag--success { background: var(--tag-success-bg); color: var(--success); }
+.tag--warning { background: var(--tag-warning-bg); color: var(--warning); }
+.tag--danger { background: var(--tag-danger-bg); color: var(--danger); }
+.tag--plain { background: transparent; border-color: var(--border-control); color: var(--muted); }
+.tag--mono { font-family: var(--font-mono); font-size: var(--fs-11); }
+.tag__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 6px; }
+.tag--dot-outline .tag__dot { background: transparent; border: 1.5px solid currentColor; }
+.tag--dashed { border-style: dashed; border-color: currentColor; background: transparent; }
+.tag--person { background: var(--entity-person-soft); color: var(--entity-person); }
+.tag--vessel { background: var(--entity-vessel-soft); color: var(--entity-vessel); }
+.tag--place { background: var(--entity-place-soft); color: var(--entity-place); }
+.tag--event { background: var(--entity-event-soft); color: var(--entity-event); }
+.mono { font-family: var(--font-mono); font-size: 0.94em; letter-spacing: var(--ls-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.kbd {
+  display: inline-block; padding: 0 5px; min-width: 18px; text-align: center;
+  font-family: var(--font-mono); font-size: var(--fs-11); line-height: 17px;
+  color: var(--muted); background: var(--surface-2);
+  border: 1px solid var(--border-control); border-bottom-width: 2px; border-radius: var(--r-2);
+}
+
+/* ============================== 面板 / 卡片 ============================== */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); display: flex; flex-direction: column; min-width: 0; }
+.panel__head {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border);
+  min-height: 44px;
+}
+.panel__title { font-family: var(--font-display); font-size: var(--fs-14); font-weight: var(--fw-strong); }
+.panel__spacer { flex: 1 1 auto; }
+.panel__body { padding: var(--sp-4); }
+.panel__foot { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--border); display: flex; gap: var(--sp-2); align-items: center; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); padding: var(--sp-3); }
+.card--flat { background: var(--surface-2); }
+.section-title {
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-family: var(--font-display); font-size: var(--fs-16); font-weight: var(--fw-strong);
+  line-height: var(--lh-title); margin-bottom: var(--sp-3);
+}
+.section-title__idx { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); letter-spacing: var(--ls-mono); }
+.kv { display: grid; grid-template-columns: 96px 1fr; gap: 0; font-size: var(--fs-13); }
+.kv dt { color: var(--muted); padding: 7px 0; line-height: 1.5; }
+.kv dd { color: var(--fg); padding: 7px 0; line-height: 1.5; word-break: break-word; }
+.kv--wide { grid-template-columns: 132px 1fr; }
+.kv > dt + dd { border-bottom: 1px solid var(--border); }
+.kv > dt:last-of-type + dd { border-bottom: 0; }
+.divider { height: 1px; background: var(--border); border: 0; margin: var(--sp-3) 0; }
+.divider--v { width: 1px; height: 20px; background: var(--border); margin: 0 var(--sp-1); }
+
+/* ============================== 表格 ============================== */
+.table-wrap { overflow: auto; flex: 1 1 auto; min-height: 0; background: var(--surface); border-radius: var(--r-4); }
+.table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-13); }
+.table th {
+  position: sticky; top: 0; z-index: 2;
+  height: 40px; padding: 0 var(--sp-3);
+  background: var(--surface-2); color: var(--muted);
+  font-size: var(--fs-12); font-weight: var(--fw-ui); letter-spacing: var(--ls-mono);
+  text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.table td { height: 44px; padding: 0 var(--sp-3); border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table tbody tr:hover td { background: var(--row-hover); }
+.table tbody tr[aria-selected="true"] td { background: var(--surface-selected); }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table .col-num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: var(--ls-mono); }
+.table .col-actions { text-align: right; white-space: nowrap; }
+.table .cell-quiet { color: var(--muted); }
+.cell-strong { display: flex; align-items: center; gap: var(--sp-2); font-weight: var(--fw-ui); }
+.cell-stack { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cell-stack__sub { font-size: var(--fs-12); color: var(--muted); font-family: var(--font-mono); letter-spacing: var(--ls-mono); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; max-width: 100%; }
+.expandable { text-align: left; }
+.expandable[aria-expanded="true"] .truncate { white-space: normal; }
+.table-toolbar {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border);
+}
+.table-toolbar__spacer { flex: 1 1 auto; }
+.pager {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--border);
+  background: var(--surface); font-size: var(--fs-13); color: var(--muted);
+}
+.pager__pages { display: flex; gap: 4px; }
+.pager__btn {
+  min-width: 30px; height: 30px; padding: 0 6px; border-radius: var(--r-2);
+  border: 1px solid var(--border-control); background: var(--surface); color: var(--fg);
+  font-size: var(--fs-13); font-family: var(--font-mono); cursor: pointer;
+}
+.pager__btn:hover { background: var(--surface-hover); }
+.pager__btn[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: var(--fw-strong); }
+.pager__btn[disabled] { background: var(--disabled-bg); color: var(--disabled-fg); border-color: var(--border); cursor: not-allowed; }
+
+/* 搜索区：查询 / 重置 / 展开更多条件 */
+.search-bar {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)) auto;
+  gap: var(--sp-3); align-items: end;
+  padding: var(--sp-4); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4);
+}
+.search-bar__actions { display: flex; align-items: center; gap: var(--sp-2); padding-bottom: 1px; }
+.search-bar[data-expanded="false"] .search-bar__more { display: none; }
+.search-summary {
+  display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-4); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--r-3); font-size: var(--fs-12); color: var(--muted);
+}
+
+/* ============================== 进度 ============================== */
+.bar { height: 6px; border-radius: var(--r-pill); background: var(--disabled-bg); overflow: hidden; display: flex; }
+.bar__seg { height: 100%; }
+.bar__seg--ok { background: var(--success); }
+.bar__seg--fail { background: var(--danger); }
+.bar__seg--run { background: var(--accent); }
+.bar-legend { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-12); color: var(--muted); flex-wrap: wrap; }
+.bar-legend__item { display: inline-flex; align-items: center; gap: 5px; }
+.bar-legend__swatch { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 8px; }
+.progress-cell { display: flex; flex-direction: column; gap: 5px; min-width: 132px; }
+.progress-cell__meta { display: flex; justify-content: space-between; font-size: var(--fs-11); color: var(--muted); font-family: var(--font-mono); }
+
+/* ============================== 时间线 ============================== */
+.timeline { position: relative; padding-left: var(--sp-5); }
+.timeline::before { content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px; width: 1px; background: var(--border); }
+.timeline__item { position: relative; padding-bottom: var(--sp-4); }
+.timeline__item:last-child { padding-bottom: 0; }
+.timeline__dot {
+  position: absolute; left: calc(-1 * var(--sp-5) + 1px); top: 5px;
+  width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--muted); background: var(--surface);
+}
+.timeline__item--accent .timeline__dot { border-color: var(--accent); background: var(--accent); }
+.timeline__item--success .timeline__dot { border-color: var(--success); background: var(--success); }
+.timeline__item--warning .timeline__dot { border-color: var(--warning); background: var(--surface); }
+.timeline__head { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
+.timeline__title { font-size: var(--fs-13); font-weight: var(--fw-ui); }
+.timeline__time { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); letter-spacing: var(--ls-mono); }
+.timeline__desc { font-size: var(--fs-12); color: var(--muted); line-height: var(--lh-body); margin-top: 3px; }
+
+/* ============================== 来源引用卡 ============================== */
+.source-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-3);
+  padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.source-card--active { border-color: var(--accent-soft-border); background: var(--accent-soft); }
+.source-card__head { display: flex; align-items: center; gap: var(--sp-2); }
+.source-card__idx {
+  font-family: var(--font-mono); font-size: var(--fs-11); color: var(--accent);
+  background: var(--tag-accent-bg); border: 1px solid var(--accent-soft-border);
+  border-radius: var(--r-1); padding: 1px 5px; flex: 0 0 auto;
+}
+.source-card__title { font-size: var(--fs-13); font-weight: var(--fw-ui); flex: 1 1 auto; min-width: 0; }
+.source-card__quote {
+  font-size: var(--fs-12); color: var(--fg); line-height: var(--lh-body);
+  background: var(--surface-2); border-left: 0; border-radius: var(--r-2);
+  padding: var(--sp-2) var(--sp-3); max-height: 120px; overflow: auto;
+}
+.source-card__meta { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-11); color: var(--muted); font-family: var(--font-mono); }
+.cite {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 17px; padding: 0 4px; margin: 0 1px;
+  font-family: var(--font-mono); font-size: var(--fs-11); line-height: 1;
+  color: var(--accent); background: var(--tag-accent-bg);
+  border: 1px solid var(--accent-soft-border); border-radius: var(--r-1);
+  cursor: pointer; vertical-align: 2px;
+}
+.cite:hover { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.cite[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+/* ============================== 抽屉 / 弹窗 / 提示 ============================== */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: var(--z-drawer); opacity: 0; pointer-events: none; transition: opacity .18s; }
+.scrim[data-open="true"] { opacity: 1; pointer-events: auto; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 560px; max-width: 92vw;
+  background: var(--surface); border-left: 1px solid var(--border);
+  z-index: var(--z-drawer); display: flex; flex-direction: column;
+  transform: translateX(101%); transition: transform .2s ease; box-shadow: var(--shadow-3);
+}
+.drawer[data-open="true"] { transform: none; }
+.drawer__head { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-4); border-bottom: 1px solid var(--border); }
+.drawer__title { font-family: var(--font-display); font-size: var(--fs-16); font-weight: var(--fw-strong); line-height: var(--lh-title); }
+.drawer__desc { font-size: var(--fs-12); color: var(--muted); margin-top: 3px; }
+.drawer__body { flex: 1 1 auto; overflow-y: auto; padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); }
+.drawer__foot { padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--border); display: flex; gap: var(--sp-2); align-items: center; }
+.modal {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -48%);
+  width: 440px; max-width: 92vw; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-4);
+  z-index: var(--z-modal); box-shadow: var(--shadow-3);
+  opacity: 0; pointer-events: none; transition: opacity .16s, transform .16s;
+}
+.modal[data-open="true"] { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+.modal__body { padding: var(--sp-5) var(--sp-5) var(--sp-4); }
+.modal__title { font-family: var(--font-display); font-size: var(--fs-16); font-weight: var(--fw-strong); display: flex; gap: var(--sp-2); align-items: center; }
+.modal__text { font-size: var(--fs-13); color: var(--muted); line-height: var(--lh-body); margin-top: var(--sp-2); }
+.modal__foot { padding: 0 var(--sp-5) var(--sp-5); display: flex; justify-content: flex-end; gap: var(--sp-2); }
+.scrim--modal { z-index: var(--z-modal); }
+.toast-stack { position: fixed; right: var(--sp-5); bottom: var(--sp-5); z-index: var(--z-toast); display: flex; flex-direction: column; gap: var(--sp-2); }
+.toast {
+  display: flex; align-items: flex-start; gap: var(--sp-2);
+  min-width: 268px; max-width: 380px; padding: var(--sp-3);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-3);
+  box-shadow: var(--shadow-2); font-size: var(--fs-13);
+}
+.toast__icon { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; }
+.toast--success .toast__icon { color: var(--success); }
+.toast--warning .toast__icon { color: var(--warning); }
+.toast--danger .toast__icon { color: var(--danger); }
+.toast--info .toast__icon { color: var(--accent); }
+.toast__title { font-weight: var(--fw-ui); }
+.toast__desc { color: var(--muted); font-size: var(--fs-12); margin-top: 2px; line-height: var(--lh-body); }
+
+/* ============================== 空 / 错 / 加载 ============================== */
+.state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--sp-2); padding: var(--sp-8) var(--sp-5); text-align: center; color: var(--muted);
+}
+.state__icon { width: 40px; height: 40px; color: var(--border-control); }
+.state__icon svg { width: 100%; height: 100%; }
+.state--error .state__icon { color: var(--danger); }
+.state__title { font-size: var(--fs-14); font-weight: var(--fw-ui); color: var(--fg); }
+.state__desc { font-size: var(--fs-12); line-height: var(--lh-body); max-width: 46ch; }
+.state__actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+.skeleton {
+  background: linear-gradient(90deg, var(--disabled-bg) 25%, var(--surface-hover) 37%, var(--disabled-bg) 63%);
+  background-size: 400% 100%; animation: sk 1.4s ease infinite; border-radius: var(--r-2);
+}
+@keyframes sk { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%; flex: 0 0 14px;
+  border: 2px solid var(--border-control); border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton, .spinner { animation-duration: 2.4s; }
+  * { transition-duration: .01ms !important; }
+}
+.notice {
+  display: flex; align-items: flex-start; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-3);
+  font-size: var(--fs-12); line-height: var(--lh-body);
+  background: var(--tag-warning-bg); color: var(--fg); border: 1px solid var(--tag-border);
+}
+.notice svg { width: 14px; height: 14px; flex: 0 0 14px; margin-top: 2px; color: var(--warning); }
+.notice--info { background: var(--tag-accent-bg); }
+.notice--info svg { color: var(--accent); }
+.notice--danger { background: var(--tag-danger-bg); }
+.notice--danger svg { color: var(--danger); }
+.notice--success { background: var(--tag-success-bg); }
+.notice--success svg { color: var(--success); }
+.notice__link { color: inherit; text-decoration: underline; font-weight: var(--fw-ui); }
+.notice__link:hover { color: var(--accent); }
+
+/* ============================== 选项卡 ============================== */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); }
+.tabs__btn {
+  position: relative; height: 36px; padding: 0 var(--sp-3);
+  border: 0; background: transparent; color: var(--muted);
+  font-size: var(--fs-13); font-weight: var(--fw-ui); cursor: pointer;
+}
+.tabs__btn:hover { color: var(--fg); background: var(--surface-hover); }
+.tabs__btn[aria-selected="true"] { color: var(--fg); font-weight: var(--fw-strong); }
+.tabs__btn[aria-selected="true"]::after { content: ""; position: absolute; left: var(--sp-2); right: var(--sp-2); bottom: -1px; height: 2px; background: var(--accent); }
+.tabs__count { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); margin-left: 4px; }
+
+/* ============================== 面包屑 / 提示气泡 ============================== */
+.crumb-sep { color: var(--border-control); }
+.popover {
+  position: absolute; z-index: 40; min-width: 220px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-3);
+  box-shadow: var(--shadow-3); padding: var(--sp-3); font-size: var(--fs-12);
+}
+.popover__title { font-size: var(--fs-13); font-weight: var(--fw-ui); margin-bottom: var(--sp-1); }
+.popover__desc { color: var(--muted); line-height: var(--lh-body); }
+.tooltip { position: relative; }
+.tooltip::after {
+  content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px);
+  transform: translateX(-50%); white-space: nowrap;
+  background: var(--fg); color: var(--bg); font-size: var(--fs-11);
+  padding: 3px 7px; border-radius: var(--r-2); opacity: 0; pointer-events: none; transition: opacity .12s;
+}
+.tooltip:hover::after, .tooltip:focus-visible::after { opacity: 1; }
+
+/* ============================== 设计标注区（非产品界面） ============================== */
+.doc {
+  margin-top: var(--sp-8); background: var(--bg);
+  border-top: 3px double var(--border-control); padding: var(--sp-6) var(--sp-6) var(--sp-9);
+}
+.doc__head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-2); }
+.doc__badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 8px; border-radius: var(--r-2);
+  border: 1px dashed var(--border-control); color: var(--muted);
+  font-size: var(--fs-11); letter-spacing: var(--ls-caps); text-transform: uppercase;
+}
+.doc__title { font-family: var(--font-display); font-size: var(--fs-18); font-weight: var(--fw-strong); }
+.doc__desc { color: var(--muted); font-size: var(--fs-13); line-height: var(--lh-body); max-width: 96ch; margin-bottom: var(--sp-4); }
+.doc__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-3); }
+.doc__card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
+.doc__card-head { display: flex; align-items: center; gap: var(--sp-2); }
+.doc__card-idx { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); }
+.doc__card-title { font-size: var(--fs-13); font-weight: var(--fw-strong); }
+.doc__card-body { font-size: var(--fs-12); color: var(--muted); line-height: var(--lh-body); }
+.doc__sample {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-3);
+  padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start;
+}
+.doc__sample--canvas { background: var(--graph-canvas); }
+.doc__table { width: 100%; border-collapse: collapse; font-size: var(--fs-12); }
+.doc__table th, .doc__table td { text-align: left; padding: 7px var(--sp-2); border-bottom: 1px solid var(--border); vertical-align: top; }
+.doc__table th { color: var(--muted); font-weight: var(--fw-ui); white-space: nowrap; }
+.doc__swatch { display: inline-block; width: 14px; height: 14px; border-radius: var(--r-1); border: 1px solid var(--tag-border); vertical-align: -2px; margin-right: 6px; }
+.doc__code { font-family: var(--font-mono); font-size: var(--fs-11); color: var(--muted); background: var(--surface-2); padding: 1px 5px; border-radius: var(--r-1); border: 1px solid var(--border); }
+.pass { color: var(--success); font-weight: var(--fw-ui); }
+.warn { color: var(--warning); font-weight: var(--fw-ui); }
+
+/* ============================== 工具类 ============================== */
+.row { display: flex; align-items: center; gap: var(--sp-2); }
+.row--wrap { flex-wrap: wrap; }
+.row--top { align-items: flex-start; }
+.col { display: flex; flex-direction: column; gap: var(--sp-2); }
+.spacer { flex: 1 1 auto; }
+.gap-1 { gap: var(--sp-1); } .gap-2 { gap: var(--sp-2); } .gap-3 { gap: var(--sp-3); } .gap-4 { gap: var(--sp-4); }
+.mt-2 { margin-top: var(--sp-2); } .mt-3 { margin-top: var(--sp-3); } .mt-4 { margin-top: var(--sp-4); }
+.fs-11 { font-size: var(--fs-11); } .fs-12 { font-size: var(--fs-12); } .fs-13 { font-size: var(--fs-13); }
+.fw-strong { font-weight: var(--fw-strong); }
+.body-text { font-size: var(--fs-14); line-height: var(--lh-body); max-width: 68ch; }
+.body-text--sm { font-size: var(--fs-13); line-height: var(--lh-body); max-width: 72ch; }
+
+/* ============================== 收缩规则：1366–1439 ============================== */
+@media (max-width: 1439px) {
+  .app { --nav-w: 64px; }
+  .nav__title, .nav__sub, .nav__group-label, .nav__label, .nav__badge { display: none; }
+  .nav__item { justify-content: center; padding: 0; }
+  .nav__item--sub { padding-left: 0; }
+  [data-auto-collapse="true"] { display: none !important; }
+}
+@media print {
+  .nav, .topbar, .doc { display: none !important; }
+  .app { min-width: 0; }
+}
+
+</style>
+<style>
+  /* =========================================================================
+     P00 · 登录页
+     无导航外壳：左栏品牌与示意，右栏表单。左栏沿用工作台导航的 --nav-bg，
+     登录页与登录后的界面因此处于同一套表面层级。
+     ========================================================================= */
+  .auth { display: flex; min-height: 100vh; background: var(--bg); }
+
+  /* ---------- 左栏：品牌与示意 ---------- */
+  .auth__brand {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; flex-direction: column; gap: var(--sp-6);
+    padding: var(--sp-8) var(--sp-6);
+    background: var(--nav-bg); border-right: 1px solid var(--border);
+  }
+  .brand { margin: auto; width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: var(--sp-5); }
+  .brand__lockup { display: flex; align-items: center; gap: var(--sp-3); }
+  .brand__mark {
+    width: 36px; height: 36px; flex: 0 0 36px;
+    border: 1.5px solid var(--accent); border-radius: var(--r-3);
+    display: grid; place-items: center;
+    color: var(--accent); font-family: var(--font-mono);
+    font-size: var(--fs-12); letter-spacing: var(--ls-mono);
+  }
+  .brand__name { font-family: var(--font-display); font-size: var(--fs-18); font-weight: var(--fw-strong); line-height: var(--lh-title); }
+  .brand__env { font-size: var(--fs-12); color: var(--muted); margin-top: 2px; }
+  /* 中文行宽用 em 而不是 ch：ch 是拉丁数字宽（约 0.6em），用它限制中文标题会提前折行 */
+  .brand__slogan { font-family: var(--font-display); font-size: 28px; font-weight: var(--fw-strong); line-height: var(--lh-display); max-width: 13em; }
+  .brand__desc { font-size: var(--fs-14); line-height: var(--lh-body); color: var(--muted); max-width: 26em; }
+  .brand__figure { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .brand__caption { font-size: var(--fs-12); line-height: 1.7; color: var(--muted); max-width: 40em; }
+  .brand__caption b { color: var(--fg); font-weight: var(--fw-ui); }
+  .brand__foot { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; font-size: var(--fs-11); color: var(--muted); }
+
+  /* ---------- 示意图：与 P01 同一套实体形状语言，纯静态、不可交互 ---------- */
+  .plate { background: var(--graph-canvas); border: 1px solid var(--border); border-radius: var(--r-4); padding: var(--sp-2); }
+  .plate svg { width: 100%; height: auto; display: block; }
+  .pt__edges line { stroke: var(--graph-edge); stroke-width: 1.5; }
+  .pt__mark { fill: var(--graph-node-fill); stroke-width: 2; }
+  .pt__char { font-family: var(--font-display); font-size: 17px; font-weight: 600; text-anchor: middle; }
+  .pt__name {
+    font-family: var(--font-display); font-size: 15px; font-weight: 600; fill: var(--fg);
+    text-anchor: middle; paint-order: stroke; stroke: var(--graph-canvas); stroke-width: 3px; stroke-linejoin: round;
+  }
+  .pt__hub-name { text-anchor: start; font-size: 16px; }
+  .pt--person .pt__mark { stroke: var(--entity-person); } .pt--person .pt__char { fill: var(--entity-person); }
+  .pt--vessel .pt__mark { stroke: var(--entity-vessel); } .pt--vessel .pt__char { fill: var(--entity-vessel); }
+  .pt--place  .pt__mark { stroke: var(--entity-place); }  .pt--place  .pt__char { fill: var(--entity-place); }
+  .pt--event  .pt__mark { stroke: var(--entity-event); }  .pt--event  .pt__char { fill: var(--entity-event); }
+
+  /* ---------- 右栏：表单 ---------- */
+  .auth__main { flex: 0 0 520px; display: flex; flex-direction: column; padding: var(--sp-4); }
+  .auth__top { display: flex; justify-content: flex-end; }
+  /* safe center：内容超出时可退回顶部对齐，不会把卡片顶出容器去压住主题开关 */
+  .auth__center { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; justify-content: safe center; gap: var(--sp-3); padding: var(--sp-4) 0; }
+  .auth__card {
+    width: 100%; max-width: 420px; margin: 0 auto;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4);
+    padding: var(--sp-6) var(--sp-7);
+    display: flex; flex-direction: column; gap: var(--sp-4);
+  }
+  .auth__title { font-family: var(--font-display); font-size: var(--fs-24); font-weight: var(--fw-strong); line-height: var(--lh-title); }
+  .auth__desc { font-size: var(--fs-13); line-height: var(--lh-body); color: var(--muted); margin-top: var(--sp-1); }
+  .auth__meta { width: 100%; max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--sp-2); }
+  .auth__foot { font-size: var(--fs-11); line-height: 1.7; color: var(--muted); }
+
+  /* 表单级提示：错误用 role="alert"（打断式），进度用 role="status"（礼貌播报）。
+     .notice 已是 flex 行，文本容器必须允许收缩，否则长文案会横向溢出而不换行。 */
+  .notice > div { flex: 1 1 auto; min-width: 0; }
+  .alt__title { font-size: var(--fs-13); font-weight: var(--fw-strong); }
+  .alt__desc { font-size: var(--fs-12); line-height: var(--lh-body); margin-top: 2px; }
+  .alt__acts { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-2); }
+  #alertErr:focus-visible, #alertRun:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-3); }
+  /* 文字按钮禁用时不应变成灰底胶囊 */
+  .btn--text[disabled] { background: transparent; border-color: transparent; }
+
+  .auth__row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+  /* 文字按钮保留 32px 点击高度，与系统内其它次级操作一致 */
+  .auth__row .btn--text { min-height: 32px; padding: 0 var(--sp-2); }
+  .auth-cap { display: flex; align-items: flex-start; gap: var(--sp-2); }
+  .auth-cap .input { flex: 0 0 122px; width: 122px; font-family: var(--font-mono); letter-spacing: 0.22em; }
+  .auth-cap__fig { flex: 0 0 auto; padding: 0; border: 1px solid var(--border-control); border-radius: var(--r-3); background: var(--surface-2); cursor: pointer; overflow: hidden; }
+  .auth-cap__fig:hover { border-color: var(--border-strong); }
+  .auth-cap__fig[disabled] { border-color: var(--border); cursor: not-allowed; }
+  .auth-cap__fig canvas { display: block; width: 96px; height: 32px; }
+
+  /* 口令可见性开关：同一个按钮切换，不额外占用行宽 */
+  .pwd-toggle { position: relative; }
+  .pwd-toggle[aria-pressed="true"]::after {
+    content: ""; position: absolute; left: 8px; right: 8px; top: 13px; height: 1.5px;
+    background: currentColor; transform: rotate(-24deg);
+  }
+
+  /* ---------- 收缩规则 ---------- */
+  @media (max-width: 1179px) {
+    .auth { flex-direction: column; }
+    .auth__brand { flex: 0 0 auto; padding: var(--sp-6) var(--sp-5) var(--sp-5); border-right: 0; border-bottom: 1px solid var(--border); }
+    .brand { margin: 0 auto; max-width: 720px; gap: var(--sp-4); }
+    .brand__figure, .brand__foot { display: none; }
+    .brand__slogan { font-size: 22px; }
+    .auth__main { flex: 1 1 auto; width: 100%; padding: var(--sp-4); }
+    .auth__center { padding: var(--sp-4) 0 var(--sp-5); }
+  }
+  /* 较矮视口（含 1366 × 768）：先压缩纵向节奏、收起页脚标注，保证主操作始终可见 */
+  @media (max-height: 780px) {
+    .auth__brand { padding: var(--sp-6) var(--sp-6); }
+    .brand { gap: var(--sp-4); }
+    .plate { max-width: 520px; }
+    .auth__card { gap: var(--sp-3); padding: var(--sp-5) var(--sp-6); }
+    .auth__center { padding: var(--sp-2) 0; }
+    .auth__foot { display: none; }
+  }
+  @media (max-height: 700px) {
+    .brand__figure { display: none; }
+  }
+</style>
+</head>
+<body data-page="login">
+<a class="skip-link" href="#loginForm">跳到登录表单</a>
+
+<div class="auth" data-od-id="login-screen">
+  <!-- ======================= 左栏：品牌与示意 ======================= -->
+  <aside class="auth__brand" data-od-id="login-brand">
+    <div class="brand">
+      <div class="brand__lockup">
+        <span class="brand__mark" aria-hidden="true">HF</span>
+        <div>
+          <div class="brand__name">海防研判工作台</div>
+          <div class="brand__env">演示环境 · 合成数据</div>
+        </div>
+      </div>
+
+      <h1 class="brand__slogan">关系来自来源记录，<br />结论经过人工复核。</h1>
+      <p class="brand__desc">在数据图谱中探索人员、船舶、地点与事件的关联，选择证据交给 AI 整理，人工复核后再进入跨单位协同。每一条关系都能追到支撑它的那条资料。</p>
+
+      <figure class="brand__figure" data-od-id="login-plate">
+        <div class="plate">
+          <svg viewBox="0 0 560 320" role="img" aria-label="演示对象关系示意：演示出港记录分别关联演示人员甲、演示人员乙、演示海船甲与演示港口甲。">
+            <defs>
+              <pattern id="ptGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M20 0H0V20" fill="none" stroke="var(--graph-grid)" stroke-width="1" />
+              </pattern>
+            </defs>
+            <rect width="560" height="320" fill="url(#ptGrid)" />
+
+            <g class="pt__edges">
+              <line x1="280" y1="170" x2="96" y2="52" />
+              <line x1="280" y1="170" x2="96" y2="250" />
+              <line x1="280" y1="170" x2="470" y2="52" />
+              <line x1="280" y1="170" x2="470" y2="250" />
+            </g>
+
+            <g class="pt__node pt--person" transform="translate(96,52)">
+              <circle class="pt__mark" r="17" />
+              <text class="pt__char" y="5">人</text>
+              <text class="pt__name" y="42">演示人员甲</text>
+            </g>
+            <g class="pt__node pt--person" transform="translate(96,250)">
+              <circle class="pt__mark" r="17" />
+              <text class="pt__char" y="5">人</text>
+              <text class="pt__name" y="42">演示人员乙</text>
+            </g>
+            <g class="pt__node pt--vessel" transform="translate(470,52)">
+              <rect class="pt__mark" x="-24" y="-17" width="48" height="34" rx="9" />
+              <text class="pt__char" y="5">船</text>
+              <text class="pt__name" y="42">演示海船甲</text>
+            </g>
+            <g class="pt__node pt--place" transform="translate(470,250)">
+              <rect class="pt__mark" x="-18" y="-18" width="36" height="36" rx="2" />
+              <text class="pt__char" y="5">港</text>
+              <text class="pt__name" y="42">演示港口甲</text>
+            </g>
+
+            <g class="pt__node pt--event" transform="translate(280,170)">
+              <path class="pt__mark" d="M0 -19 L24 0 L0 19 L-24 0 Z" />
+              <text class="pt__char" y="5">事</text>
+              <text class="pt__name pt__hub-name" x="34" y="6">演示出港记录</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption class="brand__caption">
+          示意图为合成演示数据。四条关联——<b>同船登记</b>（演示人员甲、演示人员乙）、<b>对应船舶</b>（演示海船甲）、<b>出港于</b>（演示港口甲）——均由来源 [1] 演示出港登记 <span class="mono">DEMO-INOUT-001</span> 派生，不由系统直接判定。
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="brand__foot">
+      <span class="tag tag--plain tag--mono">v0.19.0-demo</span>
+      <span>未接入真实业务系统 · 不承载真实数据</span>
+    </div>
+  </aside>
+
+  <!-- ======================= 右栏：登录表单 ======================= -->
+  <main class="auth__main">
+    <div class="auth__top">
+      <div class="seg" role="group" aria-label="主题模式" data-od-id="login-theme-switch">
+        <button class="seg__btn" type="button" data-theme-btn="light" aria-pressed="true"><span data-ico="sun"></span>亮色</button>
+        <button class="seg__btn" type="button" data-theme-btn="dark" aria-pressed="false"><span data-ico="moon"></span>暗黑</button>
+      </div>
+    </div>
+
+    <div class="auth__center">
+      <form class="auth__card" id="loginForm" novalidate tabindex="-1" data-od-id="login-form">
+        <div>
+          <h2 class="auth__title" data-od-id="login-title">登录</h2>
+          <p class="auth__desc">使用单位分配的账号登录。登录后按当前角色与数据范围加载可见内容，不显示其他单位的会话与资料。</p>
+        </div>
+
+        <div id="alertErr" role="alert" hidden></div>
+        <div id="alertRun" role="status" aria-live="polite" hidden></div>
+
+        <div class="field" data-od-id="login-field-acct">
+          <label class="field__label" for="acct">账号 <span class="field__req" aria-hidden="true">*</span></label>
+          <input class="input" id="acct" name="acct" type="text" value="demo.analyst"
+                 autocomplete="username" spellcheck="false" autocapitalize="off"
+                 aria-describedby="acctHint acctErr" placeholder="请输入账号" />
+          <div class="field__hint" id="acctHint">演示账号已预填，格式与生产账号一致（<span class="mono">demo.*</span>）。</div>
+          <p class="field__error" id="acctErr" hidden></p>
+        </div>
+
+        <div class="field" data-od-id="login-field-pwd">
+          <label class="field__label" for="pwd">口令 <span class="field__req" aria-hidden="true">*</span></label>
+          <div class="input-affix">
+            <input class="input" id="pwd" name="pwd" type="password" placeholder="请输入口令"
+                   autocomplete="current-password" aria-describedby="pwdErr" />
+            <button class="input-affix__btn pwd-toggle" type="button" id="pwdToggle"
+                    aria-pressed="false" aria-label="显示口令" title="显示口令"><span data-ico="eye"></span></button>
+          </div>
+          <p class="field__error" id="pwdErr" hidden></p>
+        </div>
+
+        <div class="field" data-od-id="login-field-cap">
+          <label class="field__label" for="cap">验证码 <span class="field__req" aria-hidden="true">*</span></label>
+          <div class="auth-cap">
+            <input class="input" id="cap" name="cap" type="text" inputmode="text" maxlength="4"
+                   autocomplete="off" placeholder="4 位字符" aria-describedby="capHint capErr" />
+            <button class="auth-cap__fig" type="button" id="capRefresh" data-od-id="login-captcha"
+                    aria-label="验证码图片，点击刷新验证码" title="点击刷新验证码">
+              <canvas id="capCanvas" width="192" height="64" aria-hidden="true"></canvas>
+            </button>
+          </div>
+          <div class="field__hint" id="capHint">演示环境已自动填入；点击验证码图片可换一张。</div>
+          <p class="field__error" id="capErr" hidden></p>
+        </div>
+
+        <div class="auth__row">
+          <label class="check" for="keep">
+            <input type="checkbox" id="keep" />
+            <span class="check__text">保持登录<span class="fs-12 muted">（仅限本单位授权设备）</span></span>
+          </label>
+          <button class="btn btn--text" type="button" id="forgot">忘记口令？</button>
+        </div>
+
+        <button class="btn btn--primary btn--lg btn--block" type="submit" id="submit" data-od-id="login-submit">登录</button>
+      </form>
+
+      <div class="auth__meta">
+        <div class="notice" data-od-id="login-demo-notice">
+          <span data-ico="warning"></span>
+          <div>演示环境：账号已预填，口令任意填写即可通过；未接入统一身份认证，页面内容全部为合成数据。</div>
+        </div>
+        <p class="auth__foot">登录行为将记入审计日志。请勿在非授权设备上保存凭证。演示环境不执行页面跳转，登录成功后停留本页。</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============================ 设计标注（非产品界面） ============================ -->
+<section class="doc" data-od-id="p00-doc">
+  <div class="doc__head"><span class="doc__badge">设计标注 · 非产品界面</span>
+    <h2 class="doc__title">P00 登录页关键状态与交互</h2>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="登录状态演示开关（非产品控件）" data-od-id="p00-state-switch">
+      <button class="seg__btn" type="button" data-setstate="ok" aria-pressed="true">默认</button>
+      <button class="seg__btn" type="button" data-setstate="invalid" aria-pressed="false">字段校验</button>
+      <button class="seg__btn" type="button" data-setstate="authfail" aria-pressed="false">认证失败</button>
+      <button class="seg__btn" type="button" data-setstate="busy" aria-pressed="false">登录中</button>
+      <button class="seg__btn" type="button" data-setstate="disabled" aria-pressed="false">账号停用</button>
+      <button class="seg__btn" type="button" data-setstate="outage" aria-pressed="false">服务不可用</button>
+    </div>
+  </div>
+  <p class="doc__desc">以下为说明卡片，不参与产品操作。右侧开关把上方登录表单直接切到对应状态，切换后页面会自动回到主画面（不重载、不清空已输入内容）。「登录中」由开关触发时停在该状态便于核对禁用态；通过真实提交进入时会在约 1 秒后转入「登录成功」。默认态只呈现两处强调色：品牌标记与主操作按钮。</p>
+
+  <div class="doc__grid">
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S1</span><span class="doc__card-title">布局与分区</span></div>
+      <div class="doc__card-body">1440 × 900 下为左右两栏：左栏自适应、内容宽度上限 600px，右栏固定 520px、表单卡片 420px 居中。左栏背景使用与工作台左侧导航相同的 <span class="doc__code">--nav-bg</span>，因此登录页与登录后的界面处于同一套表面层级，切换主题时两者的明度差保持一致。</div>
+      <div class="doc__sample"><span class="mono fs-11">左栏 flex:1 · 右栏 520px · 卡片 420px · 控件 32px · 主操作 40px</span></div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S2</span><span class="doc__card-title">主题切换保留输入</span></div>
+      <div class="doc__card-body">主题开关与工作台顶栏是同一个分段控件，位于页面右上角的同一位置。切换只改 <span class="doc__code">data-theme</span> 属性值，不重载页面：已输入的账号、口令、验证码与勾选状态全部保留；验证码按新主题重绘，颜色取自 token，字符不重新生成。首屏另有内联脚本先落主题，避免暗黑用户看到一次亮色闪烁。</div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S3</span><span class="doc__card-title">字段校验与错误定位</span></div>
+      <div class="doc__card-body">提交时按账号 → 口令 → 验证码的顺序校验，不通过就把焦点移到第一个出错字段，错误文案紧贴字段下方并用 <span class="doc__code">aria-describedby</span> 关联，输入框同时置 <span class="doc__code">aria-invalid</span>。表单使用 <span class="doc__code">novalidate</span>，避免浏览器原生气泡提示与设计系统冲突。</div>
+      <div class="doc__sample"><span class="tag tag--danger">请输入账号</span><span class="tag tag--danger">验证码不正确或已失效，请重新获取</span></div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S4</span><span class="doc__card-title">认证失败与服务不可用是两件事</span></div>
+      <div class="doc__card-body">认证失败用危险色，说明锁定规则与重试方式；服务不可用用警告色，明确「本次未提交凭证校验请求，账号不会被记为失败」并给出诊断码与原样重试。两者动作不同：前者要改口令，后者要等待或联系管理员。混为一谈会让用户反复重输本来正确的口令。</div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S5</span><span class="doc__card-title">登录中与防重复提交</span></div>
+      <div class="doc__card-body">提交后按钮进入加载态，账号、口令、验证码、验证码刷新与「保持登录」全部禁用，表单置 <span class="doc__code">aria-busy="true"</span>。进度提示使用 <span class="doc__code">role="status"</span> 的礼貌播报，不打断读屏当前正在读的内容；只有错误才用 <span class="doc__code">role="alert"</span>。</div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S6</span><span class="doc__card-title">验证码</span></div>
+      <div class="doc__card-body">演示环境自动填入 4 位字符，并把验证码图片整体做成一个按钮：点击或回车即刷新，不额外提供重复的第二入口。生产环境应由服务端下发验证码、支持失效重取，并提供语音或风险无感等非图形替代通路——图形验证码不能是唯一入口。</div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S7</span><span class="doc__card-title">登录后的权限边界</span></div>
+      <div class="doc__card-body">登录成功只承诺「按当前角色与数据范围加载内容」：不展示其他单位的会话与资料，也不提示无权对象是否存在。账号被停用时，既有登录状态同时失效，必须由系统管理员处理；界面直接说明这一点，而不是让用户反复重试。</div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S8</span><span class="doc__card-title">合成数据与安全提示</span></div>
+      <div class="doc__card-body">页面不出现真实姓名、手机号、证件号、口令或密钥；账号统一 <span class="doc__code">demo.*</span> 前缀，口令不写进页面，演示态由状态开关给出。提示登录行为记入审计日志，并说明演示环境未接入统一身份认证。</div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S9</span><span class="doc__card-title">键盘与焦点顺序</span></div>
+      <div class="doc__card-body">Tab 顺序：跳过链接 → 主题开关 → 账号 → 口令 → 显示/隐藏口令 → 验证码 → 刷新验证码 → 保持登录 → 忘记口令 → 登录。口令可见性开关用 <span class="doc__code">aria-pressed</span> 表达状态，验证码是按钮而不是可点击图片，两者都能用键盘触发；所有可聚焦元素使用 2px 焦点环。</div></div>
+
+    <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S10</span><span class="doc__card-title">强调色与动作经济</span></div>
+      <div class="doc__card-body">默认态只有两处强调色：左上品牌标记与「登录」主按钮。主题开关的选中态使用表面色 + 主文字色而非强调色；「保持登录」默认不勾选，勾选后的填充色由用户触发，不与主操作争夺注意力。整页只有一个主样式按钮。</div>
+      <div class="doc__sample"><span class="fs-12 muted">次操作：忘记口令（文字按钮）· 验证码刷新（图形按钮）· 服务不可用时的「重新尝试」（默认按钮）</span></div></div>
+  </div>
+
+  <div class="doc__card" style="margin-top:var(--sp-3)">
+    <div class="doc__card-head"><span class="doc__card-idx">S11</span><span class="doc__card-title">尺寸与收缩规则</span></div>
+    <table class="doc__table">
+      <thead><tr><th>条件</th><th>规则</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">≥ 1180px</td><td class="mono">保持左右两栏</td><td>左栏自适应、右栏 520px；1440 × 900 下左栏内容约 805px，两栏均在首屏内。</td></tr>
+        <tr><td class="mono">高度 ≤ 780px</td><td class="mono">压缩纵向节奏</td><td>含 1366 × 768：左栏内边距 40 → 24px、间距 20 → 16px、示意图宽度上限 600 → 520px，卡片内边距与间距同步收紧，隐藏页脚审计提示。左栏内容降到约 724px。</td></tr>
+        <tr><td class="mono">≤ 1179px</td><td class="mono">收为单列</td><td>品牌区变为顶部条，隐藏示意图与页脚标注，表单占满宽度并保持 420px 上限居中，不产生横向滚动。</td></tr>
+        <tr><td class="mono">高度 &lt; 700px</td><td class="mono">隐藏示意图</td><td>表单与全部关键操作优先，示意图与脚注让位。</td></tr>
+        <tr><td class="mono">打印</td><td class="mono">隐藏标注区</td><td>沿用公共规则：<span class="doc__code">.doc</span> 不打印。</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+/* =============================================================================
+   海防研判工作台 · 公共运行时
+   1) 主题：亮色 / 暗黑，写入 localStorage，切换不重载页面 —— 查询条件、选中
+      节点与会话状态因此天然保留。
+   2) 外壳：左侧导航 + 顶栏由本文件统一渲染，保证 5 个页面结构与文案完全一致。
+   3) 公共交互：抽屉 / 弹窗的焦点管理、Toast、选项卡、跨页证据与草稿传递。
+   4) 合成数据：全部演示对象、来源、任务、情报集中在此，跨页共用一份。
+   ============================================================================= */
+(function () {
+  'use strict';
+
+  /* ------------------------------- 图标 ------------------------------- */
+  var ICONS = {
+    graph: '<circle cx="6" cy="6.5" r="2.6"/><circle cx="18.5" cy="8" r="2.6"/><circle cx="12" cy="17.5" r="2.6"/><path d="M8.5 7.3l7.4.6M7.1 8.9l3.6 6.4M17.3 10.4l-3.7 5"/>',
+    spark: '<path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6L4.5 11l5.6-1.9z"/><path d="M18.5 16.5l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+    task: '<path d="M6 4.5h12v15H6zM9 2.5v4M15 2.5v4M9 11h6M9 15h4"/>',
+    share: '<path d="M3.5 8.5h13l-3-3M20.5 15.5h-13l3 3"/>',
+    admin: '<path d="M4 7.5h6M14 7.5h6M4 16.5h10M18 16.5h2"/><circle cx="12" cy="7.5" r="2.2"/><circle cx="16" cy="16.5" r="2.2"/>',
+    users: '<path d="M9.5 11.5a3.3 3.3 0 100-6.6 3.3 3.3 0 000 6.6zM3.5 20c0-3.1 2.7-5.2 6-5.2s6 2.1 6 5.2M16.2 5.4a3 3 0 010 5.8M17.8 20c0-2.1-.6-3.7-1.7-4.7 2.8.2 4.9 2.1 4.9 4.7"/>',
+    shield: '<path d="M12 3l7 2.8v5.6c0 4.2-2.9 7.7-7 9.1-4.1-1.4-7-4.9-7-9.1V5.8z"/><path d="M9 12l2.2 2.2L15.4 10"/>',
+    org: '<path d="M4 20.5V8.8l8-4.3 8 4.3v11.7M9.5 20.5V15h5v5.5M8 11.5h1.5M14.5 11.5H16"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M16.2 16.2L21 21"/>',
+    filter: '<path d="M3.5 5.5h17l-6.6 7.6V20l-3.8-2.2v-4.7z"/>',
+    close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+    chevronDown: '<path d="M6.5 9.5l5.5 5.5 5.5-5.5"/>',
+    chevronRight: '<path d="M9.5 6l6 6-6 6"/>',
+    chevronLeft: '<path d="M14.5 6l-6 6 6 6"/>',
+    collapse: '<path d="M3.5 4.5h17v15h-17zM9.5 4.5v15"/><path d="M16.5 9.5L14 12l2.5 2.5"/>',
+    expand: '<path d="M3.5 4.5h17v15h-17zM9.5 4.5v15"/><path d="M13.5 9.5L16 12l-2.5 2.5"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+    moon: '<path d="M20 14.6A8.6 8.6 0 019.4 4 8.6 8.6 0 1020 14.6z"/>',
+    plus: '<path d="M12 5.5v13M5.5 12h13"/>',
+    minus: '<path d="M5.5 12h13"/>',
+    fit: '<path d="M4 9.5V4h5.5M20 9.5V4h-5.5M4 14.5V20h5.5M20 14.5V20h-5.5"/><path d="M9.5 9.5h5v5h-5z"/>',
+    locate: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>',
+    refresh: '<path d="M4 12a8 8 0 0113.6-5.7L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 01-13.6 5.7L4 15.5M4 20v-4.5h4.5"/>',
+    reset: '<path d="M4.5 12a7.5 7.5 0 1015 0 7.5 7.5 0 00-13-5.2M4 4v4.5h4.5"/>',
+    check: '<path d="M5 12.5l4.6 4.6L19 7.5"/>',
+    warning: '<path d="M12 3.5l9.2 16H2.8z"/><path d="M12 9.5v4M12 16.5h.01"/>',
+    error: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5M12 16h.01"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/>',
+    download: '<path d="M12 4v11M7.5 11L12 15.5 16.5 11M5 19.5h14"/>',
+    upload: '<path d="M12 15.5V4.5M7.5 9L12 4.5 16.5 9M5 19.5h14"/>',
+    export: '<path d="M12 15V4M7.5 8L12 3.5 16.5 8M5 14v5.5h14V14"/>',
+    send: '<path d="M4 12l15.5-7.5-4.6 15.5-3.4-6.2zM11.5 13.8l8-9.3"/>',
+    inbox: '<path d="M3.5 13h5l1.2 3h4.6l1.2-3h5M6.5 4.5h11l3 8.5v6h-17v-6z"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.4 2"/>',
+    link: '<path d="M10.5 13.5a4 4 0 005.7 0l2.6-2.6a4 4 0 10-5.7-5.7l-1 1M13.5 10.5a4 4 0 00-5.7 0l-2.6 2.6a4 4 0 105.7 5.7l1-1"/>',
+    play: '<path d="M8.5 5.5l10.5 6.5-10.5 6.5z"/>',
+    stop: '<rect x="7" y="7" width="10" height="10" rx="1.5"/>',
+    doc: '<path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12.5h6M9 16h4"/>',
+    paperclip: '<path d="M18.5 11.2l-7.4 7.4a4 4 0 01-5.7-5.7l7.9-7.9a2.7 2.7 0 013.8 3.8l-7.9 7.9a1.4 1.4 0 01-2-2l7.4-7.4"/>',
+    trash: '<path d="M4.5 7h15M9 7V4.5h6V7M6.5 7l1 13.5h9L17.5 7M10.5 11v6M13.5 11v6"/>',
+    edit: '<path d="M4 20h4.2L19 9.2 14.8 5 4 15.8zM14 5.8l4.2 4.2"/>',
+    lock: '<path d="M5.5 11h13v9.5h-13zM9 11V7.8a3 3 0 016 0V11"/>',
+    eye: '<path d="M2.5 12S6 6.2 12 6.2 21.5 12 21.5 12 18 17.8 12 17.8 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
+    arrowLeft: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    path: '<path d="M6 19.5a2.6 2.6 0 100-5.2 2.6 2.6 0 000 5.2zM18 9.7a2.6 2.6 0 100-5.2 2.6 2.6 0 000 5.2zM18 19.5a2.6 2.6 0 100-5.2 2.6 2.6 0 000 5.2zM8.4 16.6l7.3-4.4"/>',
+    layers: '<path d="M12 3.5l8.5 4.3-8.5 4.3-8.5-4.3zM3.5 12.4l8.5 4.3 8.5-4.3M3.5 16.4l8.5 4.3 8.5-4.3"/>',
+    user: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c0-3.7 3.4-6.2 7.5-6.2s7.5 2.5 7.5 6.2"/>',
+    key: '<circle cx="8" cy="13" r="4.2"/><path d="M11.2 10.4L20 2.8M16.4 4.6l2.4 2.4M14.4 6.6l2 2"/>',
+    branch: '<path d="M6.5 5.5v13M6.5 9.5c0-2 1.6-3.6 3.6-3.6h7.4M13.5 3.5l3 2.4-3 2.4M6.5 13.5c0 2 1.6 3.6 3.6 3.6h7.4M13.5 14.7l3 2.4-3 2.4"/>',
+    history: '<path d="M3.5 12a8.5 8.5 0 1014.8-5.7M21 4v4.5h-4.5"/><path d="M12 7.5V12l3.2 2"/>',
+    grid: '<path d="M4 4.5h6.5V11H4zM13.5 4.5H20V11h-6.5zM4 13h6.5v6.5H4zM13.5 13H20v6.5h-6.5z"/>'
+  };
+
+  function icon(name, cls) {
+    var body = ICONS[name] || ICONS.info;
+    return '<svg class="' + (cls || 'btn__icon') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  }
+
+  /* --------------------------- 演示数据（跨页共用） --------------------------- */
+  var AS_OF = '2026-10-02 09:10';   // 图谱最近一次同步完成时间
+  var AS_OF_SRC = '2026-10-02 08:47'; // 资料导入最近一次完成时间
+
+  var SOURCES = {
+    '1': { idx: '1', id: 'DEMO-INOUT-001', name: '演示出港登记', at: '2026-09-18 14:20', kind: '登记记录',
+           origin: '演示登记系统 · 演示库', batch: 'DEMO-B-2026-10-02-A', status: 'ok',
+           quote: '出港登记：演示人员甲、演示人员乙；船舶：演示海船甲；出港地点：演示港口甲；登记时间：2026-09-18 14:20（UTC+8）。' },
+    '2': { idx: '2', id: 'DEMO-DOC-001', name: '演示航次说明', at: '2026-09-19 10:05', kind: '文档',
+           origin: '演示文档库 · 演示库', batch: 'DEMO-B-2026-10-02-A', status: 'ok',
+           quote: '本组资料为教学用合成数据，仅用于演示系统功能，不证明任何实际活动性质。所含人员、船舶、地点、单位均为演示命名。' },
+    '3': { idx: '3', id: 'DEMO-INOUT-002', name: '演示进港登记', at: '2026-09-21 09:05', kind: '登记记录',
+           origin: '演示登记系统 · 演示库', batch: 'DEMO-B-2026-10-02-A', status: 'ok',
+           quote: '进港登记：演示人员丙、演示人员丁；船舶：演示海船甲；进港地点：演示港口甲；登记时间：2026-09-21 09:05（UTC+8）。' },
+    '4': { idx: '4', id: 'DEMO-DECL-001', name: '演示停靠申报', at: '2026-09-19 22:40', kind: '申报记录',
+           origin: '演示申报系统 · 演示库', batch: 'DEMO-B-2026-10-02-A', status: 'pending',
+           quote: '申报船舶：演示海船丙；停靠地点：演示港口乙；申报编号与既有记录存在重复，暂不写入图谱关系，待人工核对。' },
+    '5': { idx: '5', id: 'DEMO-INOUT-003', name: '演示出港登记（第二批次）', at: '2026-10-02 07:15', kind: '登记记录',
+           origin: '演示登记系统 · 演示库', batch: 'DEMO-B-2026-10-02-A', status: 'ok',
+           quote: '出港登记：演示人员丙、演示人员丁；船舶：演示海船乙；出港地点：演示港口丙；登记时间：2026-10-02 07:15（UTC+8）。' },
+    '6': { idx: '6', id: 'DEMO-DECL-002', name: '演示关联申报', at: '2026-10-02 07:40', kind: '申报记录',
+           origin: '演示申报系统 · 演示库', batch: 'DEMO-B-2026-10-02-A', status: 'pending',
+           quote: '申报船舶：演示海船丙；关联编号缺少来源字段，无法追溯至原始登记记录，待补充资料。' }
+  };
+
+  var OBJECTS = {
+    'DEMO-P-001': { name: '演示人员甲', type: 'person', label: '人员',
+      props: [['业务编号', 'DEMO-P-001'], ['数据范围', '演示单位甲 · 演示库'], ['首次出现', '2026-09-18 14:20'],
+              ['关联记录', '1 条已加载'], ['数据更新时间', AS_OF]] },
+    'DEMO-P-002': { name: '演示人员乙', type: 'person', label: '人员',
+      props: [['业务编号', 'DEMO-P-002'], ['数据范围', '演示单位甲 · 演示库'], ['首次出现', '2026-09-18 14:20'],
+              ['关联记录', '1 条已加载'], ['数据更新时间', AS_OF]] },
+    'DEMO-P-003': { name: '演示人员丙', type: 'person', label: '人员',
+      props: [['业务编号', 'DEMO-P-003'], ['数据范围', '演示单位甲 · 演示库'], ['首次出现', '2026-09-21 09:05'],
+              ['关联记录', '2 条已加载'], ['数据更新时间', AS_OF]] },
+    'DEMO-P-004': { name: '演示人员丁', type: 'person', label: '人员',
+      props: [['业务编号', 'DEMO-P-004'], ['数据范围', '演示单位甲 · 演示库'], ['首次出现', '2026-09-21 09:05'],
+              ['关联记录', '2 条已加载'], ['数据更新时间', AS_OF]] },
+    'DEMO-S-001': { name: '演示海船甲', type: 'vessel', label: '船舶',
+      props: [['业务编号', 'DEMO-S-001'], ['数据范围', '演示单位甲 · 演示库'], ['关联记录', '4 条已加载'],
+              ['待核对关系', '1 条'], ['数据更新时间', AS_OF]] },
+    'DEMO-S-002': { name: '演示海船乙', type: 'vessel', label: '船舶',
+      props: [['业务编号', 'DEMO-S-002'], ['数据范围', '演示单位甲 · 演示库'], ['关联记录', '1 条已加载'],
+              ['数据更新时间', AS_OF]] },
+    'DEMO-S-003': { name: '演示海船丙', type: 'vessel', label: '船舶',
+      props: [['业务编号', 'DEMO-S-003'], ['数据范围', '演示单位甲 · 演示库'], ['关联记录', '1 条已加载'],
+              ['未加载关系', '3 条（超出当前筛选范围）'], ['数据更新时间', AS_OF]] },
+    'DEMO-L-001': { name: '演示港口甲', type: 'place', label: '地点',
+      props: [['业务编号', 'DEMO-L-001'], ['类型', '港口'], ['关联记录', '2 条已加载'], ['数据更新时间', AS_OF]] },
+    'DEMO-L-002': { name: '演示港口乙', type: 'place', label: '地点',
+      props: [['业务编号', 'DEMO-L-002'], ['类型', '港口'], ['关联记录', '1 条待核对'], ['数据更新时间', AS_OF]] },
+    'DEMO-L-003': { name: '演示港口丙', type: 'place', label: '地点',
+      props: [['业务编号', 'DEMO-L-003'], ['类型', '港口'], ['关联记录', '2 条已加载'], ['数据更新时间', AS_OF]] },
+    'DEMO-E-001': { name: '演示出港记录', type: 'event', label: '事件', when: '2026-09-18 14:20',
+      props: [['业务编号', 'DEMO-E-001'], ['发生时间', '2026-09-18 14:20（UTC+8）'], ['记录类型', '出港登记'],
+              ['关联对象', '2 人 · 1 船 · 1 地点'], ['数据更新时间', AS_OF]] },
+    'DEMO-E-002': { name: '演示进港记录', type: 'event', label: '事件', when: '2026-09-21 09:05',
+      props: [['业务编号', 'DEMO-E-002'], ['发生时间', '2026-09-21 09:05（UTC+8）'], ['记录类型', '进港登记'],
+              ['关联对象', '2 人 · 1 船 · 1 地点'], ['数据更新时间', AS_OF]] },
+    'DEMO-E-003': { name: '演示停靠记录', type: 'event', label: '事件', when: '2026-09-19 22:40',
+      props: [['业务编号', 'DEMO-E-003'], ['发生时间', '2026-09-19 22:40（UTC+8）'], ['记录类型', '停靠申报'],
+              ['状态', '待核对：申报编号重复'], ['数据更新时间', AS_OF]] },
+    'DEMO-E-004': { name: '演示出港记录（二批次）', type: 'event', label: '事件', when: '2026-10-02 07:15',
+      props: [['业务编号', 'DEMO-E-004'], ['发生时间', '2026-10-02 07:15（UTC+8）'], ['记录类型', '出港登记'],
+              ['关联对象', '2 人 · 1 船 · 1 地点'], ['数据更新时间', AS_OF]] }
+  };
+
+  /* 图谱：14 个对象 / 15 条关系。solid = 来源记录支持；dashed = 待核对 */
+  var GRAPH = {
+    nodes: [
+      { id: 'DEMO-P-001', x: 66,  y: 120, t: 'person' },
+      { id: 'DEMO-P-002', x: 66,  y: 250, t: 'person' },
+      { id: 'DEMO-P-003', x: 66,  y: 400, t: 'person' },
+      { id: 'DEMO-P-004', x: 66,  y: 535, t: 'person' },
+      { id: 'DEMO-E-001', x: 272, y: 185, t: 'event' },
+      { id: 'DEMO-E-002', x: 272, y: 460, t: 'event' },
+      { id: 'DEMO-E-004', x: 272, y: 580, t: 'event' },
+      { id: 'DEMO-L-001', x: 478, y: 50,  t: 'place' },
+      { id: 'DEMO-S-001', x: 478, y: 300, t: 'vessel' },
+      { id: 'DEMO-S-002', x: 478, y: 580, t: 'vessel' },
+      { id: 'DEMO-E-003', x: 690, y: 190, t: 'event' },
+      { id: 'DEMO-L-002', x: 690, y: 50,  t: 'place' },
+      { id: 'DEMO-S-003', x: 690, y: 400, t: 'vessel', more: 3 },
+      { id: 'DEMO-L-003', x: 690, y: 540, t: 'place' }
+    ],
+    edges: [
+      { a: 'DEMO-P-001', b: 'DEMO-E-001', rel: '同船登记', src: ['1'], derived: true },
+      { a: 'DEMO-P-002', b: 'DEMO-E-001', rel: '同船登记', src: ['1'], derived: true },
+      { a: 'DEMO-P-003', b: 'DEMO-E-002', rel: '同船登记', src: ['3'], derived: true },
+      { a: 'DEMO-P-004', b: 'DEMO-E-002', rel: '同船登记', src: ['3'], derived: true },
+      { a: 'DEMO-P-003', b: 'DEMO-E-004', rel: '同船登记', src: ['5'], derived: true },
+      { a: 'DEMO-P-004', b: 'DEMO-E-004', rel: '同船登记', src: ['5'], derived: true },
+      { a: 'DEMO-E-001', b: 'DEMO-S-001', rel: '对应船舶', src: ['1'] },
+      { a: 'DEMO-E-001', b: 'DEMO-L-001', rel: '出港于', src: ['1'] },
+      { a: 'DEMO-E-002', b: 'DEMO-S-001', rel: '对应船舶', src: ['3'] },
+      { a: 'DEMO-E-002', b: 'DEMO-L-001', rel: '进港于', src: ['3'] },
+      { a: 'DEMO-E-004', b: 'DEMO-S-002', rel: '对应船舶', src: ['5'] },
+      { a: 'DEMO-E-004', b: 'DEMO-L-003', rel: '出港于', src: ['5'] },
+      { a: 'DEMO-S-001', b: 'DEMO-E-003', rel: '停靠申报', src: ['4'], pending: true },
+      { a: 'DEMO-E-003', b: 'DEMO-L-002', rel: '停靠于', src: ['4'], pending: true },
+      { a: 'DEMO-S-003', b: 'DEMO-L-003', rel: '关联申报', src: ['6'], pending: true }
+    ]
+  };
+
+  /* 任务中心 */
+  var TASKS = [
+    { id: 'DEMO-T-0031', name: '演示资料导入 · 批次 A', type: '资料导入', batch: 'DEMO-B-2026-10-02-A',
+      status: 'partial', total: 1000, ok: 998, fail: 2, progress: 100, last: '2026-10-02 08:47',
+      note: '2 条待核对：来源编号重复' },
+    { id: 'DEMO-T-0032', name: '演示图谱同步 · 2026-10-02', type: '图谱同步', batch: 'DEMO-B-2026-10-02-A',
+      status: 'partial', total: 986, ok: 974, fail: 12, progress: 100, last: '2026-10-02 09:10',
+      note: '12 条关系因来源缺口标记待核对，未写入图谱边' },
+    { id: 'DEMO-T-0030', name: '演示资料导入 · 批次 C', type: '资料导入', batch: 'DEMO-B-2026-10-02-C',
+      status: 'waiting', total: 240, ok: 0, fail: 0, progress: 0, last: '2026-10-02 09:02', note: '排在队列第 2 位' },
+    { id: 'DEMO-T-0029', name: '演示资料导入 · 批次 B', type: '资料导入', batch: 'DEMO-B-2026-10-02-B',
+      status: 'running', total: 1000, ok: 410, fail: 0, progress: 41, last: '2026-10-02 09:08', note: '当前处理第 411 条' },
+    { id: 'DEMO-T-0028', name: '演示图谱同步 · 2026-10-01', type: '图谱同步', batch: 'DEMO-B-2026-10-01-A',
+      status: 'canceling', total: 512, ok: 0, fail: 0, progress: 63, last: '2026-10-01 18:22',
+      note: '已等待停止确认 4 分钟，可再次请求停止' },
+    { id: 'DEMO-T-0027', name: '演示资料导入 · 批次 A（2026-09-30）', type: '资料导入', batch: 'DEMO-B-2026-09-30-A',
+      status: 'failed', total: 320, ok: 0, fail: 320, progress: 100, last: '2026-09-30 15:04',
+      note: '来源目录不可访问，任务已中止' },
+    { id: 'DEMO-T-0026', name: '演示图谱同步 · 2026-09-25', type: '图谱同步', batch: 'DEMO-B-2026-09-25-A',
+      status: 'cancelled', total: 260, ok: 128, fail: 0, progress: 49, last: '2026-09-25 11:40',
+      note: '用户在 49% 处取消，已处理部分保留' },
+    { id: 'DEMO-T-0025', name: '演示资料导入 · 批次 A（2026-09-18）', type: '资料导入', batch: 'DEMO-B-2026-09-18-A',
+      status: 'success', total: 412, ok: 412, fail: 0, progress: 100, last: '2026-09-18 16:30', note: '' }
+  ];
+
+  /* 情报协同 */
+  var INTEL = {
+    id: 'DEMO-INTEL-2026-0007',
+    title: '演示航次资料核对',
+    from: '演示单位甲',
+    status: 'sent',
+    version: 'v2',
+    sentAt: '2026-10-02 10:20',
+    sources: ['1', '2'],
+    body: [
+      '来源事实：演示人员甲与演示人员乙出现在同一条出港登记中，对应船舶为演示海船甲，登记时间为 2026-09-18 14:20。[1]',
+      '整理摘要：该条出港登记同时关联演示港口甲与演示海船甲；演示航次说明为教学用合成资料，不证明实际活动性质。[1][2]',
+      '待核实项：现有资料未说明两人的实际活动背景；同船登记关系不足以得出其他行为或风险结论。'
+    ],
+    review: { by: '演示账号 · 研判甲', at: '2026-10-02 10:05', version: 'v2', note: '已核对引用 [1][2] 与图谱边来源，保留待核实项表述。' },
+    receipts: [
+      { unit: '演示单位乙', sign: '已签收', signAt: '2026-10-02 11:05', fb: '已反馈', fbAt: '2026-10-02 14:30', 
+        fbText: '已按本单位资料核对，无补充材料。' },
+      { unit: '演示单位丙', sign: '待签收', signAt: '—', fb: '未反馈', fbAt: '—', fbText: '' }
+    ],
+    timeline: [
+      { t: '2026-10-02 10:20', unit: '演示单位甲', actor: '演示账号 · 研判甲', action: '发送情报', desc: '发送至演示单位乙、演示单位丙，正文快照 v2 已锁定。', kind: 'accent' },
+      { t: '2026-10-02 11:05', unit: '演示单位乙', actor: '演示账号 · 协同乙', action: '签收', desc: '接收方确认收到本情报。', kind: 'success' },
+      { t: '2026-10-02 14:30', unit: '演示单位乙', actor: '演示账号 · 协同乙', action: '追加反馈', desc: '已按本单位资料核对，无补充材料。追加反馈不覆盖原正文。', kind: 'success' },
+      { t: '—', unit: '演示单位丙', actor: '—', action: '待签收', desc: '尚未签收，系统在 24 小时后提醒接收单位。', kind: '' }
+    ]
+  };
+
+  /* 用户与授权 */
+  var USERS = [
+    { acct: 'demo.yanpan.a', name: '演示人员甲', unit: '演示单位甲', role: '单位业务人员', status: 'on',  last: '2026-10-02 09:12' },
+    { acct: 'demo.xietong.b', name: '演示人员乙', unit: '演示单位乙', role: '单位业务人员', status: 'on',  last: '2026-10-01 16:40' },
+    { acct: 'demo.admin.c',   name: '演示人员丙', unit: '演示单位甲', role: '系统管理员',   status: 'on',  last: '2026-10-02 08:05' },
+    { acct: 'demo.view.d',    name: '演示人员丁', unit: '演示单位丙', role: '普通账号',     status: 'off', last: '2026-09-25 11:30' },
+    { acct: 'demo.yjy.e',     name: '演示人员戊', unit: '演示单位甲', role: '单位业务人员', status: 'on',  last: '2026-09-30 14:22' },
+    { acct: 'demo.xietong.f', name: '演示人员己', unit: '演示单位乙', role: '普通账号',     status: 'on',  last: '2026-09-29 10:05' },
+    { acct: 'demo.admin.g',   name: '演示人员庚', unit: '演示单位丙', role: '系统管理员',   status: 'off', last: '2026-09-11 09:48' },
+    { acct: 'demo.view.h',    name: '演示人员辛', unit: '演示单位甲', role: '普通账号',     status: 'on',  last: '2026-10-01 08:31' }
+  ];
+
+  /* ------------------------------- 工具 ------------------------------- */
+  var $  = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem('hf.' + k); return v === null ? d : v; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem('hf.' + k, v); } catch (e) {} },
+    getJSON: function (k, d) { try { var v = localStorage.getItem('hf.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    setJSON: function (k, v) { try { localStorage.setItem('hf.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  /* ------------------------------- 主题 ------------------------------- */
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    $$('[data-theme-btn]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-btn') === t));
+    });
+    var meta = document.querySelector('meta[name="color-scheme"]');
+    if (meta) meta.setAttribute('content', t === 'dark' ? 'dark light' : 'light dark');
+  }
+  function currentTheme() {
+    var q = new URLSearchParams(location.search).get('theme');
+    if (q === 'dark' || q === 'light') return q;
+    var saved = store.get('theme', '');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return 'light';
+  }
+  function setTheme(t) { store.set('theme', t); applyTheme(t); }
+  function toggleTheme() { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+
+  /* ------------------------------- Toast ------------------------------- */
+  function toast(o) {
+    var host = $('.toast-stack');
+    if (!host) { host = document.createElement('div'); host.className = 'toast-stack'; host.setAttribute('role', 'status'); host.setAttribute('aria-live', 'polite'); document.body.appendChild(host); }
+    var map = { success: 'check', warning: 'warning', danger: 'error', info: 'info' };
+    var el = document.createElement('div');
+    el.className = 'toast toast--' + (o.type || 'info');
+    el.innerHTML = icon(map[o.type || 'info'], 'toast__icon') +
+      '<div><div class="toast__title">' + o.title + '</div>' + (o.desc ? '<div class="toast__desc">' + o.desc + '</div>' : '') + '</div>';
+    host.appendChild(el);
+    setTimeout(function () { el.remove(); }, o.duration || 4200);
+  }
+
+  /* ----------------------- 抽屉 / 弹窗：焦点管理 ----------------------- */
+  var lastFocus = null;
+  function focusables(root) {
+    return $$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])', root)
+      .filter(function (el) { return el.offsetParent !== null || el === document.activeElement; });
+  }
+  function openLayer(id, scrimId) {
+    var el = typeof id === 'string' ? document.getElementById(id) : id;
+    if (!el) return;
+    lastFocus = document.activeElement;
+    el.setAttribute('data-open', 'true');
+    el.removeAttribute('aria-hidden');
+    var scrim = scrimId ? document.getElementById(scrimId) : null;
+    if (scrim) scrim.setAttribute('data-open', 'true');
+    var f = focusables(el);
+    if (f.length) f[0].focus();
+  }
+  function closeLayer(id, scrimId) {
+    var el = typeof id === 'string' ? document.getElementById(id) : id;
+    if (!el) return;
+    el.setAttribute('data-open', 'false');
+    el.setAttribute('aria-hidden', 'true');
+    var scrim = scrimId ? document.getElementById(scrimId) : null;
+    if (scrim) scrim.setAttribute('data-open', 'false');
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  function trapTab(e) {
+    var open = $$('.drawer[data-open="true"], .modal[data-open="true"]');
+    if (!open.length) return;
+    var host = open[open.length - 1];
+    var f = focusables(host);
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') trapTab(e);
+    if (e.key === 'Escape') {
+      var openD = $$('.drawer[data-open="true"]');
+      var openM = $$('.modal[data-open="true"]');
+      if (openM.length) { closeLayer(openM[openM.length - 1]); }
+      else if (openD.length) { closeLayer(openD[openD.length - 1], 'scrim'); }
+      else $$('[data-popover]').forEach(function (p) { p.hidden = true; });
+    }
+  });
+
+  /* ------------------------------- 导航 ------------------------------- */
+  var NAV = [
+    { key: 'graph',  label: '数据图谱', icon: 'graph', href: 'p01-graph-workbench.html' },
+    { key: 'ai',     label: 'AI 研判',  icon: 'spark', href: 'p02-ai-workbench.html', badge: '1' },
+    { key: 'task',   label: '数据任务', icon: 'task',  href: 'p03-data-tasks.html', badge: '8' },
+    { key: 'intel',  label: '情报协同', icon: 'share', href: 'p05-intel-collaboration.html', badge: '2' },
+    { key: 'admin',  label: '系统管理', icon: 'admin', href: '', sub: [
+        { key: 'user',  label: '用户管理', icon: 'users',  href: 'p04-user-management.html' },
+        { key: 'role',  label: '角色',     icon: 'shield', href: '' },
+        { key: 'unit',  label: '单位',     icon: 'org',    href: '' }
+      ] }
+  ];
+
+  function navHTML(active) {
+    var h = '';
+    h += '<div class="nav__head"><div class="nav__mark">HF</div>' +
+         '<div style="min-width:0"><div class="nav__title">海防研判工作台</div><div class="nav__sub">演示环境 · 合成数据</div></div></div>';
+    h += '<div class="nav__body">';
+    h += '<button class="nav__item" type="button" data-nav-toggle data-od-id="nav-collapse">' +
+         icon('collapse', 'nav__icon') + '<span class="nav__label">收起导航</span></button>';
+    h += '<div class="nav__group"><div class="nav__group-label">业务工作区</div>';
+    NAV.forEach(function (n) {
+      if (n.sub) {
+        h += '<button class="nav__item" type="button" data-nav-group ' + (active === n.key || n.sub.some(function (s) { return s.key === active; }) ? 'aria-current="page"' : '') + '>' +
+             icon(n.icon, 'nav__icon') + '<span class="nav__label">' + n.label + '</span>' + icon('chevronDown', 'nav__icon') + '</button>';
+        n.sub.forEach(function (s) {
+          if (s.href) {
+            h += '<a class="nav__item nav__item--sub" href="' + s.href + '"' + (active === s.key ? ' aria-current="page"' : '') + '>' +
+                 icon(s.icon, 'nav__icon') + '<span class="nav__label">' + s.label + '</span></a>';
+          } else {
+            h += '<button class="nav__item nav__item--sub" type="button" data-todo="' + s.label + '">' +
+                 icon(s.icon, 'nav__icon') + '<span class="nav__label">' + s.label + '</span></button>';
+          }
+        });
+      } else {
+        h += '<a class="nav__item" href="' + n.href + '"' + (active === n.key ? ' aria-current="page"' : '') + '>' +
+             icon(n.icon, 'nav__icon') + '<span class="nav__label">' + n.label + '</span>' +
+             (n.badge ? '<span class="nav__badge">' + n.badge + '</span>' : '') + '</a>';
+      }
+    });
+    h += '</div>';
+    h += '<div class="nav__group"><div class="nav__group-label">交付件</div>' +
+         '<a class="nav__item" href="index.html">' + icon('grid', 'nav__icon') + '<span class="nav__label">交付总览与预览</span></a>' +
+         '<a class="nav__item" href="design-system.html">' + icon('layers', 'nav__icon') + '<span class="nav__label">设计系统</span></a>' +
+         '</div>';
+    h += '</div>';
+    h += '<div class="nav__foot"><div class="row fs-11 muted" style="padding:6px 8px;line-height:1.5">' +
+         '<span class="mono">v0.19.0-demo</span><span class="spacer"></span><span>桌面工作台</span></div></div>';
+    return h;
+  }
+
+  function topbarHTML(opt) {
+    opt = opt || {};
+    var sync = opt.sync || { level: 'ok', text: '图谱数据 ' + AS_OF + ' 同步完成' };
+    var syncIcon = sync.level === 'ok' ? 'check' : (sync.level === 'warn' ? 'warning' : 'error');
+    var h = '';
+    h += '<button class="btn btn--ghost btn--icon" type="button" data-nav-toggle title="折叠/展开导航" aria-label="折叠或展开导航">' + icon('collapse') + '</button>';
+    h += '<div class="topbar__crumbs">' + (opt.crumb || []).map(function (c, i, arr) {
+            return (i === arr.length - 1 ? '<b>' + c + '</b>' : '<span>' + c + '</span><span class="crumb-sep">/</span>');
+         }).join('') + '</div>';
+    h += '<div class="topbar__spacer"></div>';
+    h += '<div class="topbar__right">';
+    h += '<a class="tag ' + (sync.level === 'ok' ? 'tag--success' : (sync.level === 'warn' ? 'tag--warning' : 'tag--danger')) + '" href="p03-data-tasks.html" data-od-id="topbar-sync" title="查看数据任务">' +
+         icon(syncIcon, 'btn__icon') + '<span>' + sync.text + '</span></a>';
+    h += '<div class="seg" role="group" aria-label="主题模式" data-od-id="theme-switch">' +
+         '<button class="seg__btn" type="button" data-theme-btn="light" aria-pressed="true">' + icon('sun') + '亮色</button>' +
+         '<button class="seg__btn" type="button" data-theme-btn="dark" aria-pressed="false">' + icon('moon') + '暗黑</button></div>';
+    h += '<div class="topbar__user">';
+    var usr = opt.user || { initial: '甲', name: '演示账号 · 研判甲', meta: '演示单位甲 · 单位业务人员' };
+    h += '<div class="avatar" aria-hidden="true">' + usr.initial + '</div>';
+    h += '<div style="min-width:0"><div class="fs-12 fw-strong" style="line-height:1.3">' + usr.name + '</div>' +
+         '<div class="fs-11 muted" style="line-height:1.3">' + usr.meta + '</div></div>';
+    h += '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function mountShell(opt) {
+    var nav = $('#nav'), top = $('#topbar');
+    if (nav) nav.innerHTML = navHTML(opt.active);
+    if (top) top.innerHTML = topbarHTML(opt);
+    var saved = store.get('nav', 'expanded');
+    setNav(saved);
+    document.addEventListener('click', function (e) {
+      var t = e.target.closest && e.target.closest('[data-nav-toggle]');
+      if (t) { setNav(document.getElementById('app').getAttribute('data-nav') === 'collapsed' ? 'expanded' : 'collapsed'); }
+      var td = e.target.closest && e.target.closest('[data-todo]');
+      if (td) { toast({ type: 'info', title: td.getAttribute('data-todo') + ' 本轮未展开', desc: '首轮以局部组件说明，见设计系统页的权限选择与单位树。' }); }
+      var tb = e.target.closest && e.target.closest('[data-theme-btn]');
+      if (tb) { setTheme(tb.getAttribute('data-theme-btn')); }
+    });
+  }
+  function setNav(state) {
+    var app = document.getElementById('app');
+    if (!app) return;
+    app.setAttribute('data-nav', state);
+    store.set('nav', state);
+    $$('[data-nav-toggle]').forEach(function (b) { b.setAttribute('aria-expanded', String(state === 'expanded')); });
+  }
+
+  /* --------------------------- 跨页：证据与草稿 --------------------------- */
+  function addEvidence(items) {
+    var cur = store.getJSON('evidence', []);
+    items.forEach(function (it) {
+      if (!cur.some(function (c) { return c.key === it.key; })) cur.push(it);
+    });
+    store.setJSON('evidence', cur);
+    return cur;
+  }
+  function getEvidence() { return store.getJSON('evidence', []); }
+  function clearEvidence() { store.setJSON('evidence', []); }
+
+  function saveDraft(d) { store.setJSON('draft', d); }
+  function getDraft() { return store.getJSON('draft', null); }
+
+  /* ------------------------------- 选项卡 ------------------------------- */
+  function initTabs(root) {
+    $$('[data-tabs]', root || document).forEach(function (bar) {
+      if (bar.dataset.bound) return;
+      bar.dataset.bound = '1';
+      bar.addEventListener('click', function (e) {
+        var btn = e.target.closest('[role="tab"]');
+        if (!btn) return;
+        var name = btn.getAttribute('data-tab');
+        $$('[role="tab"]', bar).forEach(function (b) { b.setAttribute('aria-selected', String(b === btn)); });
+        var scope = document.getElementById(bar.getAttribute('data-tabs')) || document;
+        $$('[data-tab-panel]', scope).forEach(function (p) { p.hidden = p.getAttribute('data-tab-panel') !== name; });
+      });
+      bar.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        var btns = $$('[role="tab"]', bar);
+        var i = btns.indexOf(document.activeElement);
+        if (i < 0) return;
+        e.preventDefault();
+        var n = e.key === 'ArrowRight' ? (i + 1) % btns.length : (i - 1 + btns.length) % btns.length;
+        btns[n].focus(); btns[n].click();
+      });
+    });
+  }
+
+  /* ------------------------------- 导出 ------------------------------- */
+  window.HF = {
+    icon: icon, icons: ICONS, $: $, $$: $$, store: store, toast: toast,
+    theme: { apply: applyTheme, current: currentTheme, set: setTheme, toggle: toggleTheme },
+    layer: { open: openLayer, close: closeLayer },
+    shell: { mount: mountShell, setNav: setNav },
+    tabs: initTabs,
+    evidence: { add: addEvidence, get: getEvidence, clear: clearEvidence },
+    draft: { save: saveDraft, get: getDraft },
+    data: { AS_OF: AS_OF, AS_OF_SRC: AS_OF_SRC, SOURCES: SOURCES, OBJECTS: OBJECTS, GRAPH: GRAPH,
+            TASKS: TASKS, INTEL: INTEL, USERS: USERS },
+    entity: { person: '人员', vessel: '船舶', place: '地点', event: '事件' },
+    fmt: {
+      num: function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); },
+      objTag: function (id) {
+        var o = OBJECTS[id]; if (!o) return '';
+        return '<span class="tag tag--' + o.type + '"><i class="eg eg--' + o.type + '"></i>' + o.name + '</span>';
+      }
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    applyTheme(currentTheme());
+    initTabs(document);
+  });
+})();
+
+</script>
+<script>
+(function () {
+  var root = document.documentElement;
+  var $ = HF.$;
+
+  /* ------------------------------ 图标落位 ------------------------------ */
+  HF.$$('[data-ico]').forEach(function (el) {
+    el.outerHTML = HF.icon(el.getAttribute('data-ico'), '');
+  });
+  var pwdIco = $('#pwdToggle svg');
+  if (pwdIco) { pwdIco.setAttribute('width', '15'); pwdIco.setAttribute('height', '15'); pwdIco.style.color = 'var(--muted)'; }
+  HF.$$('.notice svg, #alertErr svg, #alertRun svg').forEach(function (s) {
+    s.setAttribute('width', '15'); s.setAttribute('height', '15'); s.style.flex = '0 0 15px';
+  });
+
+  /* ------------------------------ 主题开关 ------------------------------ */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-theme-btn]');
+    if (b) HF.theme.set(b.getAttribute('data-theme-btn'));
+  });
+
+  /* ------------------------------ 验证码 ------------------------------ */
+  var canvas = $('#capCanvas'), ctx = canvas.getContext('2d');
+  var capInput = $('#cap'), capRefresh = $('#capRefresh'), capCode = '';
+  var CHARS = 'ABCDEFGHJKLMNPQRSTUVWXY3456789';
+
+  function cssv(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function randCode() {
+    var s = '';
+    for (var i = 0; i < 4; i++) s += CHARS.charAt(Math.floor(Math.random() * CHARS.length));
+    return s;
+  }
+  /* 绘制按 2 倍像素密度做，CSS 尺寸固定 96 × 32；颜色全部取 token，主题切换后重绘 */
+  function drawCaptcha(keepCode) {
+    if (!keepCode) capCode = randCode();
+    var w = 96, h = 32, k = 2;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = cssv('--surface-2');
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = cssv('--graph-grid');
+    ctx.lineWidth = 1;
+    for (var i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, Math.random() * h);
+      ctx.lineTo(w, Math.random() * h);
+      ctx.stroke();
+    }
+    /* 字体取 token 的第一个族，画布不硬编码字体栈 */
+    var mono = cssv('--font-mono').split(',')[0].trim() || 'ui-monospace';
+    ctx.font = '600 21px ' + mono + ', ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (var j = 0; j < capCode.length; j++) {
+      ctx.save();
+      ctx.translate(14 + j * 23, h / 2 + (Math.random() * 4 - 2));
+      ctx.rotate((Math.random() * 34 - 17) * Math.PI / 180);
+      ctx.fillStyle = cssv('--fg');
+      ctx.fillText(capCode.charAt(j), 0, 0);
+      ctx.restore();
+    }
+    ctx.fillStyle = cssv('--border-control');
+    for (var n = 0; n < 24; n++) ctx.fillRect(Math.random() * w, Math.random() * h, 1.4, 1.4);
+    if (!keepCode) capInput.value = capCode;   /* 演示环境自动填入；生产环境删除这一行 */
+  }
+  capRefresh.addEventListener('click', function () {
+    if (capRefresh.disabled) return;
+    drawCaptcha(false);
+    capInput.removeAttribute('aria-invalid');
+    setFieldError('cap', '');
+    capInput.focus();
+  });
+  /* 主题切换后按新 token 重绘，字符保持不变 */
+  new MutationObserver(function () { drawCaptcha(true); })
+    .observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ------------------------------ 口令可见性 ------------------------------ */
+  var pwd = $('#pwd'), pwdToggle = $('#pwdToggle');
+  pwdToggle.addEventListener('click', function () {
+    var show = pwdToggle.getAttribute('aria-pressed') !== 'true';
+    pwd.type = show ? 'text' : 'password';
+    pwdToggle.setAttribute('aria-pressed', String(show));
+    pwdToggle.setAttribute('aria-label', show ? '隐藏口令' : '显示口令');
+    pwdToggle.title = show ? '隐藏口令' : '显示口令';
+    pwd.focus();
+  });
+
+  /* ------------------------------ 字段错误 ------------------------------ */
+  function setFieldError(key, msg) {
+    var box = document.getElementById(key + 'Err');
+    var input = document.getElementById(key);
+    if (!box || !input) return;
+    if (msg) {
+      box.innerHTML = HF.icon('error', '') + '<span></span>';
+      box.lastChild.textContent = msg;   /* 文案一律走 textContent，不拼 HTML */
+      box.hidden = false;
+      input.setAttribute('aria-invalid', 'true');
+    } else {
+      box.hidden = true;
+      box.textContent = '';
+      input.removeAttribute('aria-invalid');
+    }
+  }
+
+  /* ------------------------------ 状态机 ------------------------------ */
+  var form = $('#loginForm'), submit = $('#submit');
+  var alertErr = $('#alertErr'), alertRun = $('#alertRun');
+  alertErr.tabIndex = -1;   /* 表单级错误可被聚焦，键盘用户不会丢失位置 */
+  alertRun.tabIndex = -1;
+  var keep = $('#keep');
+  var FIELDS = [$('#acct'), pwd, capInput];
+  var state = 'ok';
+
+  var ALERTS = {
+    authfail: { tone: 'danger', ico: 'error',
+      title: '账号或口令不正确',
+      desc: '连续 5 次失败后，该账号将临时锁定 30 分钟。请确认账号与口令后重试。' },
+    disabled: { tone: 'danger', ico: 'error',
+      title: '该账号已停用',
+      desc: '请联系演示单位甲的系统管理员重置账号状态。停用后，该账号此前的登录状态也已失效，需管理员处理后才可再次登录。' },
+    outage: { tone: 'warning', ico: 'warning',
+      title: '统一身份认证服务暂时不可用',
+      desc: '本次未提交凭证校验请求，账号与口令不会被记为失败。请稍后重试；如持续失败，请联系单位系统管理员并提供诊断码。',
+      diag: 'AUTH-503 · 请求 AUTH-DEMO-4F2C · 首次出现 2026-10-02 09:14', retry: true }
+  };
+
+  function alertHTML(cfg, withActions) {
+    var h = HF.icon(cfg.ico, '');
+    h += '<div><div class="alt__title">' + cfg.title + '</div><div class="alt__desc">' + cfg.desc + '</div>';
+    if (cfg.diag) h += '<div class="alt__desc mono fs-11">' + cfg.diag + '</div>';
+    if (withActions && cfg.retry) {
+      h += '<div class="alt__acts"><button class="btn btn--default btn--sm" type="button" id="retryBtn">' + HF.icon('refresh', 'btn__icon') + '重新尝试</button>' +
+           '<span class="fs-11 muted">口令已在输入框中保留</span></div>';
+    }
+    h += '</div>';
+    return h;
+  }
+  function showAlert(el, cfg, actions) {
+    el.className = 'notice notice--' + cfg.tone;
+    el.innerHTML = alertHTML(cfg, actions !== false);
+    el.hidden = false;
+    HF.$$('svg', el).forEach(function (s) { s.style.flex = '0 0 15px'; s.setAttribute('width', '15'); s.setAttribute('height', '15'); });
+    var rb = document.getElementById('retryBtn');
+    if (rb) rb.addEventListener('click', function () { submitForm(); });
+  }
+
+  function setBusy(on) {
+    FIELDS.forEach(function (i) { i.disabled = on; });
+    pwdToggle.disabled = on;
+    capRefresh.disabled = on;
+    keep.disabled = on;
+    $('#forgot').disabled = on;
+    submit.disabled = on;
+    form.setAttribute('aria-busy', String(on));
+  }
+  function setButton(mode) {
+    if (mode === 'busy') submit.innerHTML = '<span class="spinner"></span>正在登录';
+    else if (mode === 'done') submit.textContent = '已登录';
+    else submit.textContent = '登录';
+  }
+  function resetFields() {
+    ['acct', 'pwd', 'cap'].forEach(function (k) { setFieldError(k, ''); });
+    FIELDS.forEach(function (i) { i.removeAttribute('aria-describedby'); });
+  }
+
+  function applyState(name, opt) {
+    opt = opt || {};
+    /* silent：首屏初始化不抢焦点 —— 本页可能被交付总览以 iframe 嵌入，
+       iframe 内部聚焦会把父页面滚到该预览位置。 */
+    function focusEl(el) { if (!opt.silent && el) el.focus({ preventScroll: true }); }
+    state = name;
+    alertErr.hidden = true; alertErr.innerHTML = '';
+    alertRun.hidden = true; alertRun.innerHTML = '';
+    setButton('ok');
+    setBusy(false);
+    resetFields();
+    $('#acct').setAttribute('aria-describedby', 'acctHint acctErr');
+    pwd.setAttribute('aria-describedby', 'pwdErr');
+    capInput.setAttribute('aria-describedby', 'capHint capErr');
+
+    if (name === 'ok') {
+      drawCaptcha(false);
+      focusEl($('#acct'));
+    } else if (name === 'invalid') {
+      $('#acct').value = '';
+      drawCaptcha(false);
+      capInput.value = '';
+      setFieldError('acct', '请输入账号');
+      setFieldError('cap', '验证码不正确或已失效，请重新获取');
+      focusEl($('#acct'));
+    } else if (name === 'authfail') {
+      pwd.value = '';
+      drawCaptcha(false);
+      setFieldError('acct', '');
+      $('#acct').setAttribute('aria-invalid', 'true');
+      pwd.setAttribute('aria-invalid', 'true');
+      $('#acct').setAttribute('aria-describedby', 'alertErr');
+      pwd.setAttribute('aria-describedby', 'alertErr');
+      showAlert(alertErr, ALERTS.authfail);
+      focusEl(pwd);
+    } else if (name === 'disabled') {
+      showAlert(alertErr, ALERTS.disabled);
+      focusEl(alertErr);
+    } else if (name === 'outage') {
+      showAlert(alertErr, ALERTS.outage);
+      focusEl(alertErr);
+    } else if (name === 'busy') {
+      setBusy(true);
+      setButton('busy');
+      showAlert(alertRun, { tone: 'info', ico: 'refresh', title: '正在校验凭证并加载权限…',
+        desc: '请勿关闭页面或重复提交。' });
+    } else if (name === 'success') {
+      setBusy(true);
+      setButton('done');
+      showAlert(alertRun, { tone: 'success', ico: 'check', title: '登录成功，正在按角色加载权限…',
+        desc: '将进入数据图谱工作台，并按当前角色的数据范围加载可见内容；演示环境不执行页面跳转。' });
+    }
+    syncSwitch();
+  }
+  function syncSwitch() {
+    HF.$$('[data-setstate]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-setstate') === state));
+    });
+  }
+
+  /* ------------------------------ 校验与提交 ------------------------------ */
+  function validate() {
+    var bad = [];
+    var acct = $('#acct').value.trim();
+    if (!acct) { setFieldError('acct', '请输入账号'); bad.push($('#acct')); }
+    else if (!/^[A-Za-z0-9._-]{3,32}$/.test(acct)) { setFieldError('acct', '账号格式不正确：仅限字母、数字与 . _ -，长度 3–32 位'); bad.push($('#acct')); }
+    if (!pwd.value) { setFieldError('pwd', '请输入口令'); bad.push(pwd); }
+    var code = capInput.value.trim();
+    if (!code) { setFieldError('cap', '请输入验证码'); bad.push(capInput); }
+    else if (code.toUpperCase() !== capCode) {
+      setFieldError('cap', '验证码不正确或已失效，请重新获取');
+      drawCaptcha(false);
+      bad.push(capInput);
+    }
+    return bad;
+  }
+  function submitForm() {
+    if (state === 'busy' || state === 'success') return;
+    var bad = validate();
+    if (bad.length) {
+      state = 'invalid';
+      syncSwitch();
+      bad[0].focus();
+      return;
+    }
+    applyState('busy');
+    setTimeout(function () { if (state === 'busy') applyState('success'); }, 900);
+  }
+  form.addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
+  $('#forgot').addEventListener('click', function () {
+    HF.toast({ type: 'info', title: '演示环境未接入口令重置流程',
+      desc: '生产环境由本单位系统管理员在用户管理中重置，口令不通过前端页面修改。' });
+  });
+
+  /* ------------------------------ 标注区开关 ------------------------------ */
+  var switchBar = document.querySelector('[data-od-id="p00-state-switch"]');
+  if (switchBar) {
+    switchBar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-setstate]');
+      if (!b) return;
+      var name = b.getAttribute('data-setstate');
+      applyState(name);
+      /* 标注区在主画面下方：切换后回到登录画面，避免来回滚动 */
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    });
+  }
+
+  /* ------------------------------ 初始态 ------------------------------ */
+  applyState('ok', { silent: true });
+})();
+</script>
+</body>
+</html>

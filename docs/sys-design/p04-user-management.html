@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>用户管理 · 海防研判工作台</title>
+<link rel="stylesheet" href="assets/tokens.css" />
+<link rel="stylesheet" href="assets/app.css" />
+<style>
+  .um { flex: 1 0 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--sp-3); padding: 0 var(--sp-4) var(--sp-4); }
+  .um__table { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); overflow: hidden; }
+  .role-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .role-card { display: flex; gap: var(--sp-2); align-items: flex-start; padding: var(--sp-3); border: 1px solid var(--border-control); border-radius: var(--r-3); cursor: pointer; background: var(--surface); }
+  .role-card:hover { background: var(--surface-hover); }
+  .role-card[data-checked="true"] { background: var(--surface-selected); border-color: var(--accent-soft-border); }
+  .role-card input { margin-top: 3px; }
+  .role-card__name { font-size: var(--fs-13); font-weight: var(--fw-strong); }
+  .role-card__desc { font-size: var(--fs-12); color: var(--muted); line-height: var(--lh-body); margin-top: 2px; }
+  .tree { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .tree__l2 { display: flex; flex-direction: column; gap: var(--sp-2); padding-left: var(--sp-5); border-left: 1px dashed var(--border); margin-left: 7px; }
+  .sum-box { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-3); padding: var(--sp-3); }
+  .perm-grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
+  .perm-item { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-12); padding: 4px 0; }
+  .perm-item svg { width: 13px; height: 13px; flex: 0 0 13px; color: var(--success); }
+  .perm-item--off svg { color: var(--disabled-fg); }
+  .perm-item--off { color: var(--muted); }
+  .err-summary { border: 1px solid var(--danger); background: var(--tag-danger-bg); border-radius: var(--r-3); padding: var(--sp-3); }
+</style>
+</head>
+<body data-page="user">
+<div class="app" id="app" data-nav="expanded">
+  <aside class="nav" id="nav"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="workspace">
+
+      <div class="page-head" style="padding:10px var(--sp-4) var(--sp-3);align-items:center">
+        <div class="page-head__main">
+          <h1 class="page-title" style="font-size:var(--fs-16)">用户管理</h1>
+          <p class="page-desc" style="margin-top:2px">账号、所属单位、角色与数据范围。账号管理权限不包含跨单位业务资料访问范围。</p>
+        </div>
+        <div class="page-head__actions">
+          <button class="btn btn--default btn--sm" type="button" id="btnExportUsers">导出用户</button>
+          <button class="btn btn--primary" type="button" id="btnNewUser" data-od-id="p04-new-user">新建用户</button>
+        </div>
+      </div>
+
+      <div class="um">
+        <!-- 搜索区 -->
+        <form class="search-bar" id="userSearch" data-expanded="false" data-od-id="p04-search" role="search">
+          <div class="field">
+            <label class="field__label" for="u-kw">姓名 / 账号</label>
+            <input class="input" id="u-kw" placeholder="支持姓名或账号关键字" />
+          </div>
+          <div class="field">
+            <label class="field__label" for="u-unit">所属单位</label>
+            <div class="select-wrap"><select class="select" id="u-unit">
+              <option value="">全部单位</option><option>演示单位甲</option><option>演示单位乙</option><option>演示单位丙</option></select></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="u-role">角色</label>
+            <div class="select-wrap"><select class="select" id="u-role">
+              <option value="">全部角色</option><option>单位业务人员</option><option>系统管理员</option><option>普通账号</option></select></div>
+          </div>
+          <div class="field search-bar__more">
+            <label class="field__label" for="u-status">启用状态</label>
+            <div class="select-wrap"><select class="select" id="u-status">
+              <option value="">全部状态</option><option value="on">启用</option><option value="off">已禁用</option></select></div>
+          </div>
+          <div class="search-bar__actions">
+            <button class="btn btn--primary" type="submit" id="btnUserQuery">查询</button>
+            <button class="btn btn--default" type="button" id="btnUserReset">重置</button>
+            <button class="btn btn--ghost" type="button" id="btnUserMore" aria-expanded="false">展开更多条件</button>
+          </div>
+        </form>
+
+        <div class="um__table">
+          <div class="table-toolbar">
+            <b class="fs-13">用户列表</b>
+            <span class="tag tag--neutral mono" id="userCount">8</span>
+            <div class="table-toolbar__spacer"></div>
+            <span class="fs-12 muted"><span id="selCount">0</span> 项已选</span>
+            <button class="btn btn--default btn--sm" type="button" id="btnBulkOff" disabled>批量禁用</button>
+            <button class="btn btn--default btn--sm" type="button" id="btnRefreshUsers"><span id="icoRefresh2"></span>刷新</button>
+          </div>
+          <div class="table-wrap" style="flex:0 0 auto">
+            <table class="table" id="userTable">
+              <thead><tr>
+                <th style="width:40px"><input type="checkbox" id="checkAll" aria-label="全选本页" /></th>
+                <th style="width:172px">账号</th>
+                <th style="width:132px">姓名</th>
+                <th style="width:132px">所属单位</th>
+                <th style="width:150px">角色</th>
+                <th style="width:104px">状态</th>
+                <th style="width:164px" class="col-num">最近登录时间</th>
+                <th class="col-actions">操作</th>
+              </tr></thead>
+              <tbody id="userBody"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <span>共 24 条 · 每页 8 条 · 本页 1–8</span>
+            <div class="pager__pages" style="margin-left:auto">
+              <button class="pager__btn" type="button" disabled aria-label="上一页">‹</button>
+              <button class="pager__btn" aria-current="page" type="button">1</button>
+              <button class="pager__btn" type="button">2</button>
+              <button class="pager__btn" type="button">3</button>
+              <button class="pager__btn" type="button" aria-label="下一页">›</button>
+            </div>
+            <span class="fs-12 muted">演示环境仅提供第 1 页数据</span>
+          </div>
+        </div>
+
+        <div class="notice notice--info" data-od-id="p04-scope-note">
+          <span id="icoScope"></span>
+          <div><b>系统管理员的权限边界：</b>可以管理用户、角色与单位，但<b>不因此获得</b>查看全部单位业务资料的权限。业务资料的可见范围由「数据范围」独立控制，
+            与「角色（功能权限）」分开保存。<a class="notice__link" href="design-system.html#perm">查看权限组件规范</a></div>
+        </div>
+      </div>
+
+      <!-- 用户抽屉 -->
+      <div class="scrim" id="scrim"></div>
+      <aside class="drawer" id="userDrawer" role="dialog" aria-modal="true" aria-labelledby="udTitle" aria-hidden="true" data-od-id="p04-drawer">
+        <div class="drawer__head">
+          <div style="flex:1 1 auto;min-width:0">
+            <div class="drawer__title" id="udTitle">新建用户</div>
+            <div class="drawer__desc" id="udDesc">带 <span class="field__req">*</span> 的字段为必填。保存后立即生效。</div>
+          </div>
+          <button class="btn btn--ghost btn--icon" type="button" id="udClose" aria-label="关闭"></button>
+        </div>
+        <div class="drawer__body" id="udBody">
+          <div id="udErr" hidden></div>
+
+          <section>
+            <div class="section-title" style="margin-bottom:var(--sp-3)">基本信息</div>
+            <div class="col gap-3">
+              <div class="field">
+                <label class="field__label" for="udAcct">账号 <span class="field__req">*</span></label>
+                <input class="input" id="udAcct" placeholder="例如 demo.yanpan.i" autocomplete="off" />
+                <div class="field__hint">小写字母、数字与点，长度 4–32；保存后不可修改。</div>
+                <div class="field__error" id="udAcctErr" hidden></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="udName">姓名 <span class="field__req">*</span></label>
+                <input class="input" id="udName" placeholder="例如 演示人员壬" autocomplete="off" />
+                <div class="field__hint">演示环境请使用「演示人员 + 天干」命名，不填写真实姓名。</div>
+                <div class="field__error" id="udNameErr" hidden></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="udUnit">所属单位 <span class="field__req">*</span></label>
+                <div class="select-wrap"><select class="select" id="udUnit">
+                  <option value="">请选择所属单位</option>
+                  <option>演示单位甲</option><option>演示单位乙</option><option>演示单位丙</option></select></div>
+                <div class="field__error" id="udUnitErr" hidden></div>
+              </div>
+              <div class="row gap-4">
+                <label class="switch"><input type="checkbox" id="udEnabled" checked /><span>启用账号</span></label>
+                <label class="switch"><input type="checkbox" id="udNotify" checked /><span>接收签收与反馈提醒</span></label>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div class="section-title" style="margin-bottom:var(--sp-2)">角色（功能权限）<span class="mono fs-12 muted">决定「能使用什么功能」</span></div>
+            <div class="role-list" id="roleList" data-od-id="p04-role">
+              <label class="role-card"><input type="radio" name="role" value="普通账号" />
+                <span><span class="role-card__name">普通账号</span>
+                <span class="role-card__desc">查看分配给本单位的情报，可签收与反馈；不能新建研判会话、不能查看数据图谱。</span></span></label>
+              <label class="role-card"><input type="radio" name="role" value="单位业务人员" checked />
+                <span><span class="role-card__name">单位业务人员</span>
+                <span class="role-card__desc">数据图谱检索与探索、AI 研判与人工复核、数据任务查看、情报发送与签收反馈。</span></span></label>
+              <label class="role-card"><input type="radio" name="role" value="系统管理员" />
+                <span><span class="role-card__name">系统管理员</span>
+                <span class="role-card__desc">用户、角色、单位与任务运维。<b>不含</b>跨单位业务资料访问范围，业务资料可见性由下方数据范围单独控制。</span></span></label>
+            </div>
+          </section>
+
+          <section>
+            <div class="section-title" style="margin-bottom:var(--sp-2)">数据范围<span class="mono fs-12 muted">决定「能访问哪些业务数据」</span></div>
+            <div class="tree" id="unitTree" data-od-id="p04-tree"></div>
+          </section>
+
+          <section>
+            <div class="section-title" style="margin-bottom:var(--sp-2)">授权摘要（保存前请确认）</div>
+            <div class="sum-box" id="permSummary"></div>
+          </section>
+        </div>
+        <div class="drawer__foot">
+          <span class="fs-12 muted" id="udImpact">保存后立即生效。</span>
+          <span class="spacer"></span>
+          <button class="btn btn--text btn--sm" type="button" id="udCancel">取消</button>
+          <button class="btn btn--primary btn--sm" type="button" id="udSave">保存</button>
+        </div>
+      </aside>
+
+      <div class="scrim scrim--modal" id="modalScrim"></div>
+      <div class="modal" id="modal" role="alertdialog" aria-modal="true" aria-labelledby="mdTitle" aria-hidden="true">
+        <div class="modal__body">
+          <div class="modal__title"><span id="icoWarn2"></span><span id="mdTitle">确认操作</span></div>
+          <div class="modal__text" id="mdText"></div>
+        </div>
+        <div class="modal__foot">
+          <button class="btn btn--default btn--sm" type="button" id="mdCancel">取消</button>
+          <button class="btn btn--danger-solid btn--sm" type="button" id="mdOk">确认</button>
+        </div>
+      </div>
+
+      <!-- ============ 设计标注（非产品界面） ============ -->
+      <section class="doc" data-od-id="p04-doc">
+        <div class="doc__head"><span class="doc__badge">设计标注 · 非产品界面</span>
+          <h2 class="doc__title">P04 关键状态与交互</h2></div>
+        <p class="doc__desc">本页是全系统搜索、表格、表单与权限交互的规范来源；P03 的数据任务列表与本节共用同一套组件。</p>
+        <div class="doc__grid">
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S1</span><span class="doc__card-title">列表四态完整</span></div>
+            <div class="doc__card-body">正常 / 加载 / 空结果 / 接口失败四态共用同一容器高度，切换时不产生跳动；错误态保留查询条件并提供重新加载。</div>
+            <div class="doc__sample" style="width:100%">
+              <div class="skeleton" style="height:14px;width:64%"></div>
+              <div class="skeleton" style="height:14px;width:88%"></div>
+              <div class="skeleton" style="height:14px;width:76%"></div>
+            </div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S2</span><span class="doc__card-title">表单校验与错误定位</span></div>
+            <div class="doc__card-body">提交时先做整体校验：错误字段标红并显示原因，抽屉顶部给出错误摘要，焦点自动移到第一个错误字段（本页可直接点「保存」体验：账号留空）。</div>
+            <div class="doc__sample" style="width:100%"><div class="err-summary"><b class="fs-12" style="color:var(--danger)">有 2 处需要修改</b>
+              <ul class="fs-12 mt-2" style="color:var(--fg);line-height:1.8"><li>账号：必填</li><li>所属单位：必填</li></ul></div></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S3</span><span class="doc__card-title">禁用：现有登录将失效</span></div>
+            <div class="doc__card-body">禁用不是删除。确认弹窗必须说明影响、是否保留数据、以及如何恢复。</div>
+            <div class="doc__sample" style="width:100%"><div class="fs-12" style="line-height:1.7">禁用后：该账号的现有登录会话立即失效，无法再登录；已产生的研判会话与情报记录全部保留；重新启用后可继续使用原权限。</div></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S4</span><span class="doc__card-title">权限变更：会话失效并按新权限重登</span></div>
+            <div class="doc__card-body">权限（角色或数据范围）发生变化后，现有会话失效，用户需重新登录并按新权限访问。界面必须在保存前说明，不能只在保存后提示。</div>
+            <div class="doc__sample" style="width:100%"><div class="notice"><span id="icoNote1"></span><div>保存后该账号的现有会话将失效，须重新登录；重新登录后按新的角色与数据范围访问。</div></div></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S5</span><span class="doc__card-title">不可分配的权限</span></div>
+            <div class="doc__card-body">单位树中当前角色无权分配的节点禁用，并写明原因，而不是静默隐藏或允许勾选后失败。</div>
+            <div class="doc__sample"><span class="fs-12 muted">演示单位丙 · 当前角色不可分配</span></div></div>
+          <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S6</span><span class="doc__card-title">演示数据不含真实个人信息</span></div>
+            <div class="doc__card-body">页面中不出现真实姓名、手机号、证件号、密码或密钥；账号统一使用 <span class="doc__code">demo.*</span> 前缀，姓名统一为「演示人员 + 天干」。</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  HF.shell.mount({ active: 'user', crumb: ['系统管理', '用户管理'],
+    sync: { level: 'ok', text: '账号数据 2026-10-02 09:05 同步完成' } });
+
+  document.getElementById('udClose').innerHTML = HF.icon('close');
+  document.getElementById('icoScope').innerHTML = HF.icon('lock', '');
+  document.getElementById('icoRefresh2').outerHTML = HF.icon('refresh', 'btn__icon');
+  document.getElementById('icoWarn2').innerHTML = HF.icon('warning', 'btn__icon');
+  document.querySelector('#icoWarn2 svg').style.color = 'var(--warning)';
+
+  var USERS = HF.data.USERS;
+  var selected = {};
+  function rows(list) {
+    return list.map(function (u) {
+      return '<tr data-acct="' + u.acct + '"' + (selected[u.acct] ? ' aria-selected="true"' : '') + '>' +
+        '<td><input type="checkbox" data-pick="' + u.acct + '"' + (selected[u.acct] ? ' checked' : '') + ' aria-label="选择 ' + u.name + '" /></td>' +
+        '<td class="mono">' + u.acct + '</td>' +
+        '<td>' + u.name + '</td>' +
+        '<td>' + u.unit + '</td>' +
+        '<td><span class="tag tag--neutral">' + u.role + '</span></td>' +
+        '<td>' + (u.status === 'on'
+          ? '<span class="tag tag--success"><span class="tag__dot"></span>启用</span>'
+          : '<span class="tag tag--neutral"><span class="tag__dot" style="background:transparent;border:1.5px solid currentColor"></span>已禁用</span>') + '</td>' +
+        '<td class="col-num"><span class="mono fs-12">' + u.last + '</span></td>' +
+        '<td class="col-actions">' +
+        '<button class="btn btn--text btn--sm" type="button" data-act="edit" data-acct="' + u.acct + '">编辑</button>' +
+        (u.status === 'on'
+          ? '<button class="btn btn--text btn--sm" type="button" data-act="off" data-acct="' + u.acct + '">禁用</button>'
+          : '<button class="btn btn--text btn--sm" type="button" data-act="on" data-acct="' + u.acct + '">启用</button>') +
+        '</td></tr>';
+    }).join('');
+  }
+  var body = document.getElementById('userBody');
+  function render(list) {
+    body.innerHTML = rows(list);
+    document.getElementById('userCount').textContent = String(list.length);
+    var n = Object.keys(selected).filter(function (k) { return selected[k]; }).length;
+    document.getElementById('selCount').textContent = String(n);
+    document.getElementById('btnBulkOff').disabled = !n;
+    document.getElementById('checkAll').checked = list.length > 0 && list.every(function (u) { return selected[u.acct]; });
+  }
+  function currentList() {
+    var kw = document.getElementById('u-kw').value.trim().toLowerCase();
+    var unit = document.getElementById('u-unit').value, role = document.getElementById('u-role').value, st = document.getElementById('u-status').value;
+    return USERS.filter(function (u) {
+      if (kw && u.name.toLowerCase().indexOf(kw) < 0 && u.acct.toLowerCase().indexOf(kw) < 0) return false;
+      if (unit && u.unit !== unit) return false;
+      if (role && u.role !== role) return false;
+      if (st && u.status !== st) return false;
+      return true;
+    });
+  }
+  document.getElementById('userSearch').addEventListener('submit', function (e) { e.preventDefault(); render(currentList()); });
+  document.getElementById('btnUserReset').onclick = function () {
+    ['u-kw', 'u-unit', 'u-role', 'u-status'].forEach(function (i) { document.getElementById(i).value = ''; });
+    render(USERS);
+    HF.toast({ type: 'info', title: '已重置查询条件' });
+  };
+  document.getElementById('btnUserMore').onclick = function () {
+    var bar = document.getElementById('userSearch');
+    var on = bar.getAttribute('data-expanded') === 'true';
+    bar.setAttribute('data-expanded', String(!on));
+    this.setAttribute('aria-expanded', String(!on));
+    this.textContent = on ? '展开更多条件' : '收起更多条件';
+  };
+  document.getElementById('btnRefreshUsers').onclick = function () { HF.toast({ type: 'success', title: '已刷新用户列表' }); };
+  document.getElementById('btnExportUsers').onclick = function () {
+    HF.toast({ type: 'info', title: '导出用户列表', desc: '仅导出账号、姓名、单位、角色与状态，不含任何业务资料。' });
+  };
+  document.getElementById('checkAll').onclick = function () {
+    var list = currentList();
+    list.forEach(function (u) { selected[u.acct] = this.checked; }, this);
+    render(list);
+  };
+  body.addEventListener('click', function (e) {
+    var cb = e.target.closest('[data-pick]');
+    if (cb) { selected[cb.getAttribute('data-pick')] = cb.checked; render(currentList()); return; }
+    var b = e.target.closest('[data-act]'); if (!b) return;
+    var acct = b.getAttribute('data-acct');
+    var u = USERS.filter(function (x) { return x.acct === acct; })[0];
+    var act = b.getAttribute('data-act');
+    if (act === 'edit') openDrawer(u);
+    if (act === 'off') confirmModal('禁用账号 ' + u.name,
+      '禁用后：该账号的现有登录会话<b>立即失效</b>，无法再登录；已产生的研判会话与情报记录全部保留；重新启用后可继续使用原权限。',
+      '确认禁用', function () { u.status = 'off'; render(currentList()); HF.toast({ type: 'success', title: '账号已禁用', desc: u.acct + ' 的现有会话已失效。' }); });
+    if (act === 'on') confirmModal('启用账号 ' + u.name,
+      '启用后该账号可以重新登录，并按<b>原有的角色与数据范围</b>访问系统。如需调整权限，请同时编辑该用户。',
+      '确认启用', function () { u.status = 'on'; render(currentList()); HF.toast({ type: 'success', title: '账号已启用', desc: u.acct + ' 可重新登录。' }); }, false);
+  });
+  document.getElementById('btnBulkOff').onclick = function () {
+    var n = Object.keys(selected).filter(function (k) { return selected[k]; }).length;
+    confirmModal('批量禁用 ' + n + ' 个账号',
+      '将禁用已选中的 <b>' + n + '</b> 个账号。这些账号的现有登录会话会立即失效，业务记录不受影响。',
+      '确认禁用', function () {
+        USERS.forEach(function (u) { if (selected[u.acct]) u.status = 'off'; });
+        selected = {}; render(currentList());
+        HF.toast({ type: 'success', title: '已禁用 ' + n + ' 个账号' });
+      });
+  };
+
+  /* 单位树 */
+  var TREE = [
+    { name: '演示单位甲', children: [
+      { name: '演示部门一 · 全部批次', on: true },
+      { name: '演示部门二 · 指定批次', on: false }
+    ] },
+    { name: '演示单位乙', children: [{ name: '演示部门三 · 无权限分配', on: false, disabled: true }] },
+    { name: '演示单位丙', disabled: true, note: '当前角色不可分配' }
+  ];
+  function renderTree() {
+    document.getElementById('unitTree').innerHTML = TREE.map(function (n, i) {
+      var h = '<label class="check"><input type="checkbox" data-node="' + i + '"' +
+        (n.disabled ? ' disabled' : '') + (n.on ? ' checked' : '') + ' /><span class="check__text ' + (n.disabled ? 'muted' : 'fw-strong') + '">' +
+        n.name + (n.note ? ' · ' + n.note : '') + '</span></label>';
+      if (n.children) {
+        h += '<div class="tree__l2">' + n.children.map(function (c, j) {
+          return '<label class="check"><input type="checkbox" data-child="' + i + '-' + j + '"' +
+            (c.disabled ? ' disabled' : '') + (c.on ? ' checked' : '') + ' /><span class="check__text ' + (c.disabled ? 'muted' : '') + '">' +
+            c.name + '</span></label>';
+        }).join('') + '</div>';
+      }
+      return h;
+    }).join('');
+  }
+  document.getElementById('unitTree').addEventListener('change', function (e) {
+    var p = e.target.closest('[data-node]'), c = e.target.closest('[data-child]');
+    if (p) TREE[+p.getAttribute('data-node')].on = p.checked;
+    if (c) { var xy = c.getAttribute('data-child').split('-'); TREE[+xy[0]].children[+xy[1]].on = c.checked; }
+    updateSummary();
+  });
+
+  var ROLES = {
+    '普通账号': { feats: [['查看分配给本单位的情报', 1], ['签收与反馈', 1], ['新建研判会话', 0], ['数据图谱检索', 0], ['数据任务查看', 0]] },
+    '单位业务人员': { feats: [['数据图谱检索与探索', 1], ['AI 研判与人工复核', 1], ['数据任务查看', 1], ['情报发送 / 签收 / 反馈', 1], ['用户与角色管理', 0]] },
+    '系统管理员': { feats: [['用户与角色管理', 1], ['单位与任务运维', 1], ['AI 研判与人工复核', 1], ['数据图谱检索与探索', 1], ['跨单位业务资料查看', 0]] }
+  };
+  function pickedRole() { var r = document.querySelector('input[name="role"]:checked'); return r ? r.value : ''; }
+  function scopeText() {
+    var out = [];
+    TREE.forEach(function (n) {
+      var kids = (n.children || []).filter(function (c) { return c.on; });
+      if (n.on || kids.length) out.push(n.name + (kids.length ? '（' + kids.map(function (c) { return c.name; }).join('、') + '）' : ' · 全部批次'));
+    });
+    return out.length ? out.join('；') : '未选择任何数据范围（该账号将无法访问业务资料）';
+  }
+  function updateSummary() {
+    var role = pickedRole();
+    var feats = ROLES[role] ? ROLES[role].feats : [];
+    document.getElementById('permSummary').innerHTML =
+      '<dl class="kv kv--wide" style="grid-template-columns:112px 1fr">' +
+      '<dt>角色</dt><dd>' + (role || '未选择') + '</dd>' +
+      '<dt>可使用功能</dt><dd>' + (feats.length ? '' : '—') +
+        '<div class="perm-grid">' + feats.map(function (f) {
+          return '<span class="perm-item' + (f[1] ? '' : ' perm-item--off') + '">' + HF.icon(f[1] ? 'check' : 'close', '') + f[0] + '</span>';
+        }).join('') + '</div>' + '</dd>' +
+      '<dt>可访问业务数据</dt><dd>' + scopeText() + '</dd>' +
+      '<dt>变更影响</dt><dd>' + (role === '系统管理员'
+        ? '保存后该账号的现有会话将失效。管理员权限<b>不包含</b>业务资料访问范围，跨单位资料仍需单独授权。'
+        : '保存后该账号的现有会话将失效，须重新登录并按新权限访问。') + '</dd></dl>';
+  }
+  function syncRoleCards() {
+    HF.$$('.role-card').forEach(function (l) {
+      l.setAttribute('data-checked', String(!!l.querySelector('input').checked));
+    });
+  }
+  document.getElementById('roleList').addEventListener('change', function () { syncRoleCards(); updateSummary(); });
+
+  /* 抽屉 */
+  var drawer = document.getElementById('userDrawer'), editing = null;
+  function openDrawer(u) {
+    editing = u || null;
+    document.getElementById('udTitle').textContent = u ? '编辑用户 · ' + u.name : '新建用户';
+    document.getElementById('udDesc').innerHTML = u
+      ? '账号 <span class="mono">' + u.acct + '</span> 不可修改；角色或数据范围变化后，该账号现有会话将失效。'
+      : '带 <span class="field__req">*</span> 的字段为必填。保存后立即生效。';
+    document.getElementById('udErr').hidden = true;
+    ['udAcct', 'udName'].forEach(function (i) { document.getElementById(i).value = ''; });
+    document.getElementById('udUnit').value = '';
+    ['udAcctErr', 'udNameErr', 'udUnitErr'].forEach(function (i) { document.getElementById(i).hidden = true; });
+    ['udAcct', 'udName', 'udUnit'].forEach(function (i) { document.getElementById(i).removeAttribute('aria-invalid'); });
+    if (u) {
+      document.getElementById('udAcct').value = u.acct;
+      document.getElementById('udAcct').disabled = true;
+      document.getElementById('udName').value = u.name;
+      document.getElementById('udUnit').value = u.unit;
+      document.getElementById('udEnabled').checked = u.status === 'on';
+      var r = document.querySelector('input[name="role"][value="' + u.role + '"]');
+      if (r) r.checked = true;
+    } else {
+      document.getElementById('udAcct').disabled = false;
+      document.getElementById('udEnabled').checked = true;
+      document.querySelector('input[name="role"][value="单位业务人员"]').checked = true;
+    }
+    document.getElementById('udImpact').textContent = u ? '保存后该账号的现有会话将失效，需重新登录。' : '保存后立即生效。';
+    syncRoleCards();
+    updateSummary();
+    HF.layer.open(drawer, 'scrim');
+  }
+  document.getElementById('udClose').onclick = function () { HF.layer.close(drawer, 'scrim'); };
+  document.getElementById('udCancel').onclick = function () { HF.layer.close(drawer, 'scrim'); };
+  document.getElementById('btnNewUser').onclick = function () { openDrawer(null); };
+
+  function setErr(inputId, errId, msg) {
+    var inp = document.getElementById(inputId);
+    if (msg) { inp.setAttribute('aria-invalid', 'true'); } else { inp.removeAttribute('aria-invalid'); }
+    var e = document.getElementById(errId);
+    e.hidden = !msg;
+    e.innerHTML = msg ? HF.icon('error', '') + '<span>' + msg + '</span>' : '';
+    var svg = e.querySelector('svg'); if (svg) { svg.setAttribute('width', '13'); svg.setAttribute('height', '13'); }
+  }
+  document.getElementById('udSave').onclick = function () {
+    var acct = document.getElementById('udAcct').value.trim();
+    var name = document.getElementById('udName').value.trim();
+    var unit = document.getElementById('udUnit').value;
+    var errs = [];
+    setErr('udAcct', 'udAcctErr', '');
+    setErr('udName', 'udNameErr', '');
+    setErr('udUnit', 'udUnitErr', '');
+    if (!acct) { setErr('udAcct', 'udAcctErr', '账号为必填项。'); errs.push(['udAcct', '账号：必填']); }
+    else if (!/^[a-z0-9.]{4,32}$/.test(acct)) { setErr('udAcct', 'udAcctErr', '账号只能使用小写字母、数字与点，长度 4–32。'); errs.push(['udAcct', '账号：格式不符']); }
+    else if (USERS.some(function (x) { return x.acct === acct && x !== editing; })) { setErr('udAcct', 'udAcctErr', '该账号已存在，请更换。'); errs.push(['udAcct', '账号：已存在']); }
+    if (!name) { setErr('udName', 'udNameErr', '姓名为必填项。'); errs.push(['udName', '姓名：必填']); }
+    else if (USERS.some(function (x) { return x.name === name && x.unit === unit && x !== editing; })) { setErr('udName', 'udNameErr', '该单位下已存在同名用户，请确认后再保存。'); errs.push(['udName', '姓名：同单位重名']); }
+    if (!unit) { setErr('udUnit', 'udUnitErr', '请选择所属单位。'); errs.push(['udUnit', '所属单位：必填']); }
+    if (errs.length) {
+      var box = document.getElementById('udErr');
+      box.hidden = false;
+      box.innerHTML = '<div class="err-summary"><b class="fs-13" style="color:var(--danger)">有 ' + errs.length + ' 处需要修改</b>' +
+        '<ul class="fs-12 mt-2" style="line-height:1.9;color:var(--fg)">' + errs.map(function (e) { return '<li>' + e[1] + '</li>'; }).join('') + '</ul></div>';
+      document.getElementById(errs[0][0]).focus();
+      HF.toast({ type: 'danger', title: '保存失败：有 ' + errs.length + ' 处需要修改', desc: '已定位到第一个错误字段。' });
+      return;
+    }
+    if (editing) {
+      var changed = editing.role !== pickedRole() || editing.unit !== unit;
+      editing.name = name; editing.unit = unit; editing.role = pickedRole();
+      editing.status = document.getElementById('udEnabled').checked ? 'on' : 'off';
+      HF.layer.close(drawer, 'scrim');
+      render(currentList());
+      HF.toast({ type: 'success', title: '已保存用户 ' + name,
+        desc: changed ? '角色或数据范围已变更，该账号现有会话已失效，需重新登录。' : '基本信息已更新。' });
+    } else {
+      USERS.unshift({ acct: acct, name: name, unit: unit, role: pickedRole(),
+        status: document.getElementById('udEnabled').checked ? 'on' : 'off', last: '—（尚未登录）' });
+      HF.layer.close(drawer, 'scrim');
+      render(currentList());
+      HF.toast({ type: 'success', title: '已创建用户 ' + name, desc: '账号已启用，首次登录需按新权限访问。' });
+    }
+  };
+
+  /* 确认弹窗 */
+  var modal = document.getElementById('modal');
+  function confirmModal(title, text, okLabel, onOk, danger) {
+    document.getElementById('mdTitle').textContent = title;
+    document.getElementById('mdText').innerHTML = text;
+    var ok = document.getElementById('mdOk');
+    ok.textContent = okLabel;
+    ok.className = (danger === false ? 'btn btn--primary' : 'btn btn--danger-solid') + ' btn--sm';
+    HF.layer.open(modal, 'modalScrim');
+    ok.onclick = function () { HF.layer.close(modal, 'modalScrim'); onOk(); };
+    document.getElementById('mdCancel').onclick = function () { HF.layer.close(modal, 'modalScrim'); };
+  }
+
+  document.getElementById('icoNote1').innerHTML = HF.icon('warning', '');
+  renderTree();
+  render(USERS);
+  syncRoleCards();
+  updateSummary();
+})();
+</script>
+</body>
+</html>
