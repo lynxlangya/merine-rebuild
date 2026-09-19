@@ -34,7 +34,7 @@ infra/                Compose、开发 Dockerfile、数据库账号初始化
 scripts/              启停、检查、类型生成和实际联调验证
 ```
 
-前端依赖由根目录 pnpm workspace 管理，后端由 `apps/api/pom.xml` 与 Maven Wrapper 管理。项目已初始化独立 Git 仓库，未提交，也未设置远程。
+前端依赖由根目录 pnpm workspace 管理，后端由 `apps/api/pom.xml` 与 Maven Wrapper 管理。仓库已提交到 `main` 并推送到 `origin`（`git@github.com:lynxlangya/merine-rebuild.git`）。
 
 当前锁定 React 19.3.0、Ant Design 6.6.4、Vite 8.3.0、TypeScript 5.9.3、Node 24.18.0、pnpm 11.10.0、Java 21、Spring Boot 4.1.1、MyBatis Starter 4.1.0 和 springdoc 3.1.1。前端传递依赖通过 `pnpm-lock.yaml` 固定；镜像通过版本与摘要固定。
 
@@ -87,6 +87,7 @@ docker compose --env-file .env -f infra/compose.yaml exec -T web pnpm smoke
 ## 本地数据与账号
 
 - Compose 项目名为 `merine-rebuild-dev`，端口只发布到本机回环地址。当前仅服务本地开发，不包含登录或权限控制。
+- Vite 开发服务器默认只监听回环地址；容器内由 Compose 注入 `VITE_DEV_HOST=0.0.0.0`，否则宿主机端口映射无法转发。在宿主机直接运行 `pnpm --filter @merine/web dev` 不会暴露到局域网。
 - 数据库固定为 `merine_rebuild`，与旧项目的容器、账号、端口及数据卷分开。
 - `merine_migrate` 负责该库的结构迁移；`merine_app` 仅有该库的查询与增删改权限。应用不以 root 或迁移账号运行。
 - `.env` 由脚本生成，权限为 `600`，不会提交或进入镜像。已有数据卷时不能仅修改 `.env` 来轮换账号密码；数据库内的账号需要配套变更。

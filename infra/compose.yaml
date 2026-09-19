@@ -11,6 +11,8 @@ x-java: &java
     - maven_cache:/root/.m2
     - api_target:/workspace/apps/api/target
 
+# useSSL=false 与 allowPublicKeyRetrieval=true 只适用于这条容器内网的一次性开发
+# 连接。任何指向远程库的配置都必须改用 TLS，并去掉 allowPublicKeyRetrieval。
 x-db-url: &db-url jdbc:mysql://mysql:3306/merine_rebuild?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
 
 services:
@@ -76,6 +78,9 @@ services:
     environment:
       API_PROXY_TARGET: http://api:9002
       API_BASE_URL: http://api:9002
+      # 容器内必须监听全部网卡，宿主机端口映射才能转发进来；对外暴露范围
+      # 仍由下面的 127.0.0.1:5173 绑定决定。
+      VITE_DEV_HOST: '0.0.0.0'
       CI: 'true'
     ports:
       - '127.0.0.1:5173:5173'
