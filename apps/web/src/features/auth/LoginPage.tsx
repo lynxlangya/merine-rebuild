@@ -83,41 +83,6 @@ function describeFailure(error: unknown): LoginFailure {
   };
 }
 
-function BrandFigure() {
-  return (
-    <svg viewBox="0 0 560 320" role="img" aria-label="演示图谱示意图" className={styles.figure}>
-      <g stroke="var(--graph-edge)" strokeWidth="1.5" fill="none">
-        <path d="M96 108 L262 176" />
-        <path d="M96 212 L262 176" />
-        <path d="M262 176 L430 96" />
-        <path d="M262 176 L430 224" />
-      </g>
-      <g className={styles.node}>
-        <circle cx="96" cy="108" r="22" stroke="var(--entity-person)" />
-        <text x="96" y="114">
-          人
-        </text>
-        <circle cx="96" cy="212" r="22" stroke="var(--entity-person)" />
-        <text x="96" y="218">
-          人
-        </text>
-        <rect x="406" y="72" width="48" height="40" rx="9" stroke="var(--entity-vessel)" />
-        <text x="430" y="98">
-          船
-        </text>
-        <rect x="414" y="208" width="32" height="32" rx="2" stroke="var(--entity-place)" />
-        <text x="430" y="230">
-          港
-        </text>
-        <path d="M262 150 L288 176 L262 202 L236 176 Z" stroke="var(--entity-event)" />
-        <text x="262" y="182">
-          事
-        </text>
-      </g>
-    </svg>
-  );
-}
-
 export function LoginPage() {
   const { state, signIn } = useAuth();
   const { mode, setMode } = useThemeMode();
@@ -167,31 +132,8 @@ export function LoginPage() {
         跳到登录表单
       </a>
 
-      <aside className={styles.brand}>
-        <div className={styles.brandInner}>
-          <div className={styles.brandHead}>
-            <img className={styles.brandMark} src="/brand-mark.svg" alt="海防研判标识" />
-            <span>
-              <strong className={styles.brandName}>海防研判工作台</strong>
-            </span>
-          </div>
-          <h1 className={styles.slogan}>
-            关系来自来源记录，
-            <br />
-            结论经过人工复核。
-          </h1>
-          <p className={styles.brandDesc}>
-            在数据图谱中探索人员、船舶、地点与事件的关联，选择证据交给 AI
-            整理，人工复核后再进入跨单位协同。每一条关系都能追到支撑它的那条资料。
-          </p>
-          <figure className={styles.plate}>
-            <BrandFigure />
-            <figcaption className={styles.caption}>
-              示意图为合成演示数据。四条关联均由来源 [1] 演示出港登记 DEMO-INOUT-001
-              派生，不由系统直接判定。
-            </figcaption>
-          </figure>
-        </div>
+      <aside className={styles.brand} aria-hidden="true">
+        <img className={styles.coast} src="/login-harbor.jpg" alt="" fetchPriority="high" />
       </aside>
 
       <main className={styles.main}>
@@ -208,6 +150,10 @@ export function LoginPage() {
         </div>
 
         <div className={styles.center}>
+          <header className={styles.brandHead}>
+            <img className={styles.brandMark} src="/brand-mark.svg" alt="" />
+            <h1 className={styles.brandName}>海防研判工作台</h1>
+          </header>
           <Form<LoginFormValues>
             id="loginForm"
             form={form}

@@ -21,98 +21,54 @@
 }
 
 .brand {
-  display: flex;
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
-  padding: var(--sp-8) var(--sp-6);
-  border-right: 1px solid var(--border);
+  overflow: hidden;
   background: var(--nav-bg);
 }
 
-.brandInner {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-5);
+.coast {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 600px;
-  margin: auto;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+:global(:root[data-theme='dark']) .coast {
+  filter: brightness(0.65) saturate(0.8);
 }
 
 .brandHead {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto var(--sp-4);
 }
 
 .brandMark {
   display: block;
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
 }
 
 .brandName {
-  display: block;
   font-family: var(--font-display);
-  font-size: var(--fs-18);
-  font-weight: var(--fw-strong);
-}
-
-.slogan {
-  font-size: 28px;
+  font-size: var(--fs-24);
   font-weight: var(--fw-strong);
   line-height: var(--lh-display);
-  max-width: 13em;
-}
-
-.brandDesc {
-  color: var(--muted);
-  font-size: var(--fs-14);
-  line-height: var(--lh-body);
-  max-width: 26em;
-}
-
-.plate {
-  margin: 0;
-  padding: var(--sp-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-4);
-  background: var(--graph-canvas);
-}
-
-.figure {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.node text {
-  fill: var(--muted);
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: var(--fw-strong);
-  text-anchor: middle;
-}
-
-.node circle,
-.node rect,
-.node path {
-  fill: var(--graph-node-fill);
-  stroke-width: 2;
-}
-
-.caption {
-  margin-top: var(--sp-2);
-  color: var(--muted);
-  font-size: var(--fs-11);
-  line-height: 1.7;
 }
 
 .main {
   display: flex;
-  flex: 0 0 520px;
+  flex: 0 0 clamp(480px, 38vw, 640px);
   flex-direction: column;
-  padding: var(--sp-4);
+  padding: var(--sp-5) var(--sp-6);
 }
 
 .topbar {
@@ -183,43 +139,32 @@
   line-height: 1.7;
 }
 
-@media (max-width: 1179px) {
-  .auth {
-    flex-direction: column;
-  }
-
+@media (max-width: 959px) {
   .brand {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: var(--sp-5) var(--sp-4);
-  }
-
-  .plate {
     display: none;
-  }
-
-  .slogan {
-    font-size: 22px;
   }
 
   .main {
     flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 479px) {
+  .main {
+    padding: var(--sp-4);
+  }
+
+  .card {
+    padding: var(--sp-5);
+  }
+
+  .row {
+    flex-wrap: wrap;
   }
 }
 
 @media (max-height: 780px) {
-  .brand {
-    padding: var(--sp-6) var(--sp-4);
-  }
-
-  .brandInner {
-    gap: var(--sp-4);
-  }
-
-  .plate {
-    max-width: 520px;
-  }
-
   .card {
     gap: var(--sp-3);
     padding: var(--sp-5) var(--sp-6);
