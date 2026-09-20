@@ -83,11 +83,15 @@ com.merine.rebuild/
     role/                    角色用例：RoleLookup（选项）与 RoleService（维护）
       dto/                   请求、列表行、详情、成员与选项
       persistence/           RoleMapper、RoleRow、RoleQuery
+    dictionary/              字典：DictionaryLookup（读）、DictionaryService（维护，只停用不删除）
+      dto/                   字典与字典项视图、列表行、写请求
+      persistence/           DictionaryMapper、DictionaryRow
     seed/                    仅 seed profile 执行的本地账号初始化
 
 apps/api/src/main/resources/
   mapper/system/menu/MenuMapper.xml
   mapper/system/role/RoleMapper.xml
+  mapper/system/dictionary/DictionaryMapper.xml
   mapper/system/unit/UnitMapper.xml
   mapper/system/user/account/UserAccountMapper.xml
   mapper/system/user/admin/UserAdminMapper.xml
@@ -102,6 +106,7 @@ apps/api/src/test/java/com/merine/rebuild/
   system/permission/         权限码清单与代码常量、引导菜单清单的一致性回归
   system/menu/               菜单与按钮级权限回归（导航过滤、删除级联、恢复默认菜单）
   system/role/               角色管理回归与专属 fixture
+  system/dictionary/         字典回归与专属 fixture（枚举可维护、没有删除接口、判定不受标签影响）
   system/user/admin/         用户管理回归与专属 fixture
   system/unit/               单位管理回归与专属 fixture
   common/                    异常与日志回归
@@ -111,7 +116,7 @@ apps/api/src/test/java/com/merine/rebuild/
 
 - Controller 处理 HTTP 协议和入口校验；Service 编排用例、事务和业务规则；Lookup 提供有明确消费者的查询契约；Mapper 负责 SQL。内部简单查询可直接使用现有 Service，不为每张表再造 Lookup 或无职责转发层。
 - 小模块可以平铺。像单位维护、用户管理这样需要区分公开 DTO 与数据库投射的用例，拆出 `dto` / `persistence`。`account`、`admin`、`usage` 是 user 内的不同能力，不是各自拥有一套用户表的独立业务模块；其他模块不照抄这套子包名称。
-- Java 的 `public` 不等于项目允许跨模块使用。当前公开能力是 `user.account` 的账号查询、登录时间登记及相关结果/凭据约束，`user.usage.UserUnitUsageLookup` 的直属用户计数与 `RoleUsageLookup` 的成员数/成员清单，`user.authorization` 的管理底线守卫与持有者授权版本递增，`unit.UnitLookup` 和 `UnitSummary`，`role.RoleLookup` 和 `RoleSummary`（角色选项）与 `role.RolePermissionCommands`（菜单删除时解除授权），`permission.PermissionLookup`（登录展开内置角色）与 `permission.PermissionCommands`（菜单管理建码/改名/删码），以及 `menu.MenuLookup` 和 `MenuNode`（菜单管理树，同时是角色的权限勾选树）。系统管理用例共用 `PermissionGuard`。新增跨模块消费者时，先确定所需的最小公开能力。
+- Java 的 `public` 不等于项目允许跨模块使用。当前公开能力是 `user.account` 的账号查询、登录时间登记及相关结果/凭据约束，`user.usage.UserUnitUsageLookup` 的直属用户计数与 `RoleUsageLookup` 的成员数/成员清单，`user.authorization` 的管理底线守卫与持有者授权版本递增，`unit.UnitLookup` 和 `UnitSummary`，`role.RoleLookup` 和 `RoleSummary`（角色选项）与 `role.RolePermissionCommands`（菜单删除时解除授权），`permission.PermissionLookup`（登录展开内置角色）与 `permission.PermissionCommands`（菜单管理建码/改名/删码），`menu.MenuLookup` 和 `MenuNode`（菜单管理树，同时是角色的权限勾选树），以及 `dictionary.DictionaryLookup` 与 `DictionaryView`（其他模块按 code 复用参考数据，目前只由字典接口使用）。系统管理用例共用 `PermissionGuard`。新增跨模块消费者时，先确定所需的最小公开能力。
 - 跨模块不导入 Mapper、数据库投射或内部 Service。公开请求/结果不得依赖持久化类型；SQL 聚合列在 owner 内转换。例如 `UserAccountRow` 留在 persistence，`UserAccountLookup` 转成含角色列表的 `UserAccount` 后才交给 auth。
 - 同形、无敏感字段且语义一致的简单查询可以直接映射到公开 record，例如 `RoleSummary`、`UserAccountState`；不为形式统一复制 VO/BO/DO。含密码哈希的账号结果仅用于服务端认证，不进入会话、HTTP 响应或日志。
 - 依赖检查要看具体能力：当前 `user.admin → unit.UnitLookup`，`unit.UnitService → user.usage`，两条查询能力都不反向调用管理 Service。禁止形成类/Bean 的循环依赖或业务用例相互回调；目录名称本身不能证明边界有效。
@@ -120,7 +125,7 @@ apps/api/src/test/java/com/merine/rebuild/
 ### SQL 与数据归属
 
 - **一张业务表只有一个业务写入 owner，不等于一个表只能有一个 Mapper。** 同一 owner 内可以按用例拆 Mapper：账号查询、登录时间登记、管理操作与统计各有职责；不能让不同入口各自复制同一套写入规则。普通用例优先复用已有 Mapper，不无依据拆分或合并。
-- 当前 user 拥有 `sys_user`、`sys_user_role`，unit 拥有 `sys_unit`，role 拥有 `sys_role`、`sys_role_permission`，permission 拥有 `sys_permission`，menu 拥有 `sys_menu`。角色状态或权限变化需要让持有者会话失效时，role 调用 user 的授权命令，不直接写 `sys_user`；菜单删除要解除角色授权时，menu 调用 role 的 `RolePermissionCommands`，再由调用方递增持有者授权版本；成员数与成员清单由 user 的 `RoleUsageLookup` 回答。seed 是本地初始化入口，只补缺失数据，不供在线业务调用；它的事务与幂等约束独立明确。它不是新增业务跨表写入的模板。
+- 当前 user 拥有 `sys_user`、`sys_user_role`，unit 拥有 `sys_unit`，role 拥有 `sys_role`、`sys_role_permission`，permission 拥有 `sys_permission`，menu 拥有 `sys_menu`，dictionary 拥有 `sys_dict_type`、`sys_dict_item`。角色状态或权限变化需要让持有者会话失效时，role 调用 user 的授权命令，不直接写 `sys_user`；菜单删除要解除角色授权时，menu 调用 role 的 `RolePermissionCommands`，再由调用方递增持有者授权版本；成员数与成员清单由 user 的 `RoleUsageLookup` 回答。seed 是本地初始化入口，只补缺失数据，不供在线业务调用；它的事务与幂等约束独立明确。它不是新增业务跨表写入的模板。系统枚举字典（状态、菜单类型、单位层级）也落 `sys_dict_type`/`sys_dict_item`，只是引导数据由迁移写入、不在 Java 里再登记一份；想改标签或增删字典项都走字典接口，不再有"代码登记"的第二真源。
 - XML 文件名与 Mapper 接口同名；`namespace` 必须等于 Mapper **完整类名**。资源目录按业务/用例路径对应，**省略根包和技术子包 `persistence`**：`system.user.account.persistence.UserAccountMapper` 对应 `mapper/system/user/account/UserAccountMapper.xml`。由 `mybatis.mapper-locations` 显式扫描，不依赖同包自动发现。
 - 简单固定 SQL 可以用注解，动态筛选、多表关联和复杂映射优先 XML。同一方法不同时在注解和 XML 定义 SQL。复杂注解 SQL 在受影响时迁移，不为凑目录一致性改动全部历史代码。
 - 跨模块读取优先批量公开查询，避免逐行调用。确需同库只读 JOIN 时，由查询 owner 公开契约，并说明参与表、授权条件和结果归属，有真实 MySQL 验证；不能反向写表或绕过数据权限。当前账号和用户列表关联单位、角色属于这种查询。

@@ -1,0 +1,143 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-4) var(--sp-4);
+}
+
+.stateCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+  padding: var(--sp-4);
+}
+
+/* 左窄右宽：类型是入口，字典项才是日常操作对象 */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-13);
+}
+
+.countTag {
+  margin: 0;
+  background: var(--tag-neutral-bg);
+  border-color: var(--tag-border);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+}
+
+.skeleton {
+  padding: var(--sp-4);
+}
+
+.typeCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.typeName {
+  color: var(--fg);
+}
+
+.detailHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.detailIdentity {
+  min-width: 0;
+}
+
+.detailTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.detailName {
+  margin: 0;
+  font-size: var(--fs-15);
+  font-weight: var(--fw-strong);
+}
+
+.detailDesc {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+.detailActions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-thead) > tr > th {
+  height: 40px;
+  padding: 0 var(--sp-3);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-ui);
+  letter-spacing: var(--ls-mono);
+}
+
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-tbody) > tr > td {
+  padding: 6px var(--sp-3);
+  vertical-align: middle;
+}
+
+.layout :global(.ant-table-tbody) > tr {
+  cursor: pointer;
+}
+
+.layout :global(.ant-table-tbody) > tr > td {
+  padding: 6px var(--sp-3);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  letter-spacing: var(--ls-mono);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.notice {
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--tag-accent-bg);
+  border: 1px solid var(--tag-border);
+  border-radius: var(--r-3);
+  color: var(--fg);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}

@@ -2,13 +2,9 @@ import { Button, Input, Select } from 'antd';
 import { useState } from 'react';
 import { UnitTreeSelect, useUnitOptionsQuery } from '../../units/public';
 import { useRoleOptionsQuery } from '../../roles/public';
+import { DICTIONARY_CODES, DictSelect, useDictionary } from '../../dictionaries/public';
 import { EMPTY_USER_FILTERS, type UserFilters, type UserStatusFilter } from '../model';
 import styles from './UserSearchForm.module.css';
-
-const STATUS_OPTIONS: { value: Exclude<UserStatusFilter, ''>; label: string }[] = [
-  { value: 'ENABLED', label: '启用' },
-  { value: 'DISABLED', label: '已禁用' },
-];
 
 /**
  * 用户查询区：正在输入的条件与已提交的查询分开，只有点「查询」或回车才提交。
@@ -24,6 +20,7 @@ export function UserSearchForm({
 }) {
   const units = useUnitOptionsQuery();
   const roles = useRoleOptionsQuery();
+  const statusDictionary = useDictionary(DICTIONARY_CODES.status);
   const [filters, setFilters] = useState<UserFilters>(EMPTY_USER_FILTERS);
   const [expanded, setExpanded] = useState(false);
 
@@ -98,12 +95,14 @@ export function UserSearchForm({
         <label className={styles.label} htmlFor="user-status">
           启用状态
         </label>
-        <Select
+        <DictSelect
           id="user-status"
           className={styles.select}
+          dictionary={statusDictionary.data}
+          loading={statusDictionary.isPending}
           value={filters.status}
-          options={[{ value: '', label: '全部状态' }, ...STATUS_OPTIONS]}
-          onChange={(value: UserStatusFilter) => patch({ status: value })}
+          includeAllLabel="全部状态"
+          onChange={(value) => patch({ status: value as UserStatusFilter })}
         />
       </div>
 

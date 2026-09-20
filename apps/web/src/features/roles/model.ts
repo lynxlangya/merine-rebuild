@@ -50,7 +50,8 @@ export function isBuiltinProtectedError(error: unknown): boolean {
 
 /**
  * 删除按钮能不能用。返回原因文案而不是布尔值：界面必须写出「为什么不能删」，
- * 而不是静默隐藏按钮或允许点下去再失败。
+ * 而不是禁用后只留一个没有理由的按钮，或者允许点下去再失败。
+ * （权限导致的不可用是另一回事：那种按钮直接不渲染。）
  */
 export function deleteBlockedReason(
   role: Pick<RoleListItem, 'builtin' | 'userCount'>,

@@ -22,6 +22,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../features/auth/AuthProvider';
+import { useDictionariesQuery } from '../features/dictionaries/public';
 import {
   findBreadcrumb,
   toNavItems,
@@ -86,6 +87,9 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const myMenus = useMyMenusQuery();
+  // 会话级字典预取：进入应用时拉一次全部字典，页面里的 useDictionary 直接读这份缓存，
+  // 切换页面不会重复请求；登录/退出/401 由 queryClient.clear() 清掉。
+  useDictionariesQuery();
 
   // 窄屏（1366×768 是本轮验收尺寸）优先折叠导航，把宽度让给内容。
   // 只响应“跨入窄屏”，变宽不自动展开——那会覆盖用户刚刚的手动选择。

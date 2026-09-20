@@ -15,6 +15,10 @@
       "description": "登录、退出与当前身份；会话保存在服务端，Cookie 只带会话标识"
     },
     {
+      "name": "字典",
+      "description": "读取字典与字典项（登录即可）"
+    },
+    {
       "name": "角色管理",
       "description": "角色查询、新增、编辑、启停、删除与成员查看"
     },
@@ -29,6 +33,10 @@
     {
       "name": "菜单管理",
       "description": "菜单资源树与按钮权限维护"
+    },
+    {
+      "name": "字典管理",
+      "description": "字典类型与字典项维护；取值不可改，只停用不删除"
     },
     {
       "name": "用户管理",
@@ -360,6 +368,125 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseMenuDeleteImpact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dictionaries/{code}": {
+      "get": {
+        "tags": [
+          "字典管理"
+        ],
+        "summary": "查询字典详情（含全部字典项与停用项）",
+        "operationId": "detail_2",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDictionaryView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "字典管理"
+        ],
+        "summary": "编辑字典名称、说明与状态",
+        "operationId": "update_4",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDictionary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDictionaryView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dictionaries/{code}/items/{value}": {
+      "put": {
+        "tags": [
+          "字典管理"
+        ],
+        "summary": "编辑字典项标签、说明、排序与状态",
+        "operationId": "updateItem",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDictionaryItem"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDictionaryItemView"
                 }
               }
             }
@@ -846,13 +973,104 @@
         }
       }
     },
+    "/api/system/dictionaries": {
+      "get": {
+        "tags": [
+          "字典管理"
+        ],
+        "summary": "查询字典类型列表",
+        "operationId": "list_3",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDictionaryListItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "字典管理"
+        ],
+        "summary": "新建字典类型",
+        "operationId": "create_4",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDictionary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDictionaryView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dictionaries/{code}/items": {
+      "post": {
+        "tags": [
+          "字典管理"
+        ],
+        "summary": "新增字典项（取值创建后不可修改）",
+        "operationId": "createItem",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDictionaryItem"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDictionaryItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/bootstrap/probes": {
       "post": {
         "tags": [
           "bootstrap-controller"
         ],
         "summary": "写入一条本地合成联调记录",
-        "operationId": "create_4",
+        "operationId": "create_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1126,6 +1344,37 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListNavigationNode"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dictionaries": {
+      "get": {
+        "tags": [
+          "字典"
+        ],
+        "summary": "批量读取字典；不传 codes 时返回全部字典（含停用项）",
+        "operationId": "list_4",
+        "parameters": [
+          {
+            "name": "codes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDictionaryView"
                 }
               }
             }
@@ -1745,6 +1994,227 @@
           "version"
         ]
       },
+      "UpdateDictionary": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "ENABLED|DISABLED"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "version"
+        ]
+      },
+      "ApiResponseDictionaryView": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DictionaryView"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "DictionaryItemView": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "字典项取值，在所属字典内唯一，创建后不可修改"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "字典项说明；未填写为 null"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "description": "字典项状态：ENABLED 启用，DISABLED 停用"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "编辑版本；保存时原样提交，冲突须重新读取"
+          }
+        },
+        "required": [
+          "label",
+          "sortOrder",
+          "status",
+          "value",
+          "version"
+        ]
+      },
+      "DictionaryView": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "字典编码，形如 common.status 或 vessel.type"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "字典说明；未填写为 null"
+          },
+          "status": {
+            "type": "string",
+            "description": "字典状态：ENABLED 启用，DISABLED 停用；停用的字典不返回字典项"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "编辑版本"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "最近修改时刻（UTC）"
+          },
+          "items": {
+            "type": "array",
+            "description": "字典项，按排序升序，含停用项",
+            "items": {
+              "$ref": "#/components/schemas/DictionaryItemView"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "items",
+          "name",
+          "status",
+          "version"
+        ]
+      },
+      "UpdateDictionaryItem": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "ENABLED|DISABLED"
+          }
+        },
+        "required": [
+          "label",
+          "sortOrder",
+          "status",
+          "version"
+        ]
+      },
+      "ApiResponseDictionaryItemView": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DictionaryItemView"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
       "CreateUser": {
         "type": "object",
         "properties": {
@@ -2139,6 +2609,67 @@
         "required": [
           "createdMenus",
           "createdPermissions"
+        ]
+      },
+      "CreateDictionary": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9._-]{2,63}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "CreateDictionaryItem": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "业务数据里保存的值，创建后不可修改",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "description": "同类型内排序，越小越靠前；缺省为 0",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "label",
+          "value"
         ]
       },
       "CreateProbe": {
@@ -2874,6 +3405,85 @@
           "label"
         ]
       },
+      "ApiResponseListDictionaryListItem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictionaryListItem"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "DictionaryListItem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "字典说明；未填写为 null"
+          },
+          "status": {
+            "type": "string",
+            "description": "字典状态：ENABLED 启用，DISABLED 停用"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "字典项数量（含停用项）"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "最近修改时刻（UTC）"
+          }
+        },
+        "required": [
+          "code",
+          "itemCount",
+          "name",
+          "status",
+          "version"
+        ]
+      },
       "ApiResponseListNavigationNode": {
         "type": "object",
         "properties": {
@@ -2946,6 +3556,39 @@
           "id",
           "name",
           "type"
+        ]
+      },
+      "ApiResponseListDictionaryView": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictionaryView"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
         ]
       },
       "ApiResponseBootstrapStatus": {

@@ -3,6 +3,7 @@ import type { UnitTreeNode } from '@merine/api-contract';
 import { Alert, Button, Empty, Input, Skeleton, Tag, Tree } from 'antd';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { DICTIONARY_CODES, useDictionary } from '../../dictionaries/public';
 import {
   collectUnitTreeKeys,
   defaultUnitTreeExpandedKeys,
@@ -31,6 +32,7 @@ export function UnitTreePanel({
   onRetry: () => void;
 }) {
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+  const levelDictionary = useDictionary(DICTIONARY_CODES.unitLevel).data;
   const filtered = useMemo(() => filterUnitTree(nodes, search), [nodes, search]);
   const defaultExpandedKeys = useMemo(() => defaultUnitTreeExpandedKeys(nodes), [nodes]);
 
@@ -52,14 +54,14 @@ export function UnitTreePanel({
             <span className={styles.node}>
               <span className={styles.nodeName}>{node.name}</span>
               <Tag className={styles.levelTag} variant="filled">
-                {unitLevelLabel(node.level)}
+                {unitLevelLabel(node.level, levelDictionary)}
               </Tag>
             </span>
           ),
           children: node.children.map(toNode),
         };
       }),
-    [filtered],
+    [filtered, levelDictionary],
   );
 
   const total = nodes.length === 0 ? 0 : collectUnitTreeKeys(nodes).length;

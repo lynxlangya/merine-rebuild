@@ -8,7 +8,6 @@ export { menuKeys, useMenuTreeQuery, useMyMenusQuery, useRouteKeysQuery } from '
 export {
   findBreadcrumb,
   flattenMenuTree,
-  menuTypeLabel,
   toHomeEntries,
   toNavItems,
   type HomeEntry,

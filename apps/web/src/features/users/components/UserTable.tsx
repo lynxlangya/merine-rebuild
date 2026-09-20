@@ -3,6 +3,7 @@ import type { UserSummary } from '@merine/api-contract';
 import { Alert, Button, Empty, Skeleton, Switch, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { TablePager } from '../../../shared/ui/TablePager';
+import { DICTIONARY_CODES, dictLabel, useDictionary } from '../../dictionaries/public';
 import { isUserEnabled } from '../model';
 import styles from './UserTable.module.css';
 
@@ -56,7 +57,7 @@ export function UserTable({
   refreshError: string | null;
   /** 正在提交启用/停用的用户 id；目标行显示 loading，其余行暂时禁用 */
   statusChangingIds: string[];
-  /** 按钮级权限：无权限时按钮保留可见但禁用，并写明原因 */
+  /** 按钮级权限：没有权限的动作按钮不渲染（DOM 里也不存在）；带状态展示的开关保留可见但禁用 */
   canEdit: boolean;
   canToggle: boolean;
   canResetPassword: boolean;
@@ -70,6 +71,8 @@ export function UserTable({
   onRetry: () => void;
   onClearFilters: () => void;
 }) {
+  // 开关上的文案来自字典：改字典标签即可统一调整所有页面的措辞
+  const statusDictionary = useDictionary(DICTIONARY_CODES.status).data;
   const columns: TableColumnsType<UserSummary> = [
     {
       title: '账号',
@@ -109,8 +112,8 @@ export function UserTable({
             checked={enabled}
             loading={changing}
             disabled={!canToggle || statusChangingIds.length > 0}
-            checkedChildren="启用"
-            unCheckedChildren="禁用"
+            checkedChildren={dictLabel(statusDictionary, 'ENABLED')}
+            unCheckedChildren={dictLabel(statusDictionary, 'DISABLED')}
             title={canToggle ? undefined : '需要「用户管理 · 启停」权限'}
             aria-label={`${user.displayName}：${enabled ? '点击禁用账号' : '点击启用账号'}`}
             onChange={() => onStatusAction(user)}
@@ -132,34 +135,38 @@ export function UserTable({
         );
       },
     },
-    {
-      title: '操作',
-      key: 'actions',
-      align: 'right',
-      width: 184,
-      render: (_value, user) => (
-        <span className={styles.actions}>
-          <Button
-            type="text"
-            size="small"
-            disabled={!canEdit}
-            title={canEdit ? undefined : '需要「用户管理 · 编辑」权限'}
-            onClick={(event) => onEdit(user, event.currentTarget)}
-          >
-            编辑
-          </Button>
-          <Button
-            type="text"
-            size="small"
-            disabled={!canResetPassword}
-            title={canResetPassword ? undefined : '需要「用户管理 · 重置密码」权限'}
-            onClick={(event) => onResetPassword(user, event.currentTarget)}
-          >
-            重置密码
-          </Button>
-        </span>
-      ),
-    },
+    ...(canEdit || canResetPassword
+      ? [
+          {
+            title: '操作',
+            key: 'actions',
+            align: 'right' as const,
+            width: 184,
+            render: (_value: unknown, user: UserSummary) => (
+              <span className={styles.actions}>
+                {canEdit && (
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={(event) => onEdit(user, event.currentTarget)}
+                  >
+                    编辑
+                  </Button>
+                )}
+                {canResetPassword && (
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={(event) => onResetPassword(user, event.currentTarget)}
+                  >
+                    重置密码
+                  </Button>
+                )}
+              </span>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const emptyText = hasFilters ? (
@@ -192,15 +199,12 @@ export function UserTable({
         <b className={styles.toolbarTitle}>用户列表</b>
         <Tag className={styles.countTag}>{isInitialLoading ? '—' : total}</Tag>
         <span className={styles.spacer} />
-        <span className={styles.selected}>{selectedIds.length} 项已选</span>
-        <Button
-          size="small"
-          disabled={!canToggle || selectedIds.length === 0}
-          title={canToggle ? undefined : '需要「用户管理 · 启停」权限'}
-          onClick={onBulkDisable}
-        >
-          批量禁用
-        </Button>
+        {canToggle && <span className={styles.selected}>{selectedIds.length} 项已选</span>}
+        {canToggle && (
+          <Button size="small" disabled={selectedIds.length === 0} onClick={onBulkDisable}>
+            批量禁用
+          </Button>
+        )}
         <Button size="small" icon={<ReloadOutlined />} loading={isRefreshing} onClick={onRefresh}>
           刷新
         </Button>
@@ -239,14 +243,19 @@ export function UserTable({
               columns={columns}
               pagination={false}
               locale={{ emptyText }}
-              rowSelection={{
-                columnWidth: 40,
-                selectedRowKeys: selectedIds,
-                onChange: (keys) => onSelectedIdsChange(keys.map((key) => String(key))),
-                // antd 默认给选择框的 aria-label 是英文（Select all / Select row N），中文界面下补上中文
-                getTitleCheckboxProps: () => ({ 'aria-label': '全选本页' }),
-                getCheckboxProps: (user) => ({ 'aria-label': `选择 ${user.loginName}` }),
-              }}
+              // 选择框只服务于「批量禁用」：没有启停权限时不渲染，免得留一排没有出口的勾选框
+              rowSelection={
+                canToggle
+                  ? {
+                      columnWidth: 40,
+                      selectedRowKeys: selectedIds,
+                      onChange: (keys) => onSelectedIdsChange(keys.map((key) => String(key))),
+                      // antd 默认给选择框的 aria-label 是英文（Select all / Select row N），中文界面下补上中文
+                      getTitleCheckboxProps: () => ({ 'aria-label': '全选本页' }),
+                      getCheckboxProps: (user) => ({ 'aria-label': `选择 ${user.loginName}` }),
+                    }
+                  : undefined
+              }
             />
           </>
         )}

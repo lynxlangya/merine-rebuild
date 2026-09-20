@@ -3,6 +3,7 @@ import type { RoleListItem } from '@merine/api-contract';
 import { Alert, Button, Empty, Skeleton, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { TablePager } from '../../../shared/ui/TablePager';
+import { DICTIONARY_CODES, DictTag, useDictionary } from '../../dictionaries/public';
 import { deleteBlockedReason, isRoleEnabled } from '../model';
 import styles from './RoleTable.module.css';
 
@@ -16,8 +17,8 @@ function formatUpdatedAt(value: RoleListItem['updatedAt']): string {
 
 /**
  * 角色列表：工具栏、表格与分页。
- * 没有写权限时按钮保留可见但禁用，并写明原因——禁用状态本身是权限信息，
- * 静默隐藏会让「为什么别人能改」无从回答。
+ * 没有权限的动作按钮直接不渲染（DOM 里也不存在，避免改掉 disabled 属性就能点）；
+ * 业务规则导致的不可用（内置角色、还有成员）保留可见但禁用，并写明原因。
  */
 export function RoleTable({
   roles,
@@ -64,9 +65,7 @@ export function RoleTable({
   onRetry: () => void;
   onClearFilters: () => void;
 }) {
-  const updateHint = canUpdate ? undefined : '需要「角色管理 · 编辑」权限';
-  const toggleHint = canToggle ? undefined : '需要「角色管理 · 启停」权限';
-  const deleteHint = canDelete ? undefined : '需要「角色管理 · 删除」权限';
+  const statusDictionary = useDictionary(DICTIONARY_CODES.status).data;
 
   const columns: TableColumnsType<RoleListItem> = [
     {
@@ -118,12 +117,9 @@ export function RoleTable({
       title: '状态',
       dataIndex: 'status',
       width: 96,
-      render: (value: RoleListItem['status']) =>
-        isRoleEnabled(value) ? (
-          <Tag className={styles.enabledTag}>启用</Tag>
-        ) : (
-          <Tag className={styles.disabledTag}>已停用</Tag>
-        ),
+      render: (value: RoleListItem['status']) => (
+        <DictTag dictionary={statusDictionary} value={value} />
+      ),
     },
     {
       title: '最近修改',
@@ -146,38 +142,41 @@ export function RoleTable({
         const changing = statusChangingCodes.includes(role.code);
         return (
           <span className={styles.actions}>
-            <Button
-              type="text"
-              size="small"
-              disabled={!canUpdate}
-              title={updateHint}
-              onClick={(event) => onEdit(role, event.currentTarget)}
-            >
-              编辑
-            </Button>
+            {canUpdate && (
+              <Button
+                type="text"
+                size="small"
+                onClick={(event) => onEdit(role, event.currentTarget)}
+              >
+                编辑
+              </Button>
+            )}
             <Button type="text" size="small" onClick={() => onMembers(role)}>
               成员
             </Button>
-            <Button
-              type="text"
-              size="small"
-              loading={changing}
-              disabled={!canToggle || statusChangingCodes.length > 0}
-              title={toggleHint}
-              onClick={() => onStatusAction(role)}
-            >
-              {isRoleEnabled(role.status) ? '停用' : '启用'}
-            </Button>
-            <Button
-              type="text"
-              size="small"
-              danger
-              disabled={!canDelete || blocked !== null}
-              title={blocked ?? deleteHint}
-              onClick={(event) => onDelete(role, event.currentTarget)}
-            >
-              删除
-            </Button>
+            {canToggle && (
+              <Button
+                type="text"
+                size="small"
+                loading={changing}
+                disabled={statusChangingCodes.length > 0}
+                onClick={() => onStatusAction(role)}
+              >
+                {isRoleEnabled(role.status) ? '停用' : '启用'}
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                type="text"
+                size="small"
+                danger
+                disabled={blocked !== null}
+                title={blocked ?? undefined}
+                onClick={(event) => onDelete(role, event.currentTarget)}
+              >
+                删除
+              </Button>
+            )}
           </span>
         );
       },

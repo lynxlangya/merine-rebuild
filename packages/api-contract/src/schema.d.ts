@@ -72,6 +72,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system/dictionaries/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询字典详情（含全部字典项与停用项） */
+        get: operations["detail_2"];
+        /** 编辑字典名称、说明与状态 */
+        put: operations["update_4"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/dictionaries/{code}/items/{value}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 编辑字典项标签、说明、排序与状态 */
+        put: operations["updateItem"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/users": {
         parameters: {
             query?: never;
@@ -246,6 +281,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system/dictionaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询字典类型列表 */
+        get: operations["list_3"];
+        put?: never;
+        /** 新建字典类型 */
+        post: operations["create_4"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/dictionaries/{code}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 新增字典项（取值创建后不可修改） */
+        post: operations["createItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bootstrap/probes": {
         parameters: {
             query?: never;
@@ -256,7 +326,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** 写入一条本地合成联调记录 */
-        post: operations["create_4"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -393,6 +463,23 @@ export interface paths {
         };
         /** 查询当前账号可见的导航树 */
         get: operations["myMenus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dictionaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 批量读取字典；不传 codes 时返回全部字典（含停用项） */
+        get: operations["list_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -634,6 +721,75 @@ export interface components {
             /** @description 下级节点，按排序升序 */
             children: components["schemas"]["MenuNode"][];
         };
+        UpdateDictionary: {
+            /** Format: int32 */
+            version: number;
+            name: string;
+            description?: string | null;
+            status: string;
+        };
+        ApiResponseDictionaryView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["DictionaryView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        DictionaryItemView: {
+            /** @description 字典项取值，在所属字典内唯一，创建后不可修改 */
+            value: string;
+            label: string;
+            /** @description 字典项说明；未填写为 null */
+            description?: string | null;
+            /** Format: int32 */
+            sortOrder: number;
+            /** @description 字典项状态：ENABLED 启用，DISABLED 停用 */
+            status: string;
+            /**
+             * Format: int32
+             * @description 编辑版本；保存时原样提交，冲突须重新读取
+             */
+            version: number;
+        };
+        DictionaryView: {
+            /** @description 字典编码，形如 common.status 或 vessel.type */
+            code: string;
+            name: string;
+            /** @description 字典说明；未填写为 null */
+            description?: string | null;
+            /** @description 字典状态：ENABLED 启用，DISABLED 停用；停用的字典不返回字典项 */
+            status: string;
+            /**
+             * Format: int32
+             * @description 编辑版本
+             */
+            version: number;
+            /**
+             * Format: date-time
+             * @description 最近修改时刻（UTC）
+             */
+            updatedAt?: string | null;
+            /** @description 字典项，按排序升序，含停用项 */
+            items: components["schemas"]["DictionaryItemView"][];
+        };
+        UpdateDictionaryItem: {
+            /** Format: int32 */
+            version: number;
+            label: string;
+            description?: string | null;
+            /** Format: int32 */
+            sortOrder: number;
+            status: string;
+        };
+        ApiResponseDictionaryItemView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["DictionaryItemView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
         CreateUser: {
             loginName: string;
             displayName: string;
@@ -758,6 +914,22 @@ export interface components {
              * @description 新建的权限码数
              */
             createdPermissions: number;
+        };
+        CreateDictionary: {
+            code: string;
+            name: string;
+            description?: string | null;
+        };
+        CreateDictionaryItem: {
+            /** @description 业务数据里保存的值，创建后不可修改 */
+            value: string;
+            label: string;
+            description?: string | null;
+            /**
+             * Format: int32
+             * @description 同类型内排序，越小越靠前；缺省为 0
+             */
+            sortOrder?: number;
         };
         CreateProbe: {
             note: string;
@@ -991,6 +1163,34 @@ export interface components {
             /** @description 页面名称，便于选择 */
             label: string;
         };
+        ApiResponseListDictionaryListItem: {
+            code: string;
+            message: string;
+            data: components["schemas"]["DictionaryListItem"][];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        DictionaryListItem: {
+            code: string;
+            name: string;
+            /** @description 字典说明；未填写为 null */
+            description?: string | null;
+            /** @description 字典状态：ENABLED 启用，DISABLED 停用 */
+            status: string;
+            /** Format: int32 */
+            version: number;
+            /**
+             * Format: int32
+             * @description 字典项数量（含停用项）
+             */
+            itemCount: number;
+            /**
+             * Format: date-time
+             * @description 最近修改时刻（UTC）
+             */
+            updatedAt?: string | null;
+        };
         ApiResponseListNavigationNode: {
             code: string;
             message: string;
@@ -1009,6 +1209,14 @@ export interface components {
             /** @description 节点说明；未填写为 null */
             description?: string | null;
             children: components["schemas"]["NavigationNode"][];
+        };
+        ApiResponseListDictionaryView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["DictionaryView"][];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
         };
         ApiResponseBootstrapStatus: {
             code: string;
@@ -1263,6 +1471,81 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMenuDeleteImpact"];
+                };
+            };
+        };
+    };
+    detail_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDictionaryView"];
+                };
+            };
+        };
+    };
+    update_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDictionary"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDictionaryView"];
+                };
+            };
+        };
+    };
+    updateItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+                value: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDictionaryItem"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDictionaryItemView"];
                 };
             };
         };
@@ -1597,7 +1880,77 @@ export interface operations {
             };
         };
     };
+    list_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDictionaryListItem"];
+                };
+            };
+        };
+    };
     create_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDictionary"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDictionaryView"];
+                };
+            };
+        };
+    };
+    createItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDictionaryItem"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDictionaryItemView"];
+                };
+            };
+        };
+    };
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -1828,6 +2181,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListNavigationNode"];
+                };
+            };
+        };
+    };
+    list_4: {
+        parameters: {
+            query?: {
+                codes?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDictionaryView"];
                 };
             };
         };

@@ -67,7 +67,7 @@ class MenuAdminRegressionTest extends MenuAdminRegressionSupport {
         List<String> keys = jsonOf(bodyOf(routeKeys), "$.data[*].key");
         assertThat(keys)
                 .containsExactlyInAnyOrder("system.users", "system.roles", "system.menus",
-                        "system.units", "dev.diagnostics");
+                        "system.units", "system.dictionaries", "dev.diagnostics");
     }
 
     @Test

@@ -1,12 +1,8 @@
-import { Button, Input, Select } from 'antd';
+import { Button, Input } from 'antd';
 import { useState } from 'react';
+import { DICTIONARY_CODES, DictSelect, useDictionary } from '../../dictionaries/public';
 import { EMPTY_ROLE_FILTERS, type RoleFilters, type RoleStatusFilter } from '../model';
 import styles from './RoleSearchForm.module.css';
-
-const STATUS_OPTIONS: { value: Exclude<RoleStatusFilter, ''>; label: string }[] = [
-  { value: 'ENABLED', label: '启用' },
-  { value: 'DISABLED', label: '已停用' },
-];
 
 /**
  * 角色查询区：正在输入的条件与已提交的查询分开，只有点「查询」或回车才提交。
@@ -20,6 +16,7 @@ export function RoleSearchForm({
   onReset: () => void;
 }) {
   const [filters, setFilters] = useState<RoleFilters>(EMPTY_ROLE_FILTERS);
+  const statusDictionary = useDictionary(DICTIONARY_CODES.status);
 
   return (
     <form
@@ -49,13 +46,15 @@ export function RoleSearchForm({
         <label className={styles.label} htmlFor="role-status">
           状态
         </label>
-        <Select
+        <DictSelect
           id="role-status"
           className={styles.select}
+          dictionary={statusDictionary.data}
+          loading={statusDictionary.isPending}
           value={filters.status}
-          options={[{ value: '', label: '全部状态' }, ...STATUS_OPTIONS]}
-          onChange={(value: RoleStatusFilter) =>
-            setFilters((previous) => ({ ...previous, status: value }))
+          includeAllLabel="全部状态"
+          onChange={(value) =>
+            setFilters((previous) => ({ ...previous, status: value as RoleStatusFilter }))
           }
         />
       </div>

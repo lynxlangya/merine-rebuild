@@ -45,3 +45,12 @@ export type CreateMenu = components['schemas']['CreateMenu'];
 export type UpdateMenu = components['schemas']['UpdateMenu'];
 export type MenuDeleteImpact = components['schemas']['MenuDeleteImpact'];
 export type RestoreMenusResult = components['schemas']['RestoreMenusResult'];
+
+/** 字典：内置枚举与业务字典共用同一形状；管理接口另有列表与写请求类型。 */
+export type DictionaryItemView = components['schemas']['DictionaryItemView'];
+export type DictionaryView = components['schemas']['DictionaryView'];
+export type DictionaryListItem = components['schemas']['DictionaryListItem'];
+export type CreateDictionary = components['schemas']['CreateDictionary'];
+export type UpdateDictionary = components['schemas']['UpdateDictionary'];
+export type CreateDictionaryItem = components['schemas']['CreateDictionaryItem'];
+export type UpdateDictionaryItem = components['schemas']['UpdateDictionaryItem'];

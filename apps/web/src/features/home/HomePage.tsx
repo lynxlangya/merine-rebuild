@@ -30,7 +30,7 @@ export function HomePage() {
       <PageHeader
         demo={false}
         title="首页"
-        description="本地开发环境下的海防研判工作台。系统管理里已开放用户、角色、菜单与单位管理，功能权限按页面与按钮分配给角色。"
+        description="本地开发环境下的海防研判工作台。系统管理里已开放用户、角色、菜单、单位与字典管理，功能权限按页面与按钮分配给角色；没有权限的入口与按钮不会出现在页面上。"
       />
 
       <div className={styles.grid}>

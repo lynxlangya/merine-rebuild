@@ -200,15 +200,16 @@ export function UserListPage() {
         title="用户管理"
         description="账号、所属单位、角色与启用状态。账号管理权限不包含跨单位业务资料的访问范围。"
         actions={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={forbidden || !canCreate}
-            title={canCreate ? undefined : '需要「用户管理 · 新建」权限'}
-            onClick={(event) => openDrawer(null, event.currentTarget)}
-          >
-            新建用户
-          </Button>
+          canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              disabled={forbidden}
+              onClick={(event) => openDrawer(null, event.currentTarget)}
+            >
+              新建用户
+            </Button>
+          )
         }
       />
 

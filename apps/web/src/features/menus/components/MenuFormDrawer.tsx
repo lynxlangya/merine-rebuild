@@ -1,12 +1,18 @@
-import type { MenuNode, RouteKeyOption } from '@merine/api-contract';
+import type { RouteKeyOption } from '@merine/api-contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert, App, Button, Drawer, Form, Input, Select, Tag } from 'antd';
 import type { InputRef } from 'antd';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { errorText, isForbiddenError } from '../../../shared/api-error';
 import { ApiError } from '../../../shared/http';
+import {
+  DICTIONARY_CODES,
+  dictLabel,
+  toDictOptions,
+  useDictionary,
+} from '../../dictionaries/public';
 import { createMenu, updateMenu } from '../api';
-import { allowedChildTypes, menuTypeLabel, permissionCodePrefix, type MenuType } from '../model';
+import { allowedChildTypes, permissionCodePrefix, type MenuRow, type MenuType } from '../model';
 import { menuKeys } from '../queries';
 import styles from './MenuFormDrawer.module.css';
 
@@ -52,9 +58,9 @@ export function MenuFormDrawer({
 }: {
   open: boolean;
   /** null 表示新增 */
-  target: MenuNode | null;
+  target: MenuRow | null;
   /** 新增时的上级节点；null 表示顶层 */
-  parent: MenuNode | null;
+  parent: MenuRow | null;
   routeKeys: RouteKeyOption[];
   onClose: () => void;
   onClosed: () => void;
@@ -64,11 +70,18 @@ export function MenuFormDrawer({
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [form] = Form.useForm<MenuFormValues>();
+  const typeDictionary = useDictionary(DICTIONARY_CODES.menuType).data;
+  const statusDictionary = useDictionary(DICTIONARY_CODES.status).data;
   const nameRef = useRef<InputRef>(null);
   const editing = target !== null;
   const type = (editing ? target.type : undefined) as MenuType | undefined;
   const watchedType = Form.useWatch('type', form) ?? type;
-  const typeOptions = allowedChildTypes((parent?.type ?? null) as MenuType | null);
+  const parentType = (parent?.type ?? null) as MenuType | null;
+  /**
+   * 必须 memo：allowedChildTypes 每次调用都返回新数组，直接进下面的 effect 依赖，
+   * 会让"打开时初始化表单"这个 effect 每次渲染都重跑——用户刚输入的字会被 resetFields 抹掉。
+   */
+  const typeOptions = useMemo(() => allowedChildTypes(parentType), [parentType]);
 
   const save = useMutation({
     mutationFn: (values: MenuFormValues) => {
@@ -223,7 +236,7 @@ export function MenuFormDrawer({
             disabled={editing}
             options={typeOptions.map((option) => ({
               value: option,
-              label: menuTypeLabel(option),
+              label: dictLabel(typeDictionary, option),
             }))}
           />
         </Form.Item>
@@ -275,12 +288,7 @@ export function MenuFormDrawer({
         </Form.Item>
         {editing && (
           <Form.Item name="status" label="状态" extra="停用只影响导航与可分配性">
-            <Select
-              options={[
-                { value: 'ENABLED', label: '启用' },
-                { value: 'DISABLED', label: '停用' },
-              ]}
-            />
+            <Select options={toDictOptions(statusDictionary)} />
           </Form.Item>
         )}
         <Form.Item

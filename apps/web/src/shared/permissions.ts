@@ -29,6 +29,10 @@ export const PERMISSIONS = {
   unitUpdate: 'system:unit:update',
   unitDelete: 'system:unit:delete',
 
+  dictRead: 'system:dict:read',
+  dictCreate: 'system:dict:create',
+  dictUpdate: 'system:dict:update',
+
   diagnosticsRead: 'system:diagnostics:read',
   diagnosticsWrite: 'system:diagnostics:write',
 } as const;

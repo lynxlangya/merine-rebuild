@@ -101,25 +101,6 @@ export function findBreadcrumb(
   return walk(nodes, []);
 }
 
-export function menuTypeLabel(type: MenuType | string): string {
-  switch (type) {
-    case 'DIRECTORY':
-      return '目录';
-    case 'PAGE':
-      return '页面';
-    case 'TAB':
-      return '页签';
-    case 'BUTTON':
-      return '按钮';
-    default:
-      return type;
-  }
-}
-
-export function isMenuEnabled(status: MenuNode['status']): boolean {
-  return status === 'ENABLED';
-}
-
 /** 层级规则：与后端 MenuService.requireHierarchy 一致，前端只用来限制可选项。 */
 export function allowedChildTypes(parentType: MenuType | null): MenuType[] {
   switch (parentType) {
@@ -133,6 +114,40 @@ export function allowedChildTypes(parentType: MenuType | null): MenuType[] {
     default:
       return [];
   }
+}
+
+/**
+ * 表格行：叶子节点（按钮、没有下级的页签）不保留 children 字段。
+ * 接口对没有子节点的节点返回空数组，而 AntD 表格只要看到 children 就会画展开图标，
+ * 于是按钮行前面会多出一个点了没反应的折叠箭头。
+ */
+export type MenuRow = Omit<MenuNode, 'children'> & { children?: MenuRow[] };
+
+export function toMenuRows(nodes: readonly MenuNode[]): MenuRow[] {
+  return nodes.map((node) => {
+    const { children, ...rest } = node;
+    return children.length > 0 ? { ...rest, children: toMenuRows(children) } : rest;
+  });
+}
+
+/**
+ * 默认展开：每个一级（目录）都展开到二级，再展开第一个还有下级的二级节点到三级。
+ * 一进来能看清结构，又不会把每个页面的按钮一次性铺满整屏。
+ */
+export function defaultMenuExpandedKeys(rows: readonly MenuRow[]): string[] {
+  const keys: string[] = [];
+  let expandedFirstChild = false;
+  for (const row of rows) {
+    if (!row.children?.length) continue;
+    keys.push(row.id);
+    if (expandedFirstChild) continue;
+    const firstWithChildren = row.children.find((child) => child.children?.length);
+    if (firstWithChildren) {
+      keys.push(firstWithChildren.id);
+      expandedFirstChild = true;
+    }
+  }
+  return keys;
 }
 
 /**

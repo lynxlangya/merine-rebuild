@@ -36,7 +36,7 @@ describe('权限码清单自检', () => {
   });
 
   it('每个系统管理模块都有独立的查看码与按钮码', () => {
-    for (const module of ['user', 'role', 'menu', 'unit']) {
+    for (const module of ['user', 'role', 'menu', 'unit', 'dict']) {
       assert.ok(ALL_PERMISSION_CODES.includes(`system:${module}:read`));
       assert.ok(
         ALL_PERMISSION_CODES.some(

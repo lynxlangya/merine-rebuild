@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- owner: system.dictionary；只读写 sys_dict_type / sys_dict_item（含系统枚举的引导数据） -->
+<mapper namespace="com.merine.rebuild.system.dictionary.persistence.DictionaryMapper">
+
+    <!--
+      item_count 用相关子查询：JOIN 会按字典项数放大行数，把列表口径搞错。
+      dict_code 是 ascii_bin，等值比较把参数转成 ascii，非 ASCII 输入自然落空而不是报 1267。
+    -->
+    <sql id="typeColumns">
+        t.id          AS id,
+        t.dict_code   AS code,
+        t.dict_name   AS name,
+        t.description AS description,
+        t.status      AS status,
+        t.version     AS version,
+        t.updated_at  AS updatedAt,
+        (SELECT COUNT(*) FROM sys_dict_item i WHERE i.dict_type_id = t.id) AS itemCount
+    </sql>
+
+    <select id="findAllTypes" resultType="com.merine.rebuild.system.dictionary.persistence.DictionaryTypeRow">
+        SELECT <include refid="typeColumns"/>
+          FROM sys_dict_type t
+         ORDER BY t.dict_code
+    </select>
+
+    <select id="findByCode" resultType="com.merine.rebuild.system.dictionary.persistence.DictionaryTypeRow">
+        SELECT <include refid="typeColumns"/>
+          FROM sys_dict_type t
+         WHERE t.dict_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin
+    </select>
+
+    <insert id="insertType">
+        INSERT INTO sys_dict_type (dict_code, dict_name, description)
+        VALUES (#{code}, #{name}, #{description,jdbcType=VARCHAR})
+    </insert>
+
+    <update id="updateType">
+        UPDATE sys_dict_type
+           SET dict_name = #{name},
+               description = #{description,jdbcType=VARCHAR},
+               status = #{status},
+               version = version + 1,
+               updated_at = CURRENT_TIMESTAMP(6)
+         WHERE id = #{id} AND version = #{version}
+    </update>
+
+    <!-- 读接口与管理详情都要「全部字典项」：停用项也要能解析历史数据的标签 -->
+    <select id="findItemsByTypeIds" resultType="com.merine.rebuild.system.dictionary.persistence.DictionaryItemRow">
+        SELECT i.id           AS id,
+               i.dict_type_id AS typeId,
+               i.item_value   AS value,
+               i.item_label   AS label,
+               i.description  AS description,
+               i.sort_order   AS sortOrder,
+               i.status       AS status,
+               i.version      AS version,
+               i.updated_at   AS updatedAt
+          FROM sys_dict_item i
+         WHERE i.dict_type_id IN
+         <foreach item="id" collection="typeIds" open="(" separator="," close=")">#{id}</foreach>
+         ORDER BY i.sort_order, i.id
+    </select>
+
+    <select id="findItem" resultType="com.merine.rebuild.system.dictionary.persistence.DictionaryItemRow">
+        SELECT i.id           AS id,
+               i.dict_type_id AS typeId,
+               i.item_value   AS value,
+               i.item_label   AS label,
+               i.description  AS description,
+               i.sort_order   AS sortOrder,
+               i.status       AS status,
+               i.version      AS version,
+               i.updated_at   AS updatedAt
+          FROM sys_dict_item i
+         WHERE i.dict_type_id = #{typeId}
+           AND i.item_value = CONVERT(#{value} USING ascii) COLLATE ascii_bin
+    </select>
+
+    <insert id="insertItem">
+        INSERT INTO sys_dict_item (dict_type_id, item_value, item_label, description, sort_order)
+        VALUES (#{typeId}, #{value}, #{label}, #{description,jdbcType=VARCHAR}, #{sortOrder})
+    </insert>
+
+    <update id="updateItem">
+        UPDATE sys_dict_item
+           SET item_label = #{label},
+               description = #{description,jdbcType=VARCHAR},
+               sort_order = #{sortOrder},
+               status = #{status},
+               version = version + 1,
+               updated_at = CURRENT_TIMESTAMP(6)
+         WHERE id = #{id} AND version = #{version}
+    </update>
+
+</mapper>

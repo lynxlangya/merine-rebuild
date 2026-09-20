@@ -1,24 +1,30 @@
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import type { MenuNode } from '@merine/api-contract';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, App, Button, Empty, Result, Skeleton, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { errorText, isForbiddenError } from '../../shared/api-error';
 import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/public';
+import { DICTIONARY_CODES, DictTag, dictLabel, useDictionary } from '../dictionaries/public';
 import { deleteMenu, fetchMenuDeleteImpact, restoreMenus } from './api';
 import { MenuFormDrawer } from './components/MenuFormDrawer';
-import { allowedChildTypes, isMenuEnabled, menuTypeLabel, type MenuType } from './model';
+import {
+  allowedChildTypes,
+  defaultMenuExpandedKeys,
+  toMenuRows,
+  type MenuRow,
+  type MenuType,
+} from './model';
 import { menuKeys, useMenuTreeQuery, useRouteKeysQuery } from './queries';
 import styles from './MenuListPage.module.css';
 
 interface DrawerState {
   open: boolean;
-  target: MenuNode | null;
-  parent: MenuNode | null;
+  target: MenuRow | null;
+  parent: MenuRow | null;
 }
 
 /**
@@ -35,7 +41,7 @@ export function MenuListPage() {
   const me = state.status === 'authenticated' ? state.user : null;
   const [permissionLost, setPermissionLost] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>({ open: false, target: null, parent: null });
-  const [deleteTarget, setDeleteTarget] = useState<MenuNode | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MenuRow | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const triggerRef = useRef<HTMLElement | null>(null);
 
@@ -47,7 +53,12 @@ export function MenuListPage() {
 
   const tree = useMenuTreeQuery(canRead);
   const routeKeys = useRouteKeysQuery(canRead);
+  const typeDictionary = useDictionary(DICTIONARY_CODES.menuType).data;
+  const statusDictionary = useDictionary(DICTIONARY_CODES.status).data;
   const nodes = tree.data ?? [];
+  // 叶子节点去掉空 children（否则按钮行前面会多一个没用的展开箭头）
+  const rows = useMemo(() => toMenuRows(nodes), [nodes]);
+  const expandedKeys = useMemo(() => defaultMenuExpandedKeys(rows), [rows]);
   const forbidden = permissionLost || isForbiddenError(tree.error) || !canRead;
 
   const impact = useQuery({
@@ -57,7 +68,7 @@ export function MenuListPage() {
   });
 
   const remove = useMutation({
-    mutationFn: (node: MenuNode) => deleteMenu(node.id, node.version),
+    mutationFn: (node: MenuRow) => deleteMenu(node.id, node.version),
     onSuccess: async (result, node) => {
       setDeleteTarget(null);
       await queryClient.invalidateQueries({ queryKey: menuKeys.all });
@@ -96,17 +107,17 @@ export function MenuListPage() {
     },
   });
 
-  const openCreate = (parent: MenuNode | null, trigger: HTMLElement) => {
+  const openCreate = (parent: MenuRow | null, trigger: HTMLElement) => {
     triggerRef.current = trigger;
     setDrawer({ open: true, target: null, parent });
   };
 
-  const openEdit = (node: MenuNode, trigger: HTMLElement) => {
+  const openEdit = (node: MenuRow, trigger: HTMLElement) => {
     triggerRef.current = trigger;
     setDrawer({ open: true, target: node, parent: null });
   };
 
-  const openDelete = (node: MenuNode, trigger: HTMLElement) => {
+  const openDelete = (node: MenuRow, trigger: HTMLElement) => {
     triggerRef.current = trigger;
     remove.reset();
     setDeleteTarget(node);
@@ -117,7 +128,7 @@ export function MenuListPage() {
     triggerRef.current = null;
   };
 
-  const columns: TableColumnsType<MenuNode> = [
+  const columns: TableColumnsType<MenuRow> = [
     {
       title: '节点名称',
       dataIndex: 'name',
@@ -133,7 +144,7 @@ export function MenuListPage() {
       title: '类型',
       dataIndex: 'type',
       width: 84,
-      render: (value: string) => <Tag className={styles.typeTag}>{menuTypeLabel(value)}</Tag>,
+      render: (value: string) => <DictTag dictionary={typeDictionary} value={value} />,
     },
     {
       title: '路由 key',
@@ -162,60 +173,54 @@ export function MenuListPage() {
       title: '状态',
       dataIndex: 'status',
       width: 88,
-      render: (value: string) =>
-        isMenuEnabled(value) ? (
-          <Tag className={styles.enabledTag}>启用</Tag>
-        ) : (
-          <Tag className={styles.disabledTag}>已停用</Tag>
-        ),
+      render: (value: string) => <DictTag dictionary={statusDictionary} value={value} />,
     },
-    {
-      title: '操作',
-      key: 'actions',
-      align: 'right',
-      width: 208,
-      render: (_value, node) => {
-        const canAddChild = allowedChildTypes(node.type as MenuType).length > 0;
-        return (
-          <span className={styles.actions}>
-            <Button
-              type="text"
-              size="small"
-              disabled={!canCreate || !canAddChild}
-              title={
-                canCreate
-                  ? canAddChild
-                    ? undefined
-                    : '按钮节点下不能再建下级'
-                  : '需要「菜单管理 · 新增」权限'
-              }
-              onClick={(event) => openCreate(node, event.currentTarget)}
-            >
-              新增下级
-            </Button>
-            <Button
-              type="text"
-              size="small"
-              disabled={!canUpdate}
-              title={canUpdate ? undefined : '需要「菜单管理 · 编辑」权限'}
-              onClick={(event) => openEdit(node, event.currentTarget)}
-            >
-              编辑
-            </Button>
-            <Button
-              type="text"
-              size="small"
-              danger
-              disabled={!canDelete}
-              title={canDelete ? undefined : '需要「菜单管理 · 删除」权限'}
-              onClick={(event) => openDelete(node, event.currentTarget)}
-            >
-              删除
-            </Button>
-          </span>
-        );
-      },
-    },
+    ...(canCreate || canUpdate || canDelete
+      ? [
+          {
+            title: '操作',
+            key: 'actions',
+            align: 'right' as const,
+            width: 208,
+            render: (_value: MenuRow, node: MenuRow) => {
+              // 按钮是叶子：不展示「新增下级」，也不留一个永远禁用的按钮
+              const canAddChild = allowedChildTypes(node.type as MenuType).length > 0;
+              return (
+                <span className={styles.actions}>
+                  {canCreate && canAddChild && (
+                    <Button
+                      type="text"
+                      size="small"
+                      onClick={(event) => openCreate(node, event.currentTarget)}
+                    >
+                      新增下级
+                    </Button>
+                  )}
+                  {canUpdate && (
+                    <Button
+                      type="text"
+                      size="small"
+                      onClick={(event) => openEdit(node, event.currentTarget)}
+                    >
+                      编辑
+                    </Button>
+                  )}
+                  {canDelete && (
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      onClick={(event) => openDelete(node, event.currentTarget)}
+                    >
+                      删除
+                    </Button>
+                  )}
+                </span>
+              );
+            },
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -226,26 +231,26 @@ export function MenuListPage() {
         description="维护目录、页面、页签与按钮；页面只能绑前端已注册的路由 key。角色的功能权限直接来自这棵树。"
         actions={
           <>
-            <Button
-              disabled={!canRestore}
-              title={canRestore ? undefined : '需要「菜单管理 · 恢复默认」权限'}
-              loading={restore.isPending}
-              onClick={() => {
-                restore.reset();
-                setRestoreOpen(true);
-              }}
-            >
-              恢复默认菜单
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              disabled={!canRead || !canCreate}
-              title={canCreate ? undefined : '需要「菜单管理 · 新增」权限'}
-              onClick={(event) => openCreate(null, event.currentTarget)}
-            >
-              新增顶层节点
-            </Button>
+            {canRestore && (
+              <Button
+                loading={restore.isPending}
+                onClick={() => {
+                  restore.reset();
+                  setRestoreOpen(true);
+                }}
+              >
+                恢复默认菜单
+              </Button>
+            )}
+            {canCreate && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={(event) => openCreate(null, event.currentTarget)}
+              >
+                新增顶层节点
+              </Button>
+            )}
           </>
         }
       />
@@ -308,15 +313,15 @@ export function MenuListPage() {
                   <span className={styles.skeletonText}>正在加载菜单树…</span>
                 </div>
               ) : (
-                <Table<MenuNode>
+                <Table<MenuRow>
                   rowKey="id"
                   size="small"
                   tableLayout="fixed"
                   loading={tree.isFetching && !tree.isError}
-                  dataSource={nodes}
+                  dataSource={rows}
                   columns={columns}
                   pagination={false}
-                  expandable={{ defaultExpandAllRows: true }}
+                  expandable={{ defaultExpandedRowKeys: expandedKeys }}
                   locale={{
                     emptyText: (
                       <Empty
@@ -361,7 +366,7 @@ export function MenuListPage() {
         {deleteTarget && (
           <>
             <p className={styles.confirmTarget}>
-              {menuTypeLabel(deleteTarget.type)} <b>{deleteTarget.name}</b>
+              {dictLabel(typeDictionary, deleteTarget.type)} <b>{deleteTarget.name}</b>
               {deleteTarget.permissionCode && (
                 <>
                   （<span className={styles.mono}>{deleteTarget.permissionCode}</span>）

@@ -1,5 +1,6 @@
 import {
   ApartmentOutlined,
+  BookOutlined,
   MenuOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
@@ -7,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
+import { DictionaryListPage } from '../features/dictionaries/DictionaryListPage';
 import { MenuListPage } from '../features/menus/MenuListPage';
 import { RoleListPage } from '../features/roles/RoleListPage';
 import { UnitListPage } from '../features/units/UnitListPage';
@@ -50,6 +52,12 @@ export const appRoutes: RegisteredRoute[] = [
     path: '/system/units',
     element: <UnitListPage />,
     icon: <ApartmentOutlined />,
+  },
+  {
+    key: 'system.dictionaries',
+    path: '/system/dictionaries',
+    element: <DictionaryListPage />,
+    icon: <BookOutlined />,
   },
   {
     key: 'dev.diagnostics',

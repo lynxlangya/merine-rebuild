@@ -3,10 +3,11 @@ import { describe, it } from 'node:test';
 import type { MenuNode, NavigationNode } from '@merine/api-contract';
 import {
   allowedChildTypes,
+  defaultMenuExpandedKeys,
   findBreadcrumb,
-  menuTypeLabel,
   permissionCodePrefix,
   toHomeEntries,
+  toMenuRows,
   toNavItems,
 } from './model.ts';
 
@@ -94,8 +95,7 @@ describe('菜单节点规则', () => {
     assert.deepEqual(allowedChildTypes('BUTTON'), []);
   });
 
-  it('类型与权限码提示：页面权限码可用于推导按钮权限码前缀', () => {
-    assert.equal(menuTypeLabel('PAGE'), '页面');
+  it('权限码提示：页面权限码可用于推导按钮权限码前缀', () => {
     assert.equal(permissionCodePrefix('system:user:read'), 'system:user:');
     assert.equal(permissionCodePrefix(null), '');
   });
@@ -135,5 +135,72 @@ describe('菜单树与权限码', () => {
     ];
     assert.equal(tree[0].permissionCode, null);
     assert.equal(tree[0].children[0].permissionCode, 'system:user:read');
+  });
+});
+
+describe('菜单表格行与默认展开', () => {
+  const node = (partial: {
+    id: string;
+    name: string;
+    type: string;
+    children?: MenuNode[];
+  }): MenuNode =>
+    ({
+      parentId: null,
+      routeKey: null,
+      permissionCode: null,
+      description: null,
+      sortOrder: 0,
+      status: 'ENABLED',
+      version: 0,
+      updatedAt: '2026-09-20T00:00:00Z',
+      children: [],
+      ...partial,
+    }) as MenuNode;
+
+  const tree = [
+    node({
+      id: 'dir:system',
+      name: '系统管理',
+      type: 'DIRECTORY',
+      children: [
+        node({
+          id: 'page:users',
+          name: '用户管理',
+          type: 'PAGE',
+          children: [
+            node({ id: 'btn:user:create', name: '新建用户', type: 'BUTTON' }),
+            node({ id: 'btn:user:update', name: '编辑用户', type: 'BUTTON' }),
+          ],
+        }),
+        node({ id: 'page:roles', name: '角色管理', type: 'PAGE', children: [] }),
+      ],
+    }),
+    node({
+      id: 'dir:dev',
+      name: '开发工具',
+      type: 'DIRECTORY',
+      children: [node({ id: 'page:diagnostics', name: '工程诊断', type: 'PAGE' })],
+    }),
+  ];
+
+  it('叶子节点不带 children 字段，表格才不会给按钮画展开图标', () => {
+    const rows = toMenuRows(tree);
+    assert.equal('children' in rows[0].children![1], false);
+    assert.equal('children' in rows[0].children![0].children![0], false);
+    assert.equal(rows[0].children![0].children!.length, 2);
+  });
+
+  it('默认展开每个一级节点，再展开第一个有下级的二级节点', () => {
+    assert.deepEqual(defaultMenuExpandedKeys(toMenuRows(tree)), [
+      'dir:system',
+      'page:users',
+      'dir:dev',
+    ]);
+  });
+
+  it('没有下级的树不产生任何展开项', () => {
+    const flat = [node({ id: 'page:only', name: '孤立页面', type: 'PAGE' })];
+    assert.deepEqual(defaultMenuExpandedKeys(toMenuRows(flat)), []);
   });
 });

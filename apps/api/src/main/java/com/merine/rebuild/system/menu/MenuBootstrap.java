@@ -36,6 +36,8 @@ public class MenuBootstrap {
                     PermissionCodes.MENU_READ, 30, "菜单树与按钮权限维护"),
             new Entry("page:units", "dir:system", Type.PAGE, "单位管理", "system.units",
                     PermissionCodes.UNIT_READ, 40, "三级组织树维护"),
+            new Entry("page:dictionaries", "dir:system", Type.PAGE, "字典管理",
+                    "system.dictionaries", PermissionCodes.DICT_READ, 50, "字典类型与字典项维护"),
             new Entry("page:diagnostics", "dir:dev", Type.PAGE, "工程诊断", "dev.diagnostics",
                     PermissionCodes.DIAGNOSTICS_READ, 10, "页面 → API → MySQL 的最小链路"),
 
@@ -69,6 +71,10 @@ public class MenuBootstrap {
                     null, PermissionCodes.UNIT_UPDATE, 20, "修改单位名称、上级与行政区划"),
             new Entry("btn:unit:delete", "page:units", Type.BUTTON, "删除单位",
                     null, PermissionCodes.UNIT_DELETE, 30, "删除无下级且无用户的单位"),
+            new Entry("btn:dict:create", "page:dictionaries", Type.BUTTON, "新建字典",
+                    null, PermissionCodes.DICT_CREATE, 10, "新建字典类型与字典项"),
+            new Entry("btn:dict:update", "page:dictionaries", Type.BUTTON, "编辑字典",
+                    null, PermissionCodes.DICT_UPDATE, 20, "修改字典名称、说明、排序与启停状态"),
             new Entry("btn:diagnostics:write", "page:diagnostics", Type.BUTTON, "写入探针记录",
                     null, PermissionCodes.DIAGNOSTICS_WRITE, 10, "写入探针记录"));
 

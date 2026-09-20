@@ -1,0 +1,17 @@
+.neutral,
+.warning {
+  margin: 0;
+  border-radius: var(--r-2);
+  border-color: var(--tag-border);
+  color: var(--fg);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-ui);
+}
+
+.neutral {
+  background: var(--tag-neutral-bg);
+}
+
+.warning {
+  background: var(--tag-warning-bg);
+}

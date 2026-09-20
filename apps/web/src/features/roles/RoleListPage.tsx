@@ -168,15 +168,15 @@ export function RoleListPage() {
         title="角色管理"
         description="维护角色编码、说明与功能权限；用户在用户管理里被授予角色。角色决定能用什么功能，不决定能看哪些业务数据。"
         actions={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={!canRead || !canCreate}
-            title={canCreate ? undefined : '需要「角色管理 · 新建」权限'}
-            onClick={(event) => openDrawer(null, event.currentTarget)}
-          >
-            新建角色
-          </Button>
+          canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={(event) => openDrawer(null, event.currentTarget)}
+            >
+              新建角色
+            </Button>
+          )
         }
       />
 

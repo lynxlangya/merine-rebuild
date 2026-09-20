@@ -111,15 +111,16 @@ export function UnitListPage() {
         title="单位管理"
         description="维护总队、支队、大队三级组织树；单位编码稳定唯一，删除只允许无下级且无用户的空单位。"
         actions={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={forbidden || !canCreate}
-            title={canCreate ? undefined : '需要「单位管理 · 新增」权限'}
-            onClick={openCreateFromSelection}
-          >
-            新增单位
-          </Button>
+          canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              disabled={forbidden}
+              onClick={openCreateFromSelection}
+            >
+              新增单位
+            </Button>
+          )
         }
       />
 

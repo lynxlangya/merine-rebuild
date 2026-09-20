@@ -39,6 +39,10 @@ public final class PermissionCodes {
     public static final String DIAGNOSTICS_READ = "system:diagnostics:read";
     public static final String DIAGNOSTICS_WRITE = "system:diagnostics:write";
 
+    public static final String DICT_READ = "system:dict:read";
+    public static final String DICT_CREATE = "system:dict:create";
+    public static final String DICT_UPDATE = "system:dict:update";
+
     /**
      * 管理底线：一个账号要么持有内置管理员角色，要么**同时**持有这两个权限，
      * 才算「还能把系统管理恢复回来」——改用户角色与改角色权限是恢复入口，
@@ -56,6 +60,7 @@ public final class PermissionCodes {
                 ROLE_READ, ROLE_CREATE, ROLE_UPDATE, ROLE_TOGGLE_STATUS, ROLE_DELETE,
                 MENU_READ, MENU_CREATE, MENU_UPDATE, MENU_DELETE, MENU_RESTORE,
                 UNIT_READ, UNIT_CREATE, UNIT_UPDATE, UNIT_DELETE,
-                DIAGNOSTICS_READ, DIAGNOSTICS_WRITE);
+                DIAGNOSTICS_READ, DIAGNOSTICS_WRITE,
+                DICT_READ, DICT_CREATE, DICT_UPDATE);
     }
 }

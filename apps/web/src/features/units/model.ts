@@ -1,13 +1,19 @@
-import type { FieldError, UnitSummary, UnitTreeNode } from '@merine/api-contract';
+import type { DictionaryView, FieldError, UnitSummary, UnitTreeNode } from '@merine/api-contract';
 
-/** 页面统一使用业务层级名称，不在各组件里重复写 1/2/3 的文案映射。 */
+/** 字典未加载（或意外缺失该层级）时用的兜底文案，避免闪出裸数字。 */
 export const UNIT_LEVEL_LABELS: Record<number, string> = {
   1: '总队',
   2: '支队',
   3: '大队',
 };
 
-export function unitLevelLabel(level: number): string {
+/**
+ * 层级文案：优先取 system.unit.level 字典（页面只维护一处标签来源），
+ * 字典还没到或没有该值时才回退代码常量。判定始终按数值 level，字典只负责展示。
+ */
+export function unitLevelLabel(level: number, dictionary?: DictionaryView): string {
+  const item = dictionary?.items.find((entry) => entry.value === String(level));
+  if (item) return item.label;
   return UNIT_LEVEL_LABELS[level] ?? `第 ${level} 级`;
 }
 

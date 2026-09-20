@@ -93,33 +93,42 @@ export function DiagnosticsPage() {
           }
           style={{ marginBottom: 'var(--sp-3)' }}
         >
-          <Form<CreateProbe> form={form} layout="inline" onFinish={(input) => create.mutate(input)}>
-            <Form.Item
-              name="note"
-              label="联调记录"
-              rules={[
-                { required: true, whitespace: true, message: '请填写联调记录' },
-                { max: 120, message: '最多 120 个字符' },
-              ]}
+          {canWrite ? (
+            <Form<CreateProbe>
+              form={form}
+              layout="inline"
+              onFinish={(input) => create.mutate(input)}
             >
-              <Input
-                style={{ width: 320 }}
-                maxLength={120}
-                disabled={!connected || create.isPending || !canWrite}
-                placeholder="例如：我的第一次前后端数据库联调"
-              />
-            </Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<PlusOutlined />}
-              loading={create.isPending}
-              disabled={!connected || !canWrite}
-              title={canWrite ? undefined : '需要「工程诊断 · 写入」权限'}
-            >
-              写入测试记录
-            </Button>
-          </Form>
+              <Form.Item
+                name="note"
+                label="联调记录"
+                rules={[
+                  { required: true, whitespace: true, message: '请填写联调记录' },
+                  { max: 120, message: '最多 120 个字符' },
+                ]}
+              >
+                <Input
+                  style={{ width: 320 }}
+                  maxLength={120}
+                  disabled={!connected || create.isPending}
+                  placeholder="例如：我的第一次前后端数据库联调"
+                />
+              </Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<PlusOutlined />}
+                loading={create.isPending}
+                disabled={!connected}
+              >
+                写入测试记录
+              </Button>
+            </Form>
+          ) : (
+            <p style={{ color: 'var(--muted)', margin: 0 }}>
+              只读访问：写入探针记录需要「工程诊断 · 写入」权限。
+            </p>
+          )}
           {create.isError && (
             <Alert
               style={{ marginTop: 'var(--sp-3)' }}

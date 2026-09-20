@@ -20,6 +20,7 @@ public final class RegisteredRoutes {
             new Route("system.roles", "角色管理"),
             new Route("system.menus", "菜单管理"),
             new Route("system.units", "单位管理"),
+            new Route("system.dictionaries", "字典管理"),
             new Route("dev.diagnostics", "工程诊断"));
 
     private RegisteredRoutes() {

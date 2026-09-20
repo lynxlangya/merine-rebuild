@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { ApiError } from '../../../shared/http';
 import { errorText, isForbiddenError } from '../../../shared/api-error';
 import { createUnit, updateUnit } from '../api';
+import { DICTIONARY_CODES, useDictionary } from '../../dictionaries/public';
 import {
   buildParentSelectTree,
   findUnitTreeNode,
@@ -47,6 +48,7 @@ export function UnitFormDrawer({
 }) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const levelDictionary = useDictionary(DICTIONARY_CODES.unitLevel).data;
   const [form] = Form.useForm<UnitFormValues>();
   const codeRef = useRef<InputRef>(null);
   const nameRef = useRef<InputRef>(null);
@@ -230,7 +232,7 @@ export function UnitFormDrawer({
           label="上级单位"
           extra={
             derivedLevel
-              ? `保存后层级：${unitLevelLabel(derivedLevel)}。`
+              ? `保存后层级：${unitLevelLabel(derivedLevel, levelDictionary)}。`
               : '系统只允许一个一级单位；没有上级时保存会由后端校验。'
           }
         >
