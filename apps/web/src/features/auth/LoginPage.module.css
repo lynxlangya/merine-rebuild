@@ -25,20 +25,21 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  background: var(--nav-bg);
+  background-color: var(--nav-bg);
+  /* 装饰图走 CSS 背景而不是 <img>：窄屏断点整块 display:none 时浏览器不会
+     发起请求，也不会用 fetchPriority 跟表单资源抢带宽。 */
+  background-image: url('/login-harbor.jpg');
+  /* 原图是近正方形，超宽屏下这一栏趋近 4:3，cover 会裁掉上下各约 12%；
+     灯塔顶部在图片约 12% 高度处，居中裁切正好切掉塔尖，故取景上移。 */
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
-.coast {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-:global(:root[data-theme='dark']) .coast {
-  filter: brightness(0.65) saturate(0.8);
+/* 暗色下把装饰图压进主题底色。只压亮度会留下一块浅蓝灯箱，降饱和后色相
+   才与 --bg 靠拢，图片和面板之间不再是一条硬边。 */
+:global(:root[data-theme='dark']) .brand {
+  filter: brightness(0.4) saturate(0.7);
 }
 
 .brandHead {
@@ -46,7 +47,7 @@
   align-items: center;
   gap: var(--sp-3);
   width: 100%;
-  max-width: 420px;
+  max-width: var(--login-col-w);
   margin: 0 auto var(--sp-4);
 }
 
@@ -65,6 +66,9 @@
 }
 
 .main {
+  /* 表单列宽：卡片、品牌头与顶部工具条共用，保证三者左右边缘对齐 */
+  --login-col-w: 420px;
+
   display: flex;
   flex: 0 0 clamp(480px, 38vw, 640px);
   flex-direction: column;
@@ -74,6 +78,10 @@
 .topbar {
   display: flex;
   justify-content: flex-end;
+  /* 与卡片同宽并同样居中，主题切换器的右边缘才对得上卡片右边缘 */
+  width: 100%;
+  max-width: var(--login-col-w);
+  margin: 0 auto;
 }
 
 .center {
@@ -91,7 +99,7 @@
   flex-direction: column;
   gap: var(--sp-4);
   width: 100%;
-  max-width: 420px;
+  max-width: var(--login-col-w);
   margin: 0 auto;
   padding: var(--sp-6) var(--sp-7);
   border: 1px solid var(--border);
@@ -121,13 +129,6 @@
   font-size: var(--fs-11);
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-}
-
 .hint {
   color: var(--muted);
   font-size: var(--fs-12);
@@ -135,7 +136,7 @@
 
 .foot {
   color: var(--muted);
-  font-size: var(--fs-11);
+  font-size: var(--fs-12);
   line-height: 1.7;
 }
 
@@ -157,10 +158,6 @@
 
   .card {
     padding: var(--sp-5);
-  }
-
-  .row {
-    flex-wrap: wrap;
   }
 }
 

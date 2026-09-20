@@ -5,7 +5,7 @@ import {
   MoonOutlined,
   SunOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Checkbox, Form, Input, Segmented, Tooltip } from 'antd';
+import { Alert, Button, Checkbox, Form, Input, Segmented } from 'antd';
 import { useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import { ApiError } from '../../shared/http';
@@ -132,9 +132,7 @@ export function LoginPage() {
         跳到登录表单
       </a>
 
-      <aside className={styles.brand} aria-hidden="true">
-        <img className={styles.coast} src="/login-harbor.jpg" alt="" fetchPriority="high" />
-      </aside>
+      <aside className={styles.brand} aria-hidden="true" />
 
       <main className={styles.main}>
         <div className={styles.topbar}>
@@ -172,7 +170,7 @@ export function LoginPage() {
             <div>
               <h2 className={styles.title}>登录</h2>
               <p className={styles.desc}>
-                使用单位分配的账号登录。登录后按当前角色与数据范围加载可见内容，不显示其他单位的会话与资料。
+                使用单位分配的账号登录。可用功能由账号当前的角色决定。忘记密码或账号异常，请联系单位系统管理员。
               </p>
             </div>
 
@@ -232,18 +230,11 @@ export function LoginPage() {
               />
             </Form.Item>
 
-            <div className={styles.row}>
-              <Form.Item name="rememberMe" valuePropName="checked" noStyle>
-                <Checkbox>
-                  保持登录 <span className={styles.hint}>（仅限本单位授权设备）</span>
-                </Checkbox>
-              </Form.Item>
-              <Tooltip title="本页不提供自助重置。忘记密码请联系系统管理员在「用户管理」中重置，密码不通过登录页修改">
-                <Button type="link" disabled>
-                  忘记密码？
-                </Button>
-              </Tooltip>
-            </div>
+            <Form.Item name="rememberMe" valuePropName="checked" noStyle>
+              <Checkbox>
+                保持登录 <span className={styles.hint}>（仅限本单位授权设备）</span>
+              </Checkbox>
+            </Form.Item>
 
             <Button type="primary" htmlType="submit" size="large" block loading={submitting}>
               {submitting ? '正在登录' : '登录'}
