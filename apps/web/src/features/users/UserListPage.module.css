@@ -1,0 +1,61 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-4) var(--sp-4);
+}
+
+/* 无权限、加载失败这类整块状态：与列表卡片同一层级，不用表格壳子 */
+.stateCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+  padding: var(--sp-4);
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--tag-accent-bg);
+  border: 1px solid var(--tag-border);
+  border-radius: var(--r-3);
+  color: var(--fg);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+.noticeIcon {
+  margin-top: 3px;
+  color: var(--accent);
+}
+
+.notice p {
+  margin: 0;
+}
+
+/* 确认弹窗里的对象与边界说明 */
+.confirmTarget {
+  margin: 0 0 var(--sp-2);
+  color: var(--fg);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ls-mono);
+}
+
+.confirmNote {
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--tag-warning-bg);
+  border: 1px solid var(--tag-border);
+  border-radius: var(--r-3);
+  font-size: var(--fs-12);
+}
+
+.confirmTarget + p {
+  margin: 0;
+}

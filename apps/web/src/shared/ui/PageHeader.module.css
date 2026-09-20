@@ -1,0 +1,40 @@
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 10px var(--sp-4) var(--sp-3);
+}
+
+.main {
+  min-width: 0;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+}
+
+.demo {
+  margin: 0;
+  font-size: var(--fs-11);
+  font-weight: var(--fw-ui);
+}
+
+.description {
+  margin-top: 2px;
+  max-width: 78ch;
+  color: var(--muted);
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+}
+
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}

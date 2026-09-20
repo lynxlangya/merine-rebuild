@@ -1,0 +1,33 @@
+.box {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  margin: 0;
+  padding: var(--sp-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  font-size: var(--fs-13);
+}
+
+.term {
+  padding: 7px 0;
+  color: var(--muted);
+  line-height: var(--lh-ui);
+}
+
+.detail {
+  margin: 0;
+  padding: 7px 0;
+  color: var(--fg);
+  line-height: var(--lh-ui);
+  overflow-wrap: anywhere;
+}
+
+/* 行之间用装饰分隔线，最后一组不加 */
+.box dt + dd {
+  border-bottom: 1px solid var(--border);
+}
+
+.box dt:last-of-type + dd {
+  border-bottom: 0;
+}

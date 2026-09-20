@@ -1,3 +1,8 @@
+# 设计导出包与历史输入是参考资料，不随项目格式化；见 docs/rules/frontend.md、
+# docs/rules/testing.md 关于“不为修复检查结果重排原始设计导出包”的约定。
+docs/sys-design/
+docs/archive/
+
 pnpm-lock.yaml
 packages/api-contract/openapi.json
 packages/api-contract/src/schema.d.ts

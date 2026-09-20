@@ -925,7 +925,7 @@ svg { display: block; }
   .auth-cap__fig[disabled] { border-color: var(--border); cursor: not-allowed; }
   .auth-cap__fig canvas { display: block; width: 96px; height: 32px; }
 
-  /* 口令可见性开关：同一个按钮切换，不额外占用行宽 */
+  /* 密码可见性开关：同一个按钮切换，不额外占用行宽 */
   .pwd-toggle { position: relative; }
   .pwd-toggle[aria-pressed="true"]::after {
     content: ""; position: absolute; left: 8px; right: 8px; top: 13px; height: 1.5px;
@@ -1060,12 +1060,12 @@ svg { display: block; }
         </div>
 
         <div class="field" data-od-id="login-field-pwd">
-          <label class="field__label" for="pwd">口令 <span class="field__req" aria-hidden="true">*</span></label>
+          <label class="field__label" for="pwd">密码 <span class="field__req" aria-hidden="true">*</span></label>
           <div class="input-affix">
-            <input class="input" id="pwd" name="pwd" type="password" placeholder="请输入口令"
+            <input class="input" id="pwd" name="pwd" type="password" placeholder="请输入密码"
                    autocomplete="current-password" aria-describedby="pwdErr" />
             <button class="input-affix__btn pwd-toggle" type="button" id="pwdToggle"
-                    aria-pressed="false" aria-label="显示口令" title="显示口令"><span data-ico="eye"></span></button>
+                    aria-pressed="false" aria-label="显示密码" title="显示密码"><span data-ico="eye"></span></button>
           </div>
           <p class="field__error" id="pwdErr" hidden></p>
         </div>
@@ -1089,7 +1089,7 @@ svg { display: block; }
             <input type="checkbox" id="keep" />
             <span class="check__text">保持登录<span class="fs-12 muted">（仅限本单位授权设备）</span></span>
           </label>
-          <button class="btn btn--text" type="button" id="forgot">忘记口令？</button>
+          <button class="btn btn--text" type="button" id="forgot">忘记密码？</button>
         </div>
 
         <button class="btn btn--primary btn--lg btn--block" type="submit" id="submit" data-od-id="login-submit">登录</button>
@@ -1098,7 +1098,7 @@ svg { display: block; }
       <div class="auth__meta">
         <div class="notice" data-od-id="login-demo-notice">
           <span data-ico="warning"></span>
-          <div>演示环境：账号已预填，口令任意填写即可通过；未接入统一身份认证，页面内容全部为合成数据。</div>
+          <div>演示环境：账号已预填，密码任意填写即可通过；未接入统一身份认证，页面内容全部为合成数据。</div>
         </div>
         <p class="auth__foot">登录行为将记入审计日志。请勿在非授权设备上保存凭证。演示环境不执行页面跳转，登录成功后停留本页。</p>
       </div>
@@ -1128,17 +1128,17 @@ svg { display: block; }
       <div class="doc__sample"><span class="mono fs-11">左栏 flex:1 · 右栏 520px · 卡片 420px · 控件 32px · 主操作 40px</span></div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S2</span><span class="doc__card-title">主题切换保留输入</span></div>
-      <div class="doc__card-body">主题开关与工作台顶栏是同一个分段控件，位于页面右上角的同一位置。切换只改 <span class="doc__code">data-theme</span> 属性值，不重载页面：已输入的账号、口令、验证码与勾选状态全部保留；验证码按新主题重绘，颜色取自 token，字符不重新生成。首屏另有内联脚本先落主题，避免暗黑用户看到一次亮色闪烁。</div></div>
+      <div class="doc__card-body">主题开关与工作台顶栏是同一个分段控件，位于页面右上角的同一位置。切换只改 <span class="doc__code">data-theme</span> 属性值，不重载页面：已输入的账号、密码、验证码与勾选状态全部保留；验证码按新主题重绘，颜色取自 token，字符不重新生成。首屏另有内联脚本先落主题，避免暗黑用户看到一次亮色闪烁。</div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S3</span><span class="doc__card-title">字段校验与错误定位</span></div>
-      <div class="doc__card-body">提交时按账号 → 口令 → 验证码的顺序校验，不通过就把焦点移到第一个出错字段，错误文案紧贴字段下方并用 <span class="doc__code">aria-describedby</span> 关联，输入框同时置 <span class="doc__code">aria-invalid</span>。表单使用 <span class="doc__code">novalidate</span>，避免浏览器原生气泡提示与设计系统冲突。</div>
+      <div class="doc__card-body">提交时按账号 → 密码 → 验证码的顺序校验，不通过就把焦点移到第一个出错字段，错误文案紧贴字段下方并用 <span class="doc__code">aria-describedby</span> 关联，输入框同时置 <span class="doc__code">aria-invalid</span>。表单使用 <span class="doc__code">novalidate</span>，避免浏览器原生气泡提示与设计系统冲突。</div>
       <div class="doc__sample"><span class="tag tag--danger">请输入账号</span><span class="tag tag--danger">验证码不正确或已失效，请重新获取</span></div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S4</span><span class="doc__card-title">认证失败与服务不可用是两件事</span></div>
-      <div class="doc__card-body">认证失败用危险色，说明锁定规则与重试方式；服务不可用用警告色，明确「本次未提交凭证校验请求，账号不会被记为失败」并给出诊断码与原样重试。两者动作不同：前者要改口令，后者要等待或联系管理员。混为一谈会让用户反复重输本来正确的口令。</div></div>
+      <div class="doc__card-body">认证失败用危险色，说明锁定规则与重试方式；服务不可用用警告色，明确「本次未提交凭证校验请求，账号不会被记为失败」并给出诊断码与原样重试。两者动作不同：前者要改密码，后者要等待或联系管理员。混为一谈会让用户反复重输本来正确的密码。</div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S5</span><span class="doc__card-title">登录中与防重复提交</span></div>
-      <div class="doc__card-body">提交后按钮进入加载态，账号、口令、验证码、验证码刷新与「保持登录」全部禁用，表单置 <span class="doc__code">aria-busy="true"</span>。进度提示使用 <span class="doc__code">role="status"</span> 的礼貌播报，不打断读屏当前正在读的内容；只有错误才用 <span class="doc__code">role="alert"</span>。</div></div>
+      <div class="doc__card-body">提交后按钮进入加载态，账号、密码、验证码、验证码刷新与「保持登录」全部禁用，表单置 <span class="doc__code">aria-busy="true"</span>。进度提示使用 <span class="doc__code">role="status"</span> 的礼貌播报，不打断读屏当前正在读的内容；只有错误才用 <span class="doc__code">role="alert"</span>。</div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S6</span><span class="doc__card-title">验证码</span></div>
       <div class="doc__card-body">演示环境自动填入 4 位字符，并把验证码图片整体做成一个按钮：点击或回车即刷新，不额外提供重复的第二入口。生产环境应由服务端下发验证码、支持失效重取，并提供语音或风险无感等非图形替代通路——图形验证码不能是唯一入口。</div></div>
@@ -1147,14 +1147,14 @@ svg { display: block; }
       <div class="doc__card-body">登录成功只承诺「按当前角色与数据范围加载内容」：不展示其他单位的会话与资料，也不提示无权对象是否存在。账号被停用时，既有登录状态同时失效，必须由系统管理员处理；界面直接说明这一点，而不是让用户反复重试。</div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S8</span><span class="doc__card-title">合成数据与安全提示</span></div>
-      <div class="doc__card-body">页面不出现真实姓名、手机号、证件号、口令或密钥；账号统一 <span class="doc__code">demo.*</span> 前缀，口令不写进页面，演示态由状态开关给出。提示登录行为记入审计日志，并说明演示环境未接入统一身份认证。</div></div>
+      <div class="doc__card-body">页面不出现真实姓名、手机号、证件号、密码或密钥；账号统一 <span class="doc__code">demo.*</span> 前缀，密码不写进页面，演示态由状态开关给出。提示登录行为记入审计日志，并说明演示环境未接入统一身份认证。</div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S9</span><span class="doc__card-title">键盘与焦点顺序</span></div>
-      <div class="doc__card-body">Tab 顺序：跳过链接 → 主题开关 → 账号 → 口令 → 显示/隐藏口令 → 验证码 → 刷新验证码 → 保持登录 → 忘记口令 → 登录。口令可见性开关用 <span class="doc__code">aria-pressed</span> 表达状态，验证码是按钮而不是可点击图片，两者都能用键盘触发；所有可聚焦元素使用 2px 焦点环。</div></div>
+      <div class="doc__card-body">Tab 顺序：跳过链接 → 主题开关 → 账号 → 密码 → 显示/隐藏密码 → 验证码 → 刷新验证码 → 保持登录 → 忘记密码 → 登录。密码可见性开关用 <span class="doc__code">aria-pressed</span> 表达状态，验证码是按钮而不是可点击图片，两者都能用键盘触发；所有可聚焦元素使用 2px 焦点环。</div></div>
 
     <div class="doc__card"><div class="doc__card-head"><span class="doc__card-idx">S10</span><span class="doc__card-title">强调色与动作经济</span></div>
       <div class="doc__card-body">默认态只有两处强调色：左上品牌标记与「登录」主按钮。主题开关的选中态使用表面色 + 主文字色而非强调色；「保持登录」默认不勾选，勾选后的填充色由用户触发，不与主操作争夺注意力。整页只有一个主样式按钮。</div>
-      <div class="doc__sample"><span class="fs-12 muted">次操作：忘记口令（文字按钮）· 验证码刷新（图形按钮）· 服务不可用时的「重新尝试」（默认按钮）</span></div></div>
+      <div class="doc__sample"><span class="fs-12 muted">次操作：忘记密码（文字按钮）· 验证码刷新（图形按钮）· 服务不可用时的「重新尝试」（默认按钮）</span></div></div>
   </div>
 
   <div class="doc__card" style="margin-top:var(--sp-3)">
@@ -1749,14 +1749,14 @@ svg { display: block; }
   new MutationObserver(function () { drawCaptcha(true); })
     .observe(root, { attributes: true, attributeFilter: ['data-theme'] });
 
-  /* ------------------------------ 口令可见性 ------------------------------ */
+  /* ------------------------------ 密码可见性 ------------------------------ */
   var pwd = $('#pwd'), pwdToggle = $('#pwdToggle');
   pwdToggle.addEventListener('click', function () {
     var show = pwdToggle.getAttribute('aria-pressed') !== 'true';
     pwd.type = show ? 'text' : 'password';
     pwdToggle.setAttribute('aria-pressed', String(show));
-    pwdToggle.setAttribute('aria-label', show ? '隐藏口令' : '显示口令');
-    pwdToggle.title = show ? '隐藏口令' : '显示口令';
+    pwdToggle.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+    pwdToggle.title = show ? '隐藏密码' : '显示密码';
     pwd.focus();
   });
 
@@ -1788,14 +1788,14 @@ svg { display: block; }
 
   var ALERTS = {
     authfail: { tone: 'danger', ico: 'error',
-      title: '账号或口令不正确',
-      desc: '连续 5 次失败后，该账号将临时锁定 30 分钟。请确认账号与口令后重试。' },
+      title: '账号或密码不正确',
+      desc: '连续 5 次失败后，该账号将临时锁定 30 分钟。请确认账号与密码后重试。' },
     disabled: { tone: 'danger', ico: 'error',
       title: '该账号已停用',
       desc: '请联系演示单位甲的系统管理员重置账号状态。停用后，该账号此前的登录状态也已失效，需管理员处理后才可再次登录。' },
     outage: { tone: 'warning', ico: 'warning',
       title: '统一身份认证服务暂时不可用',
-      desc: '本次未提交凭证校验请求，账号与口令不会被记为失败。请稍后重试；如持续失败，请联系单位系统管理员并提供诊断码。',
+      desc: '本次未提交凭证校验请求，账号与密码不会被记为失败。请稍后重试；如持续失败，请联系单位系统管理员并提供诊断码。',
       diag: 'AUTH-503 · 请求 AUTH-DEMO-4F2C · 首次出现 2026-10-02 09:14', retry: true }
   };
 
@@ -1805,7 +1805,7 @@ svg { display: block; }
     if (cfg.diag) h += '<div class="alt__desc mono fs-11">' + cfg.diag + '</div>';
     if (withActions && cfg.retry) {
       h += '<div class="alt__acts"><button class="btn btn--default btn--sm" type="button" id="retryBtn">' + HF.icon('refresh', 'btn__icon') + '重新尝试</button>' +
-           '<span class="fs-11 muted">口令已在输入框中保留</span></div>';
+           '<span class="fs-11 muted">密码已在输入框中保留</span></div>';
     }
     h += '</div>';
     return h;
@@ -1904,7 +1904,7 @@ svg { display: block; }
     var acct = $('#acct').value.trim();
     if (!acct) { setFieldError('acct', '请输入账号'); bad.push($('#acct')); }
     else if (!/^[A-Za-z0-9._-]{3,32}$/.test(acct)) { setFieldError('acct', '账号格式不正确：仅限字母、数字与 . _ -，长度 3–32 位'); bad.push($('#acct')); }
-    if (!pwd.value) { setFieldError('pwd', '请输入口令'); bad.push(pwd); }
+    if (!pwd.value) { setFieldError('pwd', '请输入密码'); bad.push(pwd); }
     var code = capInput.value.trim();
     if (!code) { setFieldError('cap', '请输入验证码'); bad.push(capInput); }
     else if (code.toUpperCase() !== capCode) {
@@ -1928,8 +1928,8 @@ svg { display: block; }
   }
   form.addEventListener('submit', function (e) { e.preventDefault(); submitForm(); });
   $('#forgot').addEventListener('click', function () {
-    HF.toast({ type: 'info', title: '演示环境未接入口令重置流程',
-      desc: '生产环境由本单位系统管理员在用户管理中重置，口令不通过前端页面修改。' });
+    HF.toast({ type: 'info', title: '演示环境未接入密码重置流程',
+      desc: '生产环境由本单位系统管理员在用户管理中重置，密码不通过前端页面修改。' });
   });
 
   /* ------------------------------ 标注区开关 ------------------------------ */

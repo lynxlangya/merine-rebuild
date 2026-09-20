@@ -1,0 +1,59 @@
+.bar {
+  /* 操作列的定宽：由 .actions 里三个按钮的最大内容宽度决定，与数据任务页一致 */
+  --search-actions-w: 248px;
+
+  display: grid;
+  /*
+   * 网格语法里，repeat(auto-fill, …) 之后的轨道只能是定尺（<fixed-size>），
+   * 写成 `repeat(auto-fill, minmax(232px, 1fr)) auto` 会被整条声明判为无效，
+   * 搜索区会退化成单列堆叠。这里用「auto-fit + 定宽操作列」达到同样效果。
+   */
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)) var(--search-actions-w);
+  gap: var(--sp-3);
+  align-items: end;
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-ui);
+  color: var(--fg);
+}
+
+.select {
+  width: 100%;
+}
+
+/* 收起时只隐藏启用状态字段，已选值保留并仍参与查询 */
+.bar[data-expanded='false'] .more {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-bottom: 1px;
+}
+
+/* 单位/角色选项加载失败：整行提示，不能装作筛选只有「全部」 */
+.optionError {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin: 0;
+  color: var(--warning);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}

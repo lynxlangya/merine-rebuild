@@ -1,0 +1,11 @@
+# 认证回归测试专用配置：把数据源指向隔离的测试库。
+#
+# 三项都取自环境变量且刻意不设默认值——缺失时占位符无法解析，上下文启动直接失败，
+# 而不是悄悄退回开发库 merine_rebuild。运行方式见 docs/rules/testing.md：
+#   TEST_DB_URL / TEST_DB_APP_USER / TEST_DB_APP_PASSWORD
+# 运行账号只持有 DML 权限；库结构与迁移由独立账号在测试前完成。
+spring:
+  datasource:
+    url: ${TEST_DB_URL}
+    username: ${TEST_DB_APP_USER}
+    password: ${TEST_DB_APP_PASSWORD}

@@ -1,0 +1,29 @@
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+}
+
+.icon {
+  color: var(--warning);
+}
+
+.text {
+  font-size: var(--fs-13);
+  color: var(--muted);
+  line-height: var(--lh-body);
+}
+
+/* 失败原因留在弹窗里：对象与结果已经写明，这里只补原因与请求编号 */
+.error {
+  margin-top: var(--sp-3);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}

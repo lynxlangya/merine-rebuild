@@ -12,12 +12,30 @@ spring:
     init:
       mode: never
 
+mybatis:
+  # 多表关联与聚合的映射放 XML，按模块分目录；注解只用于简单固定 SQL
+  mapper-locations: classpath:mapper/**/*.xml
+  configuration:
+    # 结果列按构造参数名匹配 record，而不是按位置。默认按位置匹配：
+    # 一旦 SELECT 的列顺序与 record 组件顺序不一致，就会把值塞进错误的字段，
+    # 报错信息还停在类型转换上，很难一眼看出根因。
+    arg-name-based-constructor-auto-mapping: true
+
 server:
   address: 0.0.0.0
   port: 9002
   error:
     include-message: never
     include-stacktrace: never
+  servlet:
+    session:
+      # 会话保存在服务端内存，Cookie 只带会话标识；重启后需要重新登录
+      timeout: 30m
+      cookie:
+        http-only: true
+        same-site: lax
+        # 本地开发走 HTTP，因此这里必须为 false；部署到 HTTPS 环境时必须改为 true
+        secure: false
 
 management:
   endpoints:
@@ -27,12 +45,28 @@ management:
   endpoint:
     health:
       show-details: never
+      probes:
+        enabled: true
+      group:
+        # 就绪探针显式纳入数据库；liveness 只反映进程存活
+        readiness:
+          include: readinessState, db
 
 springdoc:
   api-docs:
     path: /api/openapi
   swagger-ui:
     path: /api/docs
+
+merine:
+  security:
+    # 接口文档默认要求登录（安全默认值）：OpenAPI 全量文档与 Swagger UI 会暴露
+    # 全部接口形状，默认公开等于给未认证访问者一份完整地图。
+    # 本地需要匿名查看文档时，显式改成 true（登录后访问同样可用）。
+    public-api-docs: false
+    # 可以调用用户管理接口的角色编码，逗号分隔。
+    # 这是最小的一道门，不是权限模型：角色能做什么功能、能看哪些业务数据仍未定义。
+    user-admin-role-codes: SYSTEM_ADMIN
 
 logging:
   pattern:

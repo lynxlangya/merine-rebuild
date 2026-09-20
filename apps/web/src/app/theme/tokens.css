@@ -1,0 +1,202 @@
+/* =============================================================================
+   海防研判工作台 · 语义 token（亮色 / 暗黑共用一套语义）
+   -----------------------------------------------------------------------------
+   这里是应用内唯一的色值与尺寸来源：Ant Design 经 ConfigProvider 映射到同名
+   token，自定义组件与图谱直接使用 CSS 变量，页面不再各抄一份色值。
+
+   约定：
+   1. 亮色写在 :root，暗黑写在 :root[data-theme='dark']；JS 未执行时也有一套
+      可用配色，避免首屏无样式。
+   2. 命名为语义，不出现 blue-500 / gray-200 这类色相名。
+   3. 装饰分隔线（--border）不具备控件识别能力；输入框、默认按钮等控件边界
+      必须使用 --border-control。
+   ============================================================================= */
+
+:root {
+  /* ---------- 字体：中文无衬线优先，数字/编号/时间统一等宽 ---------- */
+  --font-display:
+    'HarmonyOS Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei UI', 'Noto Sans SC',
+    system-ui, sans-serif;
+  --font-body:
+    'PingFang SC', 'HarmonyOS Sans SC', 'Source Han Sans SC', 'Microsoft YaHei UI', 'Noto Sans SC',
+    system-ui, -apple-system, sans-serif;
+  --font-mono:
+    'JetBrains Mono', 'SF Mono', 'Cascadia Mono', 'Roboto Mono', 'Noto Sans Mono', ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-20: 20px;
+  --fs-24: 24px;
+
+  --lh-display: 1.36;
+  --lh-title: 1.4;
+  --lh-ui: 1.5;
+  --lh-body: 1.75;
+
+  --ls-caps: 0.06em;
+  --ls-mono: 0.02em;
+
+  --fw-read: 400;
+  --fw-ui: 500;
+  --fw-strong: 600;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 48px;
+  --sp-10: 64px;
+
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 6px;
+  --r-4: 8px;
+  --r-pill: 999px;
+
+  --shadow-1: 0 1px 2px rgba(23, 32, 51, 0.06);
+  --shadow-2: 0 2px 8px rgba(23, 32, 51, 0.08), 0 0 0 1px rgba(23, 32, 51, 0.04);
+  --shadow-3: 0 12px 32px rgba(23, 32, 51, 0.16), 0 0 0 1px rgba(23, 32, 51, 0.06);
+
+  /* ---------- 布局骨架：1440×900 基准，1366×768 收缩 ---------- */
+  --nav-w: 224px;
+  --nav-w-min: 64px;
+  --topbar-h: 56px;
+  --panel-w: 320px;
+  --filter-w: 216px;
+  --session-w: 240px;
+  --control-h: 32px;
+  --table-head-h: 40px;
+  --table-row-h: 44px;
+
+  /* =========================== 亮色主题 =========================== */
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f8fafd;
+  --fg: #172033;
+  --muted: #59677a;
+  --border: #dce3ee;
+  --accent: #2563eb;
+  --on-accent: #ffffff;
+
+  --border-control: #7e8aa0;
+  --border-strong: #4c5a70;
+
+  --surface-hover: #edf1f8;
+  --surface-active: #e4eaf4;
+  --surface-selected: #e4edfd;
+  --row-hover: #f3f6fb;
+  --scrim: rgba(11, 18, 32, 0.42);
+
+  --accent-hover: #1d4fd0;
+  --accent-active: #173fa8;
+  --accent-soft: #eaf1fe;
+  --accent-soft-border: #a9c4f5;
+
+  --focus: #2563eb;
+  --focus-halo: rgba(37, 99, 235, 0.28);
+  --disabled-bg: #eef1f6;
+  --disabled-fg: #9ba5b4;
+  --fg-placeholder: #6c7789;
+
+  /* 实体分类色：与品牌色、状态色三方分工，不互相借用 */
+  --entity-person: #10707f;
+  --entity-vessel: #5b3fb0;
+  --entity-place: #4c5a70;
+  --entity-event: #b03061;
+  --entity-person-soft: #e1f6f8;
+  --entity-vessel-soft: #f2efff;
+  --entity-place-soft: #e6f3ff;
+  --entity-event-soft: #ffebf1;
+
+  --success: #1a7a45;
+  --warning: #8a5a08;
+  --danger: #b3261e;
+  --tag-success-bg: #e6f4ea;
+  --tag-warning-bg: #fbf1df;
+  --tag-danger-bg: #fceae8;
+  --tag-neutral-bg: #eef1f6;
+  --tag-accent-bg: #eaf1fe;
+  --tag-border: rgba(23, 32, 51, 0.1);
+
+  /* 图谱专用 */
+  --graph-canvas: #ffffff;
+  --graph-grid: #e9edf4;
+  --graph-edge: #6f7c93;
+  --graph-node-fill: #ffffff;
+  --graph-dim: 0.38;
+
+  /* 导航 */
+  --nav-bg: #f8fafd;
+  --nav-selected: #e4edfd;
+  --nav-hover: #edf1f8;
+}
+
+/* =========================== 暗黑主题 =========================== */
+:root[data-theme='dark'] {
+  --bg: #0b1220;
+  --surface: #111c2d;
+  --surface-2: #19263b;
+  --fg: #e5edf8;
+  --muted: #a7b4c8;
+  --border: #2c3e57;
+  --accent: #60a5fa;
+  --on-accent: #0b1220;
+
+  --border-control: #5e7396;
+  --border-strong: #7c8fae;
+
+  --surface-hover: #1b2942;
+  --surface-active: #22314d;
+  --surface-selected: #1e3355;
+  --row-hover: #1a2740;
+  --scrim: rgba(4, 8, 16, 0.62);
+
+  --accent-hover: #8cbdfb;
+  --accent-active: #a9cffc;
+  --accent-soft: #16294a;
+  --accent-soft-border: #3c5c93;
+
+  --focus: #93c5fd;
+  --focus-halo: rgba(147, 197, 253, 0.3);
+  --disabled-bg: #1e2a3d;
+  --disabled-fg: #586a85;
+  --fg-placeholder: #8395ae;
+
+  --entity-person: #4fc3d4;
+  --entity-vessel: #b49bf0;
+  --entity-place: #9cacc2;
+  --entity-event: #f09cbb;
+  --entity-person-soft: #0e3438;
+  --entity-vessel-soft: #2f2a41;
+  --entity-place-soft: #1d2f42;
+  --entity-event-soft: #3f252e;
+
+  --success: #57ce8a;
+  --warning: #f0bc5a;
+  --danger: #f58c84;
+  --tag-success-bg: #17352a;
+  --tag-warning-bg: #3a2c14;
+  --tag-danger-bg: #3d1e1c;
+  --tag-neutral-bg: #232f44;
+  --tag-accent-bg: #16294a;
+  --tag-border: rgba(229, 237, 248, 0.12);
+
+  --graph-canvas: #0e1829;
+  --graph-grid: #252e3d;
+  --graph-edge: #66799a;
+  --graph-node-fill: #152134;
+  --graph-dim: 0.34;
+
+  --nav-bg: #0e1829;
+  --nav-selected: #1c2e49;
+  --nav-hover: #16233a;
+}

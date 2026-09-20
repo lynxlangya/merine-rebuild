@@ -65,7 +65,12 @@ services:
       mysql:
         condition: service_healthy
     healthcheck:
-      test: ['CMD-SHELL', 'curl --fail --silent http://127.0.0.1:9002/api/bootstrap >/dev/null']
+      # 就绪探针：显式包含数据库检查，且不访问业务接口（业务接口已要求认证）
+      test:
+        [
+          'CMD-SHELL',
+          'curl --fail --silent http://127.0.0.1:9002/actuator/health/readiness >/dev/null',
+        ]
       interval: 10s
       timeout: 5s
       retries: 30

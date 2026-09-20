@@ -1,0 +1,127 @@
+.app {
+  height: 100vh;
+  min-width: 1366px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--nav-bg) !important;
+  transition: width 0.16s ease;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: var(--topbar-h);
+  flex: 0 0 var(--topbar-h);
+  padding: 0 var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.brandMark {
+  display: block;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.brandText strong {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+}
+
+.menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-inline-end: none !important;
+  background: transparent;
+  padding: var(--sp-2);
+}
+
+/* 折叠态只留图标：分组标题在 64px 宽度下会被截断成「业…」，直接隐藏更清楚 */
+.app[data-nav='collapsed'] .menu :global(.ant-menu-item-group-title) {
+  display: none;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: var(--topbar-h);
+  padding: 0 var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  line-height: normal;
+}
+
+.crumbs {
+  font-size: var(--fs-13);
+}
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 40px;
+  padding: 0 var(--sp-2);
+}
+
+.avatar {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  font-weight: var(--fw-strong);
+}
+
+.userText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+.userText strong {
+  font-size: var(--fs-12);
+}
+
+.userMeta {
+  font-size: var(--fs-11);
+}
+
+.workspace {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}

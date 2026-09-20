@@ -1,0 +1,14 @@
+# 演示账号初始化专用 profile：只跑一次写入然后退出，不对外提供服务。
+# 用随机端口而不是关闭 Web 容器，以免为此把安全配置按 profile 拆开；
+# 该进程不发布任何端口（compose run 默认不映射端口）。
+server:
+  port: 0
+
+spring:
+  main:
+    banner-mode: 'off'
+
+logging:
+  level:
+    root: warn
+    com.merine.rebuild: info

@@ -1,0 +1,177 @@
+/* 用户抽屉（560px）：基本信息、角色与授权摘要三段 */
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
+}
+
+.desc {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-read);
+  line-height: var(--lh-ui);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  letter-spacing: var(--ls-mono);
+}
+
+.form :global(.ant-form-item) {
+  margin-bottom: var(--sp-3);
+}
+
+.form :global(.ant-form-item-label) > label {
+  color: var(--fg);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-ui);
+}
+
+.form :global(.ant-form-item-extra) {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+/* 整体失败提示：字段错误在字段下方，这里只放原因与请求编号 */
+.failure {
+  margin-bottom: var(--sp-3);
+}
+
+/* ---------- 段落 ---------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--sp-4);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
+}
+
+.sectionNote {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-read);
+}
+
+.select {
+  width: 100%;
+}
+
+/* ---------- 角色多选卡 ---------- */
+
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.roleCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-3);
+  cursor: pointer;
+}
+
+.roleCard:hover {
+  background: var(--surface-hover);
+}
+
+.roleCard[data-checked='true'] {
+  background: var(--surface-selected);
+  border-color: var(--accent-soft-border);
+}
+
+.roleCard[data-disabled='true'] {
+  background: var(--disabled-bg);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+
+.roleCheckbox {
+  margin-top: 3px;
+}
+
+.roleBody {
+  display: block;
+  min-width: 0;
+}
+
+.roleName {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  color: var(--fg);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-strong);
+}
+
+.roleCode {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-read);
+  letter-spacing: var(--ls-mono);
+}
+
+.roleDesc {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+/* ---------- 当前状态说明 ---------- */
+
+.identity {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+.statusTag {
+  margin: 0 4px;
+  background: var(--tag-neutral-bg);
+  border-color: var(--tag-border);
+  color: var(--fg);
+  font-size: var(--fs-12);
+}
+
+/* ---------- 底部操作 ---------- */
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.footNote {
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-ui);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
