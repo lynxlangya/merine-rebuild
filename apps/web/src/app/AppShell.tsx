@@ -16,10 +16,11 @@ import {
   Layout,
   Menu,
   Segmented,
+  Skeleton,
   Tooltip,
   Typography,
 } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../features/auth/AuthProvider';
 import { useDictionariesQuery } from '../features/dictionaries/public';
@@ -269,7 +270,17 @@ export function AppShell() {
         </Layout.Header>
 
         <Layout.Content className={styles.workspace}>
-          <Outlet />
+          {/* 页面按路由懒加载，首次进入某页时在这里兜住加载间隙 */}
+          <Suspense
+            fallback={
+              <div className={styles.pageLoading} role="status" aria-live="polite">
+                <Skeleton active title={false} paragraph={{ rows: 6 }} />
+                <span className={styles.pageLoadingText}>正在加载页面…</span>
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </Layout.Content>
       </Layout>
     </Layout>

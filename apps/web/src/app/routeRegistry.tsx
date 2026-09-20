@@ -6,13 +6,34 @@ import {
   SettingOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import type { ReactNode } from 'react';
-import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
-import { DictionaryListPage } from '../features/dictionaries/DictionaryListPage';
-import { MenuListPage } from '../features/menus/MenuListPage';
-import { RoleListPage } from '../features/roles/RoleListPage';
-import { UnitListPage } from '../features/units/UnitListPage';
-import { UserListPage } from '../features/users/UserListPage';
+import { lazy, type ReactNode } from 'react';
+
+/**
+ * 页面按路由懒加载：每个模块单独成块，进哪页下哪页，首屏不再背着六个页面的代码。
+ * Suspense 边界统一放在 AppShell 的 Outlet 外层，切换时保留导航与骨架。
+ */
+const UserListPage = lazy(() =>
+  import('../features/users/UserListPage').then((module) => ({ default: module.UserListPage })),
+);
+const RoleListPage = lazy(() =>
+  import('../features/roles/RoleListPage').then((module) => ({ default: module.RoleListPage })),
+);
+const MenuListPage = lazy(() =>
+  import('../features/menus/MenuListPage').then((module) => ({ default: module.MenuListPage })),
+);
+const UnitListPage = lazy(() =>
+  import('../features/units/UnitListPage').then((module) => ({ default: module.UnitListPage })),
+);
+const DictionaryListPage = lazy(() =>
+  import('../features/dictionaries/DictionaryListPage').then((module) => ({
+    default: module.DictionaryListPage,
+  })),
+);
+const DiagnosticsPage = lazy(() =>
+  import('../features/diagnostics/DiagnosticsPage').then((module) => ({
+    default: module.DiagnosticsPage,
+  })),
+);
 
 /**
  * 前端已注册页面：路由 key → 组件、路径与图标。
