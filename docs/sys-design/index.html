@@ -127,8 +127,8 @@
                 <dt>设计画布</dt><dd class="mono">1440 × 900</dd>
                 <dt>左侧导航</dt><dd class="mono">224px ⇄ 64px 图标栏</dd>
                 <dt>顶栏</dt><dd class="mono">56px</dd>
-                <dt>筛选面板</dt><dd class="mono">232px（可折叠）</dd>
-                <dt>详情 / 证据面板</dt><dd class="mono">344px（可折叠）</dd>
+                <dt>筛选面板</dt><dd class="mono">216px（可折叠）</dd>
+                <dt>详情 / 证据面板</dt><dd class="mono">320px（可折叠）</dd>
                 <dt>会话列表</dt><dd class="mono">240px（可折叠）</dd>
                 <dt>表格</dt><dd>表头 40px · 行 44px · 正文 13px</dd>
                 <dt>控件</dt><dd>默认 32px · 小 28px · 主操作 40px</dd>
@@ -274,19 +274,20 @@
 
   /* 文件表 */
   var FILES = [
+    ['../../DESIGN.md', '当前应用设计规范：视觉取值、页面布局、组件表现与验收；后续开发从这里开始'],
     ['index.html', '本文件：交付总览、双主题预览、跨页路径、自检结论、文件与尺寸参考'],
     ['design-system.html', '设计系统：双主题 token、对比度实测表、排版、间距、图标、实体类型、状态规范、公共组件、权限选择组件、AntD 变量对应、1366 收缩规则'],
+    ['p00-login.html', 'P00 初始登录原型；当前应用布局以 DESIGN.md 与实际代码为准'],
     ['p01-graph-workbench.html', 'P01 数据图谱工作台'],
     ['p02-ai-workbench.html', 'P02 AI 研判工作台'],
     ['p03-data-tasks.html', 'P03 数据任务中心'],
     ['p04-user-management.html', 'P04 用户管理与授权'],
     ['p05-intel-collaboration.html', 'P05 情报协同详情（发送方视角，含草稿状态）'],
     ['p05b-intel-receiving.html', 'P05-B 情报协同详情（接收方视角，含未签收状态）'],
-    ['assets/tokens.css', '双主题 token 与 AntD 映射注释。唯一允许写颜色值的地方'],
+    ['assets/tokens.css', '原型专用双主题 token 与映射注释；应用取值维护在 apps/web/src/app/theme/tokens.css'],
     ['assets/app.css', '应用骨架与公共组件：导航、顶栏、按钮、表单、标签、表格、抽屉、弹窗、时间线、进度、空/错状态、设计标注区'],
     ['assets/app.js', '运行时：主题切换、导航外壳、图标库、抽屉与弹窗焦点管理、Toast、选项卡、跨页证据与草稿传递、统一合成数据'],
-    ['brand-spec.md', '品牌与视觉方向：六个核心 token、字体栈、5 条视觉规则、已知未验证项'],
-    ['implementation-notes.md', '实现参考：页面分区与尺寸、面板收缩规则、组件对应、关键交互、React 落地建议']
+    ['implementation-notes.md', '原型交互备忘：尚未实现的图谱、AI、任务与情报流程，不定义正式接口或技术选型']
   ];
   document.getElementById('fileRows').innerHTML = FILES.map(function (f) {
     return '<tr><td class="mono">' + f[0] + '</td><td class="txt">' + f[1] + '</td></tr>';

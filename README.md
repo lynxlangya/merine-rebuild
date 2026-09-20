@@ -181,6 +181,6 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 
 **尚未实现的其它部分**：图谱查询、任务调度、AI 平台接入、情报流转、Neo4j；用户列表导出。也没有连接旧数据库或外部业务服务。交付镜像只做到本地演练，生产化还缺 TLS、密钥管理、监控指标与多实例会话。
 
-`docs/sys-design` 下的设计稿**只是样式与交互参考**，不是本轮要实现的模块清单。
+前端设计从 [DESIGN.md](DESIGN.md) 开始：配色、排版、尺寸、页面布局、组件交互与验收基线集中在这里；实现职责与状态管理见[前端规则](docs/rules/frontend.md)。[初始 UI 原型](docs/sys-design/index.html)**只是样式与交互参考**，不是本轮要实现的模块清单。
 
 选型依据：[Spring Boot](https://docs.spring.io/spring-boot/system-requirements.html)、[MyBatis](https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/)、[Vite](https://vite.dev/guide/)、[Ant Design](https://ant.design/docs/react/introduce/)、[Docker Compose](https://docs.docker.com/compose/)。依赖组合以本仓库的实际构建与联调结果为准。
