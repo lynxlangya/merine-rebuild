@@ -91,10 +91,10 @@ docker compose --project-name merine-rebuild-dev --env-file .env -f infra/compos
 docker compose --project-name merine-rebuild-dev --env-file .env -f infra/compose.yaml logs --tail 100 api
 ```
 
-前端修改会由 Vite 热更新。后端本轮采用明确的编译重启：修改 Java 后执行以下命令，启动时会重新编译当前源码。后续再按实际需要增加自动重载。
+前端修改会由 Vite 热更新。后端本轮采用明确的编译重启：修改 Java 后执行以下命令，启动时会重新编译当前源码（不加参数表示整栈，`web` 可单独重启）。后续再按实际需要增加自动重载。
 
 ```bash
-docker compose --env-file .env -f infra/compose.yaml restart api
+./scripts/dev.sh restart api
 ```
 
 前端依赖变更后更新锁文件并重启 web；新增 SQL 迁移后执行 `./scripts/dev.sh migrate`，已执行的迁移文件不再修改。
@@ -117,12 +117,32 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 ```
 
 - `check`：建好测试库并跑 TypeScript、Node 内置前端回归测试、格式检查与 Maven 验证（含认证、用户管理与单位管理回归测试）。
-- `build`：前端生产构建与后端 jar 打包。目前验证开发环境，完整交付镜像另在后续 M1.5 实现。
+- `build`：前端生产构建与后端 jar 打包（`project.build.outputTimestamp` 固定产物时间戳，同一份源码重复构建哈希一致）。交付镜像见下面的「交付形态演练」。
 - `test-db`：准备隔离的测试库 `merine_rebuild_test` 并应用同一套迁移；重复执行是幂等的，不动开发库。
 - `contract:generate`：从当前源码启动的本地后端导出 OpenAPI，更新 `packages/api-contract/openapi.json` 与 `src/schema.d.ts`。页面消费生成类型，生成文件不手改。接口文档默认需要登录；当前文档访问不额外要求系统管理角色。
 - `smoke`：经 Vite 的 `/api` 代理走一遍「CSRF → 登录（含错误密码与未登录）→ MySQL 读写 → 参数校验 → 退出后会话失效」；每次追加一条 `SMOKE-` 合成记录，不清理或重置已有数据。密码经环境变量传入，不写在脚本里。
 
 `smoke` 在容器内默认访问同容器的 Vite `5173`。`contract:generate` 通过容器服务名访问 API。初次下载依赖较慢时可查看对应服务日志；状态未知时先查看 `status`，不删卷重试。
+
+## 交付形态演练
+
+开发编排跑的是「Maven + Vite 开发服务器 + 挂载源码」，交付形态跑的是构建产物：后端只有 JRE 与分层解压后的 jar，前端只有 nginx 与静态文件。两者互不干扰（独立项目名、独立数据卷），可以在本机同时存在。
+
+```bash
+./scripts/dev.sh prod-build   # 构建交付镜像（api ≈ 248 MB，web ≈ 63 MB；不含 Maven/Node/源码）
+./scripts/dev.sh prod-up      # 建库 → 迁移（独立迁移账号）→ 启动，访问 http://127.0.0.1:8080
+./scripts/dev.sh prod-seed    # 首次运行后初始化一个管理员账号（密码交互输入）
+./scripts/dev.sh prod-down    # 停止，保留数据卷
+```
+
+镜像与编排要点：
+
+- 后端用 `infra/docker/api.prod.Dockerfile` 两阶段构建：Maven 阶段打包并 `extract --layers`，运行阶段只 COPY 四层。依赖层 39 MB 不变时，改业务代码只会重建 0.5 MB 左右的应用层。
+- 前端用 `infra/docker/web.prod.Dockerfile`：pnpm 构建 → `nginx:1.29-alpine` 只放 `dist`。nginx 负责 SPA 兜底、哈希资源长缓存、`index.html` 不缓存，并把 `/api` 同源反代给后端（Cookie 与 CSRF 的作用域和开发环境一致）。
+- 迁移仍由独立账号执行：交付编排用 Flyway CLI 镜像，运行账号只持有 DML 权限，迁移失败不会启动应用。
+- 应用侧开了响应压缩与优雅停机（`server.shutdown=graceful` + 容器 `stop_grace_period: 30s`）；`COOKIE_SECURE=true` 可在 `.env` 里打开，用于 HTTPS 终结后的部署。
+
+**仍然不是真实生产**：TLS 终结、密钥管理（当前密码仍在 `.env`）、监控指标与告警、多实例会话（会话在内存，单实例）、数据库备份与回滚演练都还没有做。这些属于 M1.5 及以后。
 
 ## 本地数据与账号
 
@@ -159,7 +179,7 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 
 **尚未实现**：数据范围模型（账号能看哪些业务数据）。当前权限码只决定「能用哪些功能」，不代表能看哪些业务数据；分级/跨单位的可见范围、可管理单位限制与操作留痕都还没有实现。
 
-**尚未实现的其它部分**：图谱查询、任务调度、AI 平台接入、情报流转、Neo4j、完整交付镜像；用户列表导出。也没有连接旧数据库或外部业务服务。
+**尚未实现的其它部分**：图谱查询、任务调度、AI 平台接入、情报流转、Neo4j；用户列表导出。也没有连接旧数据库或外部业务服务。交付镜像只做到本地演练，生产化还缺 TLS、密钥管理、监控指标与多实例会话。
 
 `docs/sys-design` 下的设计稿**只是样式与交互参考**，不是本轮要实现的模块清单。
 

@@ -22,6 +22,11 @@ compose() {
   docker compose --project-name merine-rebuild-dev --env-file "$ROOT/.env" -f "$ROOT/infra/compose.yaml" "$@"
 }
 
+# 交付形态演练：独立的项目名与数据卷，只跑构建产物（jar + nginx），不挂载源码
+compose_prod() {
+  docker compose --project-name merine-rebuild-prod --env-file "$ROOT/.env" -f "$ROOT/infra/compose.prod.yaml" "$@"
+}
+
 require_env() {
   [[ -f "$ROOT/.env" ]] || { printf 'Run ./scripts/dev.sh setup first.\n' >&2; exit 1; }
 }
@@ -91,6 +96,22 @@ case "${1:-help}" in
     ;;
   status) require_env; compose ps ;;
   logs) require_env; shift; compose logs --tail 100 -f "$@" ;;
+  restart)
+    # 改完 Java 必须重启 api：spring-boot:run 不会热加载，重启时会重新编译并重放迁移。
+    require_env
+    load_env
+    compose config --quiet
+    service="${2:-}"
+    case "$service" in
+      api|web) compose restart "$service" ;;
+      '')
+        compose up -d --wait --wait-timeout 180 mysql
+        compose run --rm --no-deps migrate
+        compose restart api web
+        ;;
+      *) printf 'restart 只接受 api 或 web（留空表示整栈）\n' >&2; exit 1 ;;
+    esac
+    ;;
   down) require_env; compose down ;;
   seed)
     require_env
@@ -176,9 +197,59 @@ case "${1:-help}" in
       -e TEST_DB_APP_PASSWORD="$MYSQL_TEST_PASSWORD" \
       api ./mvnw -B -q package
     ;;
+  prod-build)
+    # 只构建交付镜像，不动正在运行的开发栈
+    require_env
+    load_env
+    compose_prod config --quiet
+    compose_prod build api web
+    ;;
+  prod-up)
+    # 与开发栈同构的顺序：先迁移再启动应用；迁移失败就不启动（set -e 会直接退出）
+    require_env
+    load_env
+    compose_prod config --quiet
+    compose_prod up -d --wait --wait-timeout 300 mysql
+    compose_prod run --rm --no-deps -T migrate < /dev/null
+    compose_prod up -d --wait --wait-timeout 300 api web
+    printf '\n交付形态演练： http://127.0.0.1:8080\n'
+    ;;
+  prod-seed)
+    # 与 seed 相同：密码从交互输入读取，不进 shell 历史；这里面向交付形态的数据卷
+    require_env
+    load_env
+    read -r -p '演示账号登录名 [demo.analyst]: ' seed_login
+    seed_login="${seed_login:-demo.analyst}"
+    read -r -s -p '演示账号密码（至少 6 位，输入不回显）: ' seed_password
+    printf '\n'
+    if [[ ${#seed_password} -lt 6 ]]; then
+      printf '密码至少 6 位，已中止；未写入任何数据。\n' >&2
+      exit 1
+    fi
+    seed_env=()
+    for seed_key in SEED_DISPLAY_NAME SEED_UNIT_CODE SEED_UNIT_NAME SEED_ROLE_CODE SEED_ROLE_NAME; do
+      seed_value="$(printenv "$seed_key" || true)"
+      if [[ -n "$seed_value" ]]; then
+        seed_env+=(-e "$seed_key=$seed_value")
+      fi
+    done
+    compose_prod run --rm --no-deps -T \
+      -e SPRING_PROFILES_ACTIVE=seed \
+      -e SEED_LOGIN_NAME="$seed_login" \
+      -e SEED_PASSWORD="$seed_password" \
+      ${seed_env[@]+"${seed_env[@]}"} \
+      api
+    unset seed_password
+    ;;
+  prod-down)
+    require_env
+    compose_prod down
+    ;;
   *)
-    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|menus|test-db|status|logs [service]|down|check|build}\n'
+    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|menus|test-db|status|logs [service]|restart [api|web]|down|check|build|prod-build|prod-up|prod-seed|prod-down}\n'
     printf 'up starts the local development stack; down preserves all named volumes.\n'
+    printf 'restart recompiles and restarts api/web (Java changes are not hot-reloaded).\n'
+    printf 'prod-* builds and runs the delivery-shaped images (jar + nginx) for a local rehearsal.\n'
     printf 'seed initializes a local demo account; test-db prepares the isolated test schema.\n'
     printf 'menus restores missing bootstrap menu nodes and permission codes (works without the UI).\n'
     [[ "${1:-help}" == help ]] || exit 1

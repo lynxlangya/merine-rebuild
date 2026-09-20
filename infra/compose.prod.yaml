@@ -1,0 +1,102 @@
+# 交付形态的本地演练编排：只跑构建产物（jar + nginx 静态站点），不挂载源码。
+#
+# 与 infra/compose.yaml（开发编排）的区别：
+#   * api/web 用 *.prod.Dockerfile 构建，容器内没有 Maven、Node 与源码；
+#   * 只对外发布 web 端口（默认 127.0.0.1:8080），api 与 mysql 仅在编排网络内可达；
+#   * 独立的数据卷与项目名，演练不会碰到开发库。
+#
+# 用法：
+#   ./scripts/dev.sh prod-build   # 构建两个交付镜像
+#   ./scripts/dev.sh prod-up      # 建库 + 迁移 + 启动，打印访问地址
+#   ./scripts/dev.sh prod-seed    # 首次运行后初始化一个管理员账号
+#   ./scripts/dev.sh prod-down    # 停止（保留数据卷）
+#
+# 仍然不是真实生产的部分（见 README「交付形态演练」）：TLS 终结、密钥管理、
+# 监控指标、多实例会话、数据库备份都还没做。
+name: merine-rebuild-prod
+
+# useSSL=false 与 allowPublicKeyRetrieval=true 只适用于这条容器内网的一次性连接。
+# 指向真实数据库的部署必须改用 TLS 并去掉 allowPublicKeyRetrieval。
+x-db-url: &db-url jdbc:mysql://mysql:3306/merine_rebuild?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+
+services:
+  mysql:
+    image: mysql:8.4@sha256:85b9bf2e29cf836ecb8c2a15a935d4ba0c606631dff1dd79531a11983c638f2a
+    environment:
+      MYSQL_DATABASE: merine_rebuild
+      MYSQL_USER: merine_migrate
+      MYSQL_PASSWORD: ${MYSQL_MIGRATION_PASSWORD:?Run scripts/dev.sh setup}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run scripts/dev.sh setup}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
+      TZ: UTC
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+      - ./mysql/10-app-user.sh:/docker-entrypoint-initdb.d/10-app-user.sh:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'MYSQL_PWD="$${MYSQL_APP_PASSWORD}" mysql --user=merine_app --database=merine_rebuild --silent --execute="SELECT 1" >/dev/null',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  # 迁移仍由独立账号执行，且作为启动前置步骤：失败就不启动应用。
+  # 用官方 Flyway CLI 镜像而不是应用镜像——运行账号始终只持有 DML 权限。
+  migrate:
+    image: flyway/flyway:12.4.0-alpine@sha256:b43c3d9b7227687682a9124451ac3dbc9b0003eca65290ad1dcda760345bc680
+    profiles: [tools]
+    command: migrate
+    environment:
+      FLYWAY_URL: *db-url
+      FLYWAY_USER: merine_migrate
+      FLYWAY_PASSWORD: ${MYSQL_MIGRATION_PASSWORD:?Run scripts/dev.sh setup}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      FLYWAY_CLEAN_DISABLED: 'true'
+      FLYWAY_CONNECT_RETRIES: '30'
+    volumes:
+      # 迁移脚本仍以仓库里的这一份为准，避免镜像内外两套 SQL
+      - ../apps/api/src/main/resources/db/migration:/flyway/sql:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/docker/api.prod.Dockerfile
+    environment:
+      DB_URL: *db-url
+      DB_APP_USER: merine_app
+      DB_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
+      # HTTPS 终结后把 COOKIE_SECURE 设成 true（在 .env 里配置即可）
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:9002/actuator/health/readiness']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    # 应用配了 server.shutdown=graceful（最多等 30s），这里给容器同样的时间
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/docker/web.prod.Dockerfile
+    ports:
+      - '127.0.0.1:8080:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data_prod:

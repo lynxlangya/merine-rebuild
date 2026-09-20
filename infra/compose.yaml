@@ -61,6 +61,9 @@ services:
       DB_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
     ports:
       - '127.0.0.1:9002:9002'
+    # 应用配了 server.shutdown=graceful（最多等 30s 收尾），给容器留出同样的时间，
+    # 否则 compose 默认 10s 后会 SIGKILL，在途请求照样被切断
+    stop_grace_period: 30s
     depends_on:
       mysql:
         condition: service_healthy

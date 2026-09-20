@@ -18,6 +18,8 @@
         <java.version>21</java.version>
         <mybatis.version>4.1.0</mybatis.version>
         <springdoc.version>3.1.1</springdoc.version>
+        <!-- 固定产物时间戳：同一份源码重复构建得到字节一致的 jar，便于核对产物与缓存。 -->
+        <project.build.outputTimestamp>2026-09-20T00:00:00Z</project.build.outputTimestamp>
     </properties>
     <dependencies>
         <dependency>

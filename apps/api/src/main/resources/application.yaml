@@ -1,6 +1,9 @@
 spring:
   application:
     name: merine-rebuild
+  lifecycle:
+    # 与 server.shutdown=graceful 配套：最多等待 30s 让在途请求收尾
+    timeout-per-shutdown-phase: 30s
   datasource:
     url: ${DB_URL}
     username: ${DB_APP_USER}
@@ -24,6 +27,13 @@ mybatis:
 server:
   address: 0.0.0.0
   port: 9002
+  # 停机先停止接收新请求，把手上的请求做完；配合容器 stop_grace_period 才生效
+  shutdown: graceful
+  # 列表类响应（菜单、用户、字典）JSON 体积可观：实测 gzip 能压到三成左右
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: application/json,application/problem+json,text/plain,text/css,application/javascript
   error:
     include-message: never
     include-stacktrace: never

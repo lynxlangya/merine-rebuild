@@ -91,6 +91,8 @@ MySQL 默认 REPEATABLE READ 下普通读取可能看到事务快照；需要“
 - 迁移是启动前置步骤，沿用 `dev.sh up` 的独立迁移账号；迁移失败不启动应用，不授予运行账号 DDL 权限来绕过。直接重启 Java 不会替你应用新增迁移。
 - liveness 只反映进程存活；本项目依赖 MySQL，readiness 显式纳入 `readinessState,db`，探针用 `/actuator/health/readiness`，不访问业务查询。数据库连通不代表 schema 已达目标版本，schema 仍由迁移前置保障。Boot 不默认把数据库加入 readiness，依据：[官方探针说明](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html#actuator.endpoints.kubernetes-probes.external-state)。
 - 健康端点不返回凭据或库内业务详情；探针流量不算业务操作，不产生日常业务审计。异常告警与服务状态仍应可观测。
+- 交付形态只放构建产物：运行镜像里没有 Maven、Node 与源码，jar 用 Spring Boot 分层（依赖层不变时只重建应用层）；静态站点由 nginx 提供并同源反代 `/api`，Cookie 与 CSRF 的作用域与开发环境保持一致。交付编排与开发编排分开（独立项目名与数据卷），并在文档里写清尚未生产化的部分（TLS、密钥、监控、多实例会话）。
+- 进程要能被优雅停掉：`server.shutdown=graceful` 配 `spring.lifecycle.timeout-per-shutdown-phase`，容器侧配等长的 `stop_grace_period`；列表类 JSON 响应开启压缩（实测可压到三成左右），否则分页数据在弱网下代价明显。
 - 日志默认只记录请求/任务/操作标识、路由模板、方法、状态码、错误码、耗时及经确认无敏感性的计数。运行日志不能替代有权限管理的业务审计，后者记录操作者、动作、对象标识、时间与结果。
 - 所有级别均不得记录密码、Cookie/Token、密钥、完整请求、SQL 参数、情报/反馈正文、来源片段、检索词、AI 提示与输出或其他单位的名称/数据数量。不得开启输出绑定参数的 SQL 日志。
 - 异常 cause/message 可能包含 SQL 或用户输入；记录前检查来源并脱敏，保留必要错误类型、位置和关联标识，不无差别打印整个异常对象，也不为了避免泄漏完全丢掉诊断线索。
