@@ -1,7 +1,8 @@
 import { Button, Input, Select } from 'antd';
 import { useState } from 'react';
+import { UnitTreeSelect, useUnitOptionsQuery } from '../units/public';
 import { EMPTY_USER_FILTERS, type UserFilters, type UserStatusFilter } from './api';
-import { useRoleOptionsQuery, useUnitOptionsQuery } from './queries';
+import { useRoleOptionsQuery } from './queries';
 import styles from './UserSearchForm.module.css';
 
 const STATUS_OPTIONS: { value: Exclude<UserStatusFilter, ''>; label: string }[] = [
@@ -65,16 +66,14 @@ export function UserSearchForm({
         <label className={styles.label} htmlFor="user-unit">
           所属单位
         </label>
-        <Select
+        <UnitTreeSelect
           id="user-unit"
           className={styles.select}
           value={filters.unitCode}
           loading={units.isPending}
-          options={[
-            { value: '', label: units.isError ? '全部单位（选项加载失败）' : '全部单位' },
-            ...(units.data ?? []).map((unit) => ({ value: unit.code, label: unit.name })),
-          ]}
-          onChange={(value: string) => patch({ unitCode: value })}
+          allowClear
+          placeholder="全部单位"
+          onChange={(value) => patch({ unitCode: value ?? '' })}
         />
       </div>
 

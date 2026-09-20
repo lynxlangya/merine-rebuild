@@ -5,12 +5,11 @@
  * 失效用 userKeys.lists 前缀，只影响列表，不动单位与角色的选项缓存。
  */
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { fetchRoles, fetchUnits, fetchUserPage, type UserListQuery } from './api';
+import { fetchRoles, fetchUserPage, type UserListQuery } from './api';
 
 export const userKeys = {
   lists: ['system', 'users', 'list'] as const,
   list: (query: UserListQuery) => [...userKeys.lists, query] as const,
-  units: ['system', 'units'] as const,
   roles: ['system', 'roles'] as const,
 };
 
@@ -24,21 +23,11 @@ export function useUserListQuery(query: UserListQuery) {
   });
 }
 
-/** 单位与角色是低频变更的选项数据：一次会话内缓存 5 分钟，表单与筛选共用一份。 */
-const OPTION_STALE_TIME = 5 * 60 * 1000;
-
-export function useUnitOptionsQuery() {
-  return useQuery({
-    queryKey: userKeys.units,
-    queryFn: ({ signal }) => fetchUnits(signal),
-    staleTime: OPTION_STALE_TIME,
-  });
-}
-
+/** 角色是低频变更的选项数据：一次会话内缓存 5 分钟，表单与筛选共用一份。 */
 export function useRoleOptionsQuery() {
   return useQuery({
     queryKey: userKeys.roles,
     queryFn: ({ signal }) => fetchRoles(signal),
-    staleTime: OPTION_STALE_TIME,
+    staleTime: 5 * 60 * 1000,
   });
 }

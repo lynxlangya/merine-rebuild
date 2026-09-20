@@ -46,6 +46,13 @@ public class UserAdminGuard {
     }
 
     public void require(Authentication authentication) {
+        require(authentication, "没有管理用户的权限");
+    }
+
+    /**
+     * 同一道系统管理门禁可以被不同模块复用，但拒绝文案要写清当前操作的对象。
+     */
+    public void require(Authentication authentication, String deniedMessage) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "尚未登录或会话已过期");
         }
@@ -53,7 +60,7 @@ public class UserAdminGuard {
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(adminAuthorities::contains);
         if (!allowed) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "没有管理用户的权限");
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", deniedMessage);
         }
     }
 }

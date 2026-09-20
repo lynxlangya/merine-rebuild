@@ -1,4 +1,4 @@
-import { HomeOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
+import { ApartmentOutlined, HomeOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 
 export interface NavItem {
@@ -26,7 +26,10 @@ export const navGroups: NavGroup[] = [
   {
     key: 'system',
     label: '系统管理',
-    items: [{ key: 'users', label: '用户管理', icon: <TeamOutlined />, path: '/system/users' }],
+    items: [
+      { key: 'users', label: '用户管理', icon: <TeamOutlined />, path: '/system/users' },
+      { key: 'units', label: '单位管理', icon: <ApartmentOutlined />, path: '/system/units' },
+    ],
   },
   {
     key: 'dev',
@@ -46,5 +49,6 @@ export const navGroups: NavGroup[] = [
 export const breadcrumbs: Record<string, string[]> = {
   '/': ['首页'],
   '/system/users': ['系统管理', '用户管理'],
+  '/system/units': ['系统管理', '单位管理'],
   '/dev/diagnostics': ['开发工具', '工程诊断'],
 };

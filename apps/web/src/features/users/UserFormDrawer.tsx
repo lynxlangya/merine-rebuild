@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Drawer, Form, Input, Select, Skeleton, Tag } from 'antd';
+import { Alert, Button, Checkbox, Drawer, Form, Input, Skeleton, Tag } from 'antd';
 import type { InputRef } from 'antd';
 import type { CreateUser, RoleSummary, UpdateUser, UserSummary } from '@merine/api-contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,7 +8,8 @@ import { ApiError } from '../../shared/http';
 import { validatePasswordLength } from '../../shared/password';
 import { createUser, errorText, isForbiddenError, toFormFieldErrors, updateUser } from './api';
 import { AuthorizationSummary } from './AuthorizationSummary';
-import { userKeys, useRoleOptionsQuery, useUnitOptionsQuery } from './queries';
+import { UnitTreeSelect, useUnitOptionsQuery } from '../units/public';
+import { userKeys, useRoleOptionsQuery } from './queries';
 import styles from './UserFormDrawer.module.css';
 
 /** 表单值：新建与编辑共用一个表单；账号只在新建时可填，密码在编辑时留空表示不改。 */
@@ -219,18 +220,6 @@ export function UserFormDrawer({
     form.setFieldsValue(initialValues);
   }, [open, targetId, form, resetSave]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const unitOptions = (units.data ?? []).map((unit) => ({
-    value: unit.code,
-    label: unit.status === 'ENABLED' ? unit.name : `${unit.name}（该单位已停用）`,
-  }));
-  // 用户当前所属单位若不在选项里（例如单位已停用），补一条，避免下拉显示原始编码
-  if (editingUser && !unitOptions.some((option) => option.value === editingUser.unitCode)) {
-    unitOptions.push({
-      value: editingUser.unitCode,
-      label: `${editingUser.unitName}（不在可选单位内）`,
-    });
-  }
-
   const rolesUnavailable = roles.isError;
   const selectedRoleCodes = Form.useWatch('roleCodes', form) ?? initialValues.roleCodes;
   const selectedRoleNames = selectedRoleCodes.map(
@@ -386,12 +375,11 @@ export function UserFormDrawer({
                 : '只列出已启用的单位。'
             }
           >
-            <Select
+            <UnitTreeSelect
               className={styles.select}
               loading={units.isPending}
               placeholder="请选择所属单位"
-              options={unitOptions}
-              notFoundContent={units.isPending ? '加载中' : '没有可选单位'}
+              currentCode={editingUser?.unitCode}
             />
           </Form.Item>
 

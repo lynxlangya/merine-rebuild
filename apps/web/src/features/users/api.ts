@@ -9,11 +9,12 @@ import type {
   CreateUser,
   PageResultUserSummary,
   RoleSummary,
-  UnitSummary,
   UpdateUser,
   UserSummary,
 } from '@merine/api-contract';
 import { ApiError, request } from '../../shared/http';
+
+export { errorText, isForbiddenError } from '../../shared/api-error';
 
 /** 每页条数：与后端默认值一致，后端上限 100。 */
 export const USER_PAGE_SIZE = 20;
@@ -61,10 +62,6 @@ export function fetchUserPage(query: UserListQuery, signal?: AbortSignal) {
   return request<PageResultUserSummary>(`/api/system/users?${params}`, { signal });
 }
 
-export function fetchUnits(signal?: AbortSignal) {
-  return request<UnitSummary[]>('/api/system/units', { signal });
-}
-
 export function fetchRoles(signal?: AbortSignal) {
   return request<RoleSummary[]>('/api/system/roles', { signal });
 }
@@ -102,10 +99,6 @@ export function isUserEnabled(status: UserSummary['status']): boolean {
   return status === 'ENABLED';
 }
 
-export function isForbiddenError(error: unknown): boolean {
-  return error instanceof ApiError && (error.status === 403 || error.code === 'FORBIDDEN');
-}
-
 export function isUserNotFoundError(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 404 || error.code === 'USER_NOT_FOUND');
 }
@@ -113,12 +106,6 @@ export function isUserNotFoundError(error: unknown): boolean {
 /** 页码越界：服务端明确报错，界面据此回到第一页并说明原因。 */
 export function isPageOutOfRangeError(error: unknown): boolean {
   return error instanceof ApiError && error.code === 'PAGE_OUT_OF_RANGE';
-}
-
-/** 失败提示统一带上请求编号，便于对照后端日志。 */
-export function errorText(error: unknown): string {
-  if (!(error instanceof ApiError)) return '操作失败，请稍后重试';
-  return error.requestId ? `${error.message}（请求编号 ${error.requestId}）` : error.message;
 }
 
 /* ============================== 字段错误 ============================== */

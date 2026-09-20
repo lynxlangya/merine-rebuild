@@ -1,4 +1,4 @@
-import { SettingOutlined, TeamOutlined } from '@ant-design/icons';
+import { ApartmentOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
 import { Card, Descriptions, List, Tag, Typography } from 'antd';
 import { Link } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
@@ -18,7 +18,7 @@ export function HomePage() {
       <PageHeader
         demo={false}
         title="首页"
-        description="本地开发环境下的海防研判工作台。当前只开放系统管理中的用户管理。"
+        description="本地开发环境下的海防研判工作台。当前开放系统管理中的用户管理与单位管理。"
       />
 
       <div className={styles.grid}>
@@ -56,6 +56,12 @@ export function HomePage() {
                 title: '用户管理',
                 description: '查询、新建与编辑账号：姓名、所属单位、角色与启用状态。',
                 path: '/system/users',
+              },
+              {
+                icon: <ApartmentOutlined />,
+                title: '单位管理',
+                description: '维护总队、支队、大队三级组织树，查看直属下级与用户。',
+                path: '/system/units',
               },
               {
                 icon: <SettingOutlined />,

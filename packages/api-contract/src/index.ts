@@ -16,6 +16,12 @@ export type CreateUser = components['schemas']['CreateUser'];
 export type UpdateUser = components['schemas']['UpdateUser'];
 export type ChangeStatus = components['schemas']['ChangeStatus'];
 
-/** 单位与角色：供用户管理的筛选与表单选择。 */
+/** 单位管理：用户管理的所属单位选择与组织树共用同一套契约。 */
 export type UnitSummary = components['schemas']['UnitSummary'];
+export type UnitTreeNode = components['schemas']['UnitTreeNode'];
+export type UnitView = components['schemas']['UnitView'];
+export type CreateUnit = components['schemas']['CreateUnit'];
+export type UpdateUnit = components['schemas']['UpdateUnit'];
+
+/** 角色：用户管理的筛选与表单选择。 */
 export type RoleSummary = components['schemas']['RoleSummary'];

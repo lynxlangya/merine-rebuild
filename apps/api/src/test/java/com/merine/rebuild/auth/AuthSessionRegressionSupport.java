@@ -111,6 +111,8 @@ abstract class AuthSessionRegressionSupport {
                 """, ROLE_CODE_PREFIX + "%");
         jdbcTemplate.update("DELETE FROM sys_user WHERE login_name LIKE ?", LOGIN_NAME_PREFIX + "%");
         jdbcTemplate.update("DELETE FROM sys_role WHERE role_code LIKE ?", ROLE_CODE_PREFIX + "%");
+        jdbcTemplate.update("UPDATE sys_unit SET parent_id = NULL WHERE unit_code LIKE ?",
+                UNIT_CODE_PREFIX + "%");
         jdbcTemplate.update("DELETE FROM sys_unit WHERE unit_code LIKE ?", UNIT_CODE_PREFIX + "%");
     }
 

@@ -5,7 +5,7 @@ import styles from './ConfirmDialog.module.css';
 
 /**
  * 影响确认弹窗（440px，非 Ant Design 默认宽度）。
- * 禁用/启用这类操作先写清对象与结果再执行；确认按钮在请求进行中进入 loading
+ * 删除、禁用、启用这类操作先写清对象与结果再执行；确认按钮在请求进行中进入 loading
  * 并禁用，失败原因留在弹窗里，用户可以直接重试或取消。
  */
 export function ConfirmDialog({
@@ -22,7 +22,7 @@ export function ConfirmDialog({
   open: boolean;
   title: string;
   confirmLabel: string;
-  /** 破坏性操作（禁用）用 danger 主按钮 */
+  /** 破坏性操作用 danger 主按钮 */
   danger?: boolean;
   submitting: boolean;
   error: string | null;

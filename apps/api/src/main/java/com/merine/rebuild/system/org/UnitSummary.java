@@ -13,5 +13,10 @@ public record UnitSummary(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
                 description = "单位状态：ENABLED 启用，DISABLED 停用")
-        String status) {
+        String status,
+        @Schema(description = "上级单位编码；一级单位为 null", nullable = true)
+        String parentCode,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "单位层级：1 总队，2 支队，3 大队")
+        int level) {
 }

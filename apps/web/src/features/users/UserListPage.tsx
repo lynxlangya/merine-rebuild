@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { App, Button, Result } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import {
   EMPTY_USER_FILTERS,
   changeUserStatus,
@@ -16,7 +17,6 @@ import {
   type UserFilters,
   type UserListQuery,
 } from './api';
-import { ConfirmDialog } from './ConfirmDialog';
 import { userKeys, useUserListQuery } from './queries';
 import { UserFormDrawer } from './UserFormDrawer';
 import { UserSearchForm } from './UserSearchForm';

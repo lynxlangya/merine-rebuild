@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- owner: system 模块；读写 sys_unit，单位树是唯一写入 owner。 -->
+<mapper namespace="com.merine.rebuild.system.org.UnitAdminMapper">
+
+    <sql id="unitColumns">
+        u.id                    AS id,
+        u.unit_code             AS code,
+        u.unit_name             AS name,
+        u.parent_id             AS parentId,
+        p.unit_code             AS parentCode,
+        u.unit_level            AS level,
+        u.area_code             AS areaCode,
+        u.status                AS status,
+        u.version               AS version,
+        u.updated_at            AS updatedAt
+    </sql>
+
+    <select id="findAll" resultType="com.merine.rebuild.system.org.UnitAdminRow">
+        SELECT <include refid="unitColumns"/>
+          FROM sys_unit u
+          LEFT JOIN sys_unit p ON p.id = u.parent_id
+         ORDER BY u.unit_level, u.unit_code
+    </select>
+
+    <!-- 全表范围锁：单位维护先串行化，再在 Service 里校验单根、层级和循环引用。 -->
+    <select id="lockAllIds" resultType="long">
+        SELECT id
+          FROM sys_unit
+         ORDER BY id
+           FOR UPDATE
+    </select>
+
+    <select id="findByCode" resultType="com.merine.rebuild.system.org.UnitAdminRow">
+        SELECT <include refid="unitColumns"/>
+          FROM sys_unit u
+          LEFT JOIN sys_unit p ON p.id = u.parent_id
+         WHERE u.unit_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin
+    </select>
+
+    <insert id="insert">
+        INSERT INTO sys_unit (unit_code, unit_name, parent_id, unit_level, area_code, status)
+        VALUES (#{code},
+                #{name},
+                #{parentId,jdbcType=BIGINT},
+                #{level},
+                #{areaCode,jdbcType=VARCHAR},
+                'ENABLED')
+    </insert>
+
+    <update id="update">
+        UPDATE sys_unit
+           SET unit_name = #{name},
+               parent_id = #{parentId,jdbcType=BIGINT},
+               unit_level = #{level},
+               area_code = #{areaCode,jdbcType=VARCHAR},
+               version = version + 1,
+               updated_at = CURRENT_TIMESTAMP(6)
+         WHERE id = #{id}
+           AND version = #{version}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_unit
+         WHERE id = #{id}
+    </delete>
+
+</mapper>

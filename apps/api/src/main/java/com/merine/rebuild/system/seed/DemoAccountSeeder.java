@@ -36,9 +36,9 @@ public class DemoAccountSeeder implements CommandLineRunner {
     private String password;
     @Value("${SEED_DISPLAY_NAME:陈知远}")
     private String displayName;
-    @Value("${SEED_UNIT_CODE:DEMO-UNIT-A}")
+    @Value("${SEED_UNIT_CODE:ORG_001}")
     private String unitCode;
-    @Value("${SEED_UNIT_NAME:临湾海防支队}")
+    @Value("${SEED_UNIT_NAME:浙江省公安厅海防总队}")
     private String unitName;
     @Value("${SEED_ROLE_CODE:SYSTEM_ADMIN}")
     private String roleCode;

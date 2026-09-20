@@ -17,6 +17,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system/units/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 编辑单位名称、上级或行政区划 */
+        put: operations["update_1"];
+        post?: never;
+        /** 删除无下级、无用户的单位 */
+        delete: operations["delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/users": {
         parameters: {
             query?: never;
@@ -69,6 +87,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询全部单位选项 */
+        get: operations["list_1"];
+        put?: never;
+        /** 新增单位 */
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bootstrap/probes": {
         parameters: {
             query?: never;
@@ -79,7 +115,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** 写入一条本地合成联调记录 */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -105,15 +141,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/system/units": {
+    "/api/system/units/tree": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** 查询全部单位 */
-        get: operations["list_1"];
+        /** 查询完整单位组织树 */
+        get: operations["tree"];
         put?: never;
         post?: never;
         delete?: never;
@@ -227,6 +263,55 @@ export interface components {
              */
             lastLoginAt?: string;
         };
+        UpdateUnit: {
+            /**
+             * Format: int32
+             * @description 打开编辑表单时取得的单位版本
+             */
+            version: number;
+            name: string;
+            /** @description 上级单位编码；一级单位为 null */
+            parentCode?: string | null;
+            /** @description 2–12 位数字 */
+            areaCode: string;
+        };
+        ApiResponseUnitView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["UnitView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        UnitView: {
+            code: string;
+            name: string;
+            /** @description 单位状态：ENABLED 启用，DISABLED 停用 */
+            status: string;
+            /** @description 上级单位编码；一级单位为 null */
+            parentCode?: string | null;
+            /**
+             * Format: int32
+             * @description 单位层级：1 总队，2 支队，3 大队
+             */
+            level: number;
+            /** @description 行政区划代码；历史合成数据可能为 null */
+            areaCode?: string | null;
+            /** Format: int64 */
+            childCount: number;
+            /** Format: int64 */
+            userCount: number;
+            /**
+             * Format: int32
+             * @description 编辑版本；保存时原样提交，冲突须重新读取
+             */
+            version: number;
+            /**
+             * Format: date-time
+             * @description 最近修改时刻（UTC）
+             */
+            updatedAt: string;
+        };
         CreateUser: {
             loginName: string;
             displayName: string;
@@ -248,6 +333,14 @@ export interface components {
             requestId: string;
             /** @description 字段级校验错误；无字段错误时为 null */
             fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        CreateUnit: {
+            code: string;
+            name: string;
+            /** @description 上级单位编码；一级单位为 null */
+            parentCode?: string | null;
+            /** @description 2–12 位数字 */
+            areaCode: string;
         };
         CreateProbe: {
             note: string;
@@ -324,6 +417,58 @@ export interface components {
             name: string;
             /** @description 单位状态：ENABLED 启用，DISABLED 停用 */
             status: string;
+            /** @description 上级单位编码；一级单位为 null */
+            parentCode?: string | null;
+            /**
+             * Format: int32
+             * @description 单位层级：1 总队，2 支队，3 大队
+             */
+            level: number;
+        };
+        ApiResponseListUnitTreeNode: {
+            code: string;
+            message: string;
+            data: components["schemas"]["UnitTreeNode"][];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        UnitTreeNode: {
+            code: string;
+            name: string;
+            /** @description 单位状态：ENABLED 启用，DISABLED 停用 */
+            status: string;
+            /** @description 上级单位编码；一级单位为 null */
+            parentCode?: string | null;
+            /**
+             * Format: int32
+             * @description 单位层级：1 总队，2 支队，3 大队
+             */
+            level: number;
+            /** @description 行政区划代码；历史合成数据可能为 null */
+            areaCode?: string | null;
+            /**
+             * Format: int64
+             * @description 直属下级单位数
+             */
+            childCount: number;
+            /**
+             * Format: int64
+             * @description 直属用户数
+             */
+            userCount: number;
+            /**
+             * Format: int32
+             * @description 编辑版本；保存时原样提交，冲突须重新读取
+             */
+            version: number;
+            /**
+             * Format: date-time
+             * @description 最近修改时刻（UTC）
+             */
+            updatedAt: string;
+            /** @description 直属下级节点，按单位编码升序 */
+            children: components["schemas"]["UnitTreeNode"][];
         };
         ApiResponseListRoleSummary: {
             code: string;
@@ -427,6 +572,54 @@ export interface operations {
             };
         };
     };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUnit"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUnitView"];
+                };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     list: {
         parameters: {
             query?: {
@@ -526,7 +719,51 @@ export interface operations {
             };
         };
     };
+    list_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListUnitSummary"];
+                };
+            };
+        };
+    };
     create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUnit"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseUnitView"];
+                };
+            };
+        };
+    };
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -614,7 +851,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    tree: {
         parameters: {
             query?: never;
             header?: never;
@@ -629,7 +866,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListUnitSummary"];
+                    "*/*": components["schemas"]["ApiResponseListUnitTreeNode"];
                 };
             };
         };

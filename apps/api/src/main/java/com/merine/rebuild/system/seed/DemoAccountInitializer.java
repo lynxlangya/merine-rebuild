@@ -52,8 +52,10 @@ public class DemoAccountInitializer {
         if (id != null) {
             return id;
         }
-        mapper.insertUnit(code, name);
-        return mapper.findUnitId(code);
+        // 单位树由 Flyway 组织参考数据迁移维护，seed 只把账号挂到已有单位；
+        // 否则一个本地命令就能绕过单根、层级和编码校验再造一棵树。
+        throw new IllegalStateException(
+                "单位不存在：" + code + "（" + name + "）。请先执行迁移，不要用 seed 创建组织单位");
     }
 
     private long ensureRole(String code, String name) {
