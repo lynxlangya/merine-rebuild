@@ -121,8 +121,7 @@
   gap: var(--sp-1);
 }
 
-/* 状态与角色标签 */
-.tagSuccess,
+/* 角色标签 */
 .tagNeutral {
   margin: 0;
   border-radius: var(--r-2);
@@ -130,35 +129,10 @@
   font-weight: var(--fw-ui);
 }
 
-.tagSuccess {
-  background: var(--tag-success-bg);
-  border-color: transparent;
-  color: var(--success);
-}
-
 .tagNeutral {
   background: var(--tag-neutral-bg);
   border-color: var(--tag-border);
   color: var(--fg);
-}
-
-/* antd Tag 是 inline-block 容器，圆点必须是行内块，否则宽高不生效 */
-.dot,
-.dotOutline {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex: 0 0 6px;
-}
-
-.dot {
-  background: currentColor;
-}
-
-.dotOutline {
-  background: transparent;
-  border: 1.5px solid currentColor;
 }
 
 /* 分页 */

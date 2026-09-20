@@ -166,6 +166,7 @@ export function UserListPage() {
     statusChange.isError && !isForbiddenError(statusChange.error)
       ? errorText(statusChange.error)
       : null;
+  const statusChangingIds = statusChange.isPending && statusRequest ? statusRequest.ids : [];
 
   return (
     <div>
@@ -225,6 +226,7 @@ export function UserListPage() {
                 isInitialLoading={list.isPending}
                 isRefreshing={list.isFetching}
                 refreshError={list.isError && list.data ? errorText(list.error) : null}
+                statusChangingIds={statusChangingIds}
                 onPageChange={changePage}
                 onSelectedIdsChange={setSelectedIds}
                 onEdit={(user, trigger) => openDrawer(user, trigger)}

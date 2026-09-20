@@ -1,20 +1,9 @@
 import { ReloadOutlined } from '@ant-design/icons';
 import type { UserSummary } from '@merine/api-contract';
-import { Alert, Button, Empty, Skeleton, Table, Tag } from 'antd';
+import { Alert, Button, Empty, Skeleton, Switch, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { isUserEnabled } from '../model';
 import styles from './UserTable.module.css';
-
-/** 状态标签：启用为成功色 + 实心圆点，已禁用为中性色 + 空心圆点，两者都带文字。 */
-function StatusTag({ status }: { status: UserSummary['status'] }) {
-  const enabled = isUserEnabled(status);
-  return (
-    <Tag className={enabled ? styles.tagSuccess : styles.tagNeutral}>
-      <span className={enabled ? styles.dot : styles.dotOutline} />
-      {enabled ? '启用' : '已禁用'}
-    </Tag>
-  );
-}
 
 /** 最近登录时间：本地时区 YYYY-MM-DD HH:mm；从未登录是真实状态，不显示成空。 */
 function formatLastLogin(value: UserSummary['lastLoginAt']): string {
@@ -56,6 +45,7 @@ export function UserTable({
   isInitialLoading,
   isRefreshing,
   refreshError,
+  statusChangingIds,
   onPageChange,
   onSelectedIdsChange,
   onEdit,
@@ -75,6 +65,8 @@ export function UserTable({
   isRefreshing: boolean;
   /** 有旧结果时的刷新失败说明；没有旧结果时由页面整体表达失败 */
   refreshError: string | null;
+  /** 正在提交启用/停用的用户 id；目标行显示 loading，其余行暂时禁用 */
+  statusChangingIds: string[];
   onPageChange: (page: number) => void;
   onSelectedIdsChange: (ids: string[]) => void;
   onEdit: (user: UserSummary, trigger: HTMLElement) => void;
@@ -96,7 +88,7 @@ export function UserTable({
       render: (value: string) => <span className={styles.mono}>{value}</span>,
     },
     { title: '姓名', dataIndex: 'displayName', width: 132 },
-    { title: '所属单位', dataIndex: 'unitName', width: 132 },
+    { title: '所属单位', dataIndex: 'unitName', width: 240 },
     {
       title: '角色',
       dataIndex: 'roleNames',
@@ -115,10 +107,25 @@ export function UserTable({
         ),
     },
     {
-      title: '状态',
+      title: '启用状态',
       dataIndex: 'status',
-      width: 104,
-      render: (value: UserSummary['status']) => <StatusTag status={value} />,
+      width: 130,
+      render: (_value, user) => {
+        const enabled = isUserEnabled(user.status);
+        const changing = statusChangingIds.includes(user.id);
+        return (
+          <Switch
+            size="small"
+            checked={enabled}
+            loading={changing}
+            disabled={statusChangingIds.length > 0}
+            checkedChildren="启用"
+            unCheckedChildren="禁用"
+            aria-label={`${user.displayName}：${enabled ? '点击禁用账号' : '点击启用账号'}`}
+            onChange={() => onStatusAction(user)}
+          />
+        );
+      },
     },
     {
       title: '最近登录时间',
@@ -138,13 +145,11 @@ export function UserTable({
       title: '操作',
       key: 'actions',
       align: 'right',
+      width: 80,
       render: (_value, user) => (
         <span className={styles.actions}>
           <Button type="text" size="small" onClick={(event) => onEdit(user, event.currentTarget)}>
             编辑
-          </Button>
-          <Button type="text" size="small" onClick={() => onStatusAction(user)}>
-            {isUserEnabled(user.status) ? '禁用' : '启用'}
           </Button>
         </span>
       ),
