@@ -1,4 +1,4 @@
-import type { UnitSummary, UnitTreeNode } from '@merine/api-contract';
+import type { FieldError, UnitSummary, UnitTreeNode } from '@merine/api-contract';
 
 /** 页面统一使用业务层级名称，不在各组件里重复写 1/2/3 的文案映射。 */
 export const UNIT_LEVEL_LABELS: Record<number, string> = {
@@ -145,4 +145,25 @@ export function findUnitName(
 ): string | null {
   if (!code) return null;
   return findUnitTreeNode(nodes, code)?.name ?? null;
+}
+
+export type UnitFormField = 'code' | 'name' | 'parentCode' | 'areaCode';
+
+const FORM_FIELDS: readonly string[] = ['code', 'name', 'parentCode', 'areaCode'];
+
+export function toUnitFormFieldErrors(fieldErrors: readonly FieldError[]): {
+  fields: Partial<Record<UnitFormField, string>>;
+  rest: string[];
+} {
+  const fields: Partial<Record<UnitFormField, string>> = {};
+  const rest: string[] = [];
+  for (const { field, message } of fieldErrors) {
+    const name = field.replace(/\[\d+\]$/, '');
+    if (FORM_FIELDS.includes(name)) {
+      fields[name as UnitFormField] ??= message;
+    } else {
+      rest.push(message);
+    }
+  }
+  return { fields, rest };
 }

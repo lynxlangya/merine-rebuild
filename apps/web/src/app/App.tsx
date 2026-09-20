@@ -7,7 +7,7 @@ import { AuthProvider } from '../features/auth/AuthProvider';
 import { queryClient } from './queryClient';
 import { router } from './routes';
 import { buildTheme } from './theme/antdTheme';
-import { ThemeProvider, useThemeMode } from './theme/ThemeProvider';
+import { ThemeProvider, useThemeMode } from '../shared/theme/ThemeProvider';
 
 function ThemedApp() {
   const { mode } = useThemeMode();

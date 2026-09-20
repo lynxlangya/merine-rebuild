@@ -1,7 +1,7 @@
 package com.merine.rebuild.system.role;
 
 import com.merine.rebuild.common.ApiResponse;
-import com.merine.rebuild.system.user.UserAdminGuard;
+import com.merine.rebuild.system.security.SystemAdminGuard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "角色", description = "角色查询，供用户管理选择与筛选")
 public class RoleController {
     private final RoleLookup roles;
-    private final UserAdminGuard guard;
+    private final SystemAdminGuard guard;
 
-    public RoleController(RoleLookup roles, UserAdminGuard guard) {
+    public RoleController(RoleLookup roles, SystemAdminGuard guard) {
         this.roles = roles;
         this.guard = guard;
     }

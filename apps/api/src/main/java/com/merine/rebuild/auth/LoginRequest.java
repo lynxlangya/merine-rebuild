@@ -1,6 +1,6 @@
 package com.merine.rebuild.auth;
 
-import com.merine.rebuild.system.user.PasswordLimits;
+import com.merine.rebuild.system.user.account.PasswordLimits;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

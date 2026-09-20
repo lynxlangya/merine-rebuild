@@ -1,7 +1,7 @@
 import { ApartmentOutlined, SettingOutlined, TeamOutlined } from '@ant-design/icons';
 import { Card, Descriptions, List, Tag, Typography } from 'antd';
 import { Link } from 'react-router';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../auth/public';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import styles from './HomePage.module.css';
 

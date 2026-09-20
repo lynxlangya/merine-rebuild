@@ -22,7 +22,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../features/auth/AuthProvider';
 import { ApiError } from '../shared/http';
 import { breadcrumbs, homeNavItem, navGroups, type NavItem } from './navigation';
-import { useThemeMode } from './theme/ThemeProvider';
+import { useThemeMode } from '../shared/theme/ThemeProvider';
 import styles from './AppShell.module.css';
 
 const NAV_STORAGE_KEY = 'merine.nav';

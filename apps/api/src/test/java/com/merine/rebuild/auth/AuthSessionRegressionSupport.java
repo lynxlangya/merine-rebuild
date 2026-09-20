@@ -1,27 +1,8 @@
 package com.merine.rebuild.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-
-import com.jayway.jsonpath.JsonPath;
-import jakarta.servlet.http.Cookie;
-import java.sql.Connection;
-import java.util.Map;
-import javax.sql.DataSource;
+import com.merine.rebuild.support.MockMvcRegressionSupport;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * 认证与会话回归测试的公共基类：真实 Spring 上下文 + 真实 MySQL 测试库 + MockMvc。
@@ -35,14 +16,7 @@ import tools.jackson.databind.ObjectMapper;
  * 不用 {@code @Transactional} 包住测试：会话与身份要跨多个 HTTP 请求写入，
  * 外层测试事务回滚盖不住这些写入，也会让应用读到未提交的数据。
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-abstract class AuthSessionRegressionSupport {
-
-    /** 与 SecurityConfig 的 CookieCsrfTokenRepository.withHttpOnlyFalse() 保持一致。 */
-    protected static final String CSRF_COOKIE_NAME = "XSRF-TOKEN";
-    protected static final String CSRF_HEADER_NAME = "X-XSRF-TOKEN";
+abstract class AuthSessionRegressionSupport extends MockMvcRegressionSupport {
 
     /** 合成数据命名空间：清理与插入都只涉及带这些前缀的行，不触碰库里的其他数据。 */
     protected static final String LOGIN_NAME_PREFIX = "regr.auth.";
@@ -55,21 +29,6 @@ abstract class AuthSessionRegressionSupport {
     protected static final String UNIT_NAME = "回归测试单位";
     protected static final String ROLE_NAME = "回归测试角色";
 
-    @Autowired
-    protected MockMvc mockMvc;
-
-    @Autowired
-    protected ObjectMapper objectMapper;
-
-    @Autowired
-    private DataSource dataSource;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    protected PasswordEncoder passwordEncoder;
-
     /** 本次测试插入的合成行主键。JUnit 每个测试方法新建实例，字段不会互相污染。 */
     protected long unitId;
     protected long roleId;
@@ -77,24 +36,8 @@ abstract class AuthSessionRegressionSupport {
 
     @BeforeEach
     void resetSyntheticData() throws Exception {
-        assertIsolatedTestDatabase();
         deleteSyntheticRows();
         insertSyntheticAccount();
-    }
-
-    /**
-     * 兜底防线：profile 名字叫 test 不等于连的就是测试库。
-     * 直接读实际连接元数据核对库名，不采信配置里写的是什么。
-     */
-    private void assertIsolatedTestDatabase() throws Exception {
-        try (Connection connection = dataSource.getConnection()) {
-            assertThat(connection.getMetaData().getURL())
-                    .as("破坏性测试只允许连隔离的测试库")
-                    .contains("merine_rebuild_test");
-            assertThat(connection.getCatalog())
-                    .as("实际连接的默认库必须是测试库")
-                    .isEqualTo("merine_rebuild_test");
-        }
     }
 
     /** 删除顺序固定为 sys_user_role → sys_user → sys_role → sys_unit，避免撞外键。 */
@@ -153,51 +96,5 @@ abstract class AuthSessionRegressionSupport {
     protected String passwordHashInDatabase() {
         return jdbcTemplate.queryForObject("SELECT password_hash FROM sys_user WHERE id = ?", String.class,
                 userId);
-    }
-
-    /**
-     * GET /api/auth/csrf 触发令牌生成并写入 Cookie；返回 Cookie 供后续写请求按
-     * Cookie 原始值放进 X-XSRF-TOKEN 请求头（SpaCsrfTokenRequestHandler 的分派规则）。
-     */
-    protected Cookie issueCsrfToken(MockHttpSession session) throws Exception {
-        MockHttpServletRequestBuilder request = get("/api/auth/csrf");
-        if (session != null) {
-            request = request.session(session);
-        }
-        MvcResult result = mockMvc.perform(request).andReturn();
-        assertThat(result.getResponse().getStatus()).as("获取 CSRF 令牌").isEqualTo(200);
-        Cookie cookie = result.getResponse().getCookie(CSRF_COOKIE_NAME);
-        assertThat(cookie).as("GET /api/auth/csrf 必须下发 %s Cookie", CSRF_COOKIE_NAME).isNotNull();
-        assertThat(cookie.getValue()).isNotBlank();
-        return cookie;
-    }
-
-    /** 携带会话与 CSRF 令牌的登录请求；session 为 null 时不带会话。 */
-    protected MvcResult login(String loginName, String password, Cookie csrf, MockHttpSession session)
-            throws Exception {
-        MockHttpServletRequestBuilder request = withCsrf(post("/api/auth/session")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(loginBody(loginName, password)), csrf);
-        if (session != null) {
-            request = request.session(session);
-        }
-        return mockMvc.perform(request).andReturn();
-    }
-
-    protected String loginBody(String loginName, String password) {
-        return objectMapper.writeValueAsString(Map.of("loginName", loginName, "password", password));
-    }
-
-    protected static MockHttpServletRequestBuilder withCsrf(MockHttpServletRequestBuilder request, Cookie csrf) {
-        return request.cookie(csrf).header(CSRF_HEADER_NAME, csrf.getValue());
-    }
-
-    protected static String bodyOf(MvcResult result) throws Exception {
-        return result.getResponse().getContentAsString();
-    }
-
-    /** 按 JSONPath 读响应字段；字段值为 null 时返回 null。 */
-    protected static <T> T jsonOf(String body, String path) {
-        return JsonPath.read(body, path);
     }
 }

@@ -47,6 +47,7 @@
 
 ## 3. 组件与状态的职责
 
+- 文件位置与导入边界以[目录与模块规则](structure.md)为准：app 装配 feature，feature 之间走显式 `public.ts`，shared 不反向依赖业务。共享主题状态在 `shared/theme`，tokens 与 Ant Design 映射留在 `app/theme`。
 - 优先现有 Ant Design 控件，组件组合优于重写。公共搜索/表格先在用户管理跑通，再由角色或单位页验证复用；复用 props、children 和明确回调，不引入自建表格 DSL。
 - `PageHeader` 只做标题与操作区，`SearchForm` 负责查询交互，`DataTable` 负责呈现与分页，业务 feature 决定 API、列、权限与批量操作。是否抽取按实际重复决定，不先生成整套公共组件。
 - 请求函数不写在渲染逻辑中；服务端状态由 TanStack Query 管理，表单输入由 Form/局部 state 管理；可从现有数据计算的值不再复制进 state。Effect 只同步外部系统，不用来串联本可直接计算的数据。

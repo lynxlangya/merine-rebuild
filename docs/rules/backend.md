@@ -1,10 +1,11 @@
 # 后端设计与开发规则
 
-采用 Java 21、Spring Boot 4、Spring MVC、MyBatis 的模块化单体。版本以 [POM](../../apps/api/pom.xml) 为准；下文是目标约束，认证、业务模块和自动测试仍须按阶段实现。
+采用 Java 21、Spring Boot 4、Spring MVC、MyBatis 的模块化单体。版本以 [POM](../../apps/api/pom.xml) 为准；已实现能力见 [README](../../README.md)，下文同时约束后续开发，不代表所有目标能力都已实现。
 
 ## 1. 分工与接口
 
-- Controller 处理协议、参数校验与响应；Service 完成授权、用例编排和事务；Mapper 负责 SQL 与映射。业务判断不藏在 Controller、XML 或通用工具里，目录与公开边界见[模块规则](structure.md)。
+- Controller 处理协议、参数校验、入口门禁与响应；Service 负责资源授权、用例编排和事务；Mapper 负责 SQL 与映射。业务状态判断不藏在 Controller、XML 或通用工具里，目录、命名与公开边界统一遵循[模块规则](structure.md)。
+- 按业务职责决定是否拆 `dto/`、`persistence/`；同一业务 owner 可按用例使用多个 Mapper。公开契约不暴露 SQL 聚合格式或内部持久化对象；XML namespace 使用 Mapper 完整类名，文件路径约定见模块规则。
 - 使用构造器注入与明确依赖；简单数据载体优先 record，业务方法用具体类型。避免泛用 `Map<String, Object>`、无职责的转发层、仅有一个实现的内部 Service 接口，以及为减少几行代码新增 Lombok/映射库。
 - 请求 DTO 明确可编辑字段，使用 Validation 校验长度、范围和格式；空值/空串/去空格规则显式处理。身份、单位归属、服务端时间、审核人等不由客户端任意赋值；更新不得将整个请求复制进持久化对象。
 - API 使用同源 `/api`；资源路径采用英文复数、`kebab-case`，方法遵守读写语义。发送/签收等状态动作可设清楚的动作子路径，不用任意 `status` 更新接口绕过规则；GET 不产生业务写入。
@@ -29,6 +30,8 @@
 
 - M1 默认采用 Spring Security Session + HttpOnly Cookie，保持同源请求和 CSRF 防护；登录/退出/过期、HTTPS 下 Secure、SameSite、会话超时按实际环境配置。单实例重启后重登可以接受，不预建 JWT/Redis 方案。
 - 优先一条覆盖全应用的 SecurityFilterChain，明确最小公共路径，其余请求认证或拒绝。若以后拆多条链，最后仍保留覆盖所有请求的链；只给每条局部链写 `anyRequest()` 不足以保护未匹配路径。参见 [Spring Security 匹配规则](https://docs.spring.io/spring-security/reference/servlet/configuration/java.html#_choosing_securitymatcher_or_requestmatchers)。
+- 用户、角色和单位管理共用 `system/security/SystemAdminGuard`；允许调用的角色由 `merine.security.system-admin-role-codes` 配置，旧 `user-admin-role-codes` 不再使用。
+- 当前门禁在 HTTP Controller 调用；尚无功能权限与业务数据范围模型。以后新增任务、内部命令等非 HTTP 入口时，在实际用例边界补齐调用方授权，不能因绕过 Controller 而获得权限；系统管理门禁不能当作所有资源的授权。
 - 公共路径限登录所需端点、静态资源和必要的无敏感详情健康探针。API 文档是否开放按环境显式决定，使用本仓库实际 `/api/openapi`、`/api/docs` 及所需资源路径核对，不照抄默认 `/v3/api-docs`；不放开整个 `/api/**` 或 `/actuator/**`。
 - 后端对每次列表、详情、数量、导出及命令执行操作权限和数据范围检查；先限定可见集合，再统计、分页或生成图谱。用户提交的单位筛选只可收窄范围，不能扩大授权。
 - 系统管理权限不自动授予行业数据权限。情报按直接参与单位/分支授权，不能仅凭行政级别或通用“全部范围”放行；对不可披露对象使用一致响应，不透露其存在。
@@ -64,6 +67,7 @@ MySQL 默认 REPEATABLE READ 下普通读取可能看到事务快照；需要“
 ## 5. MyBatis 读写
 
 - 简短、固定 SQL 可以使用注解；动态条件、多表查询和复杂映射放 XML。同一查询不维护两份版本；关联命名、枚举、JSON 等见[数据库规则](database.md)。
+- Mapper XML 路径与 Mapper 所在 Java 包镜像，例如 `system/unit/persistence/UnitMapper` 对应 `mapper/system/unit/UnitMapper.xml`；不为不同调用场景复制同一个表的 Mapper。
 - 值一律绑定 `#{...}`。排序列名不能靠参数绑定替代白名单，优先 XML `<choose>` 映射固定片段；`${...}` 不得接收任何用户输入。SELECT 显式列字段，更新显式列可写字段。
 - 数据范围、筛选和软删条件若在 list/count 共享，应复用同一条件片段并核对总数口径。需要精确一致快照的列表/导出明确事务；普通列表说明实时变化可能导致的分页漂移。
 - 在 SQL 做有上限的分页，默认 LIMIT/OFFSET；不依赖 RowBounds 做物理分页。JOIN、EXISTS、先分页主键再批量补充按关系基数选择，防止一对多 JOIN 放大行数、错误 count 和 N+1；不规定所有列表必须一条 JOIN。

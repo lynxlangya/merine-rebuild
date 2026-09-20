@@ -1,6 +1,6 @@
 package com.merine.rebuild.system.seed;
 
-import com.merine.rebuild.system.user.PasswordLimits;
+import com.merine.rebuild.system.user.account.PasswordLimits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

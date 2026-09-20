@@ -5,7 +5,8 @@
  * 失效用 userKeys.lists 前缀，只影响列表，不动单位与角色的选项缓存。
  */
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { fetchRoles, fetchUserPage, type UserListQuery } from './api';
+import { fetchRoles, fetchUserPage } from './api';
+import type { UserListQuery } from './model';
 
 export const userKeys = {
   lists: ['system', 'users', 'list'] as const,

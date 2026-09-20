@@ -1,7 +1,7 @@
 package com.merine.rebuild.auth;
 
-import com.merine.rebuild.system.user.UserAccountLookup;
-import com.merine.rebuild.system.user.UserAccountState;
+import com.merine.rebuild.system.user.account.UserAccountLookup;
+import com.merine.rebuild.system.user.account.UserAccountState;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

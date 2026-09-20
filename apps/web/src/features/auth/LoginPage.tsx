@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import { ApiError } from '../../shared/http';
 import { validatePasswordLength } from '../../shared/password';
-import { useThemeMode } from '../../app/theme/ThemeProvider';
+import { useThemeMode } from '../../shared/theme/ThemeProvider';
 import { useAuth } from './AuthProvider';
 import { safeRedirectTarget } from './redirect';
 import styles from './LoginPage.module.css';

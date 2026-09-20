@@ -1,6 +1,6 @@
 package com.merine.rebuild.auth;
 
-import com.merine.rebuild.system.user.UserAccount;
+import com.merine.rebuild.system.user.account.UserAccount;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
@@ -9,8 +9,7 @@ import java.util.List;
  * 会话中保留的身份事实。
  *
  * 这里刻意不含密码哈希：凭据只在登录比对那一刻存在，认证完成后会话里只留身份。
- * 本轮没有功能权限模型（角色分配与数据范围留到后续阶段），因此不携带 authorities，
- * 安全规则只有“已认证”。等权限模型落地时，这里再加最小必要的权限标识与数据范围。
+ * 角色编码用于当前系统管理门禁，名称用于展示；功能权限与数据范围尚未实现。
  */
 public record AuthenticatedAccount(
         long userId,
@@ -32,7 +31,7 @@ public record AuthenticatedAccount(
                 account.displayName(),
                 account.unitName(),
                 account.roleCodes(),
-                account.roles(),
+                account.roleNames(),
                 account.authorizationVersion());
     }
 }

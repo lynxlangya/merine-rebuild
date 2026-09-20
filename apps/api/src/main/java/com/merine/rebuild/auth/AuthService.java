@@ -1,10 +1,10 @@
 package com.merine.rebuild.auth;
 
 import com.merine.rebuild.common.ApiException;
-import com.merine.rebuild.system.user.UserAccount;
-import com.merine.rebuild.system.user.UserAccountCommands;
-import com.merine.rebuild.system.user.UserAccountLookup;
-import com.merine.rebuild.system.user.PasswordLimits;
+import com.merine.rebuild.system.user.account.UserAccount;
+import com.merine.rebuild.system.user.account.UserAccountCommands;
+import com.merine.rebuild.system.user.account.UserAccountLookup;
+import com.merine.rebuild.system.user.account.PasswordLimits;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;

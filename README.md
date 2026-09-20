@@ -47,16 +47,20 @@ SEED_ROLE_NAME='系统管理员' SEED_DISPLAY_NAME='陈知远' ./scripts/dev.sh 
 ```text
 apps/web/             React、TypeScript、Vite、Ant Design、Router、TanStack Query
   src/app/            路由、外壳、Provider、主题 token 与 Ant Design 映射
-  src/features/       按用户用例拆分：auth、home、users、units、diagnostics
-  src/shared/         统一请求入口与经复用验证的展示组件
+  src/features/       按用例拆分：页面、api/queries/model、内部 components，跨 feature 走 public.ts
+  src/shared/         统一请求、主题状态与经复用验证的展示组件
 apps/api/             Java 21、Spring Boot、MyBatis、Validation、Actuator、springdoc
+  src/main/java/com/merine/rebuild/   auth、system/unit、system/user 等业务能力及 common
+  src/main/resources/mapper/        按业务/用例归属组织的 MyBatis XML
   src/main/resources/db/migration/   Flyway SQL 迁移
 packages/api-contract/ 后端 OpenAPI 快照与生成的 TypeScript 类型
 infra/                Compose、开发 Dockerfile、数据库账号初始化
 scripts/              启停、检查、类型生成和实际联调验证
 ```
 
-依赖方向为 `app → features → shared`。色彩、间距、圆角等语义 token 只在 `apps/web/src/app/theme/tokens.css` 维护一处；Ant Design 通过 `ConfigProvider` 映射到同一组 token，页面不再各抄色值。
+前端依赖方向为 `app → features → shared`。色彩、间距、圆角等语义 token 只在 `apps/web/src/app/theme/tokens.css` 维护一处；Ant Design 通过 `ConfigProvider` 映射到同一组 token，共享主题状态位于 `shared/theme`。
+
+后端按业务组织，复杂用例再分 `dto` / `persistence`；小模块保持平铺。文件位置、命名、公开能力及分层时机统一见[目录与模块规则](docs/rules/structure.md)。一条典型链路是 `features/units/UnitListPage → queries/api → system.unit.UnitController → UnitService → UnitMapper → mapper/system/unit/UnitMapper.xml`；用户表单通过 `features/units/public.ts` 复用单位选择能力。
 
 前端依赖由根目录 pnpm workspace 管理，后端由 `apps/api/pom.xml` 与 Maven Wrapper 管理。仓库已提交到 `main` 并推送到 `origin`（`git@github.com:lynxlangya/merine-rebuild.git`）。
 
@@ -110,7 +114,7 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 - `check`：建好测试库并跑 TypeScript、Node 内置前端回归测试、格式检查与 Maven 验证（含认证、用户管理与单位管理回归测试）。
 - `build`：前端生产构建与后端 jar 打包。目前验证开发环境，完整交付镜像另在后续 M1.5 实现。
 - `test-db`：准备隔离的测试库 `merine_rebuild_test` 并应用同一套迁移；重复执行是幂等的，不动开发库。
-- `contract:generate`：从本地后端导出 OpenAPI，更新 `packages/api-contract/openapi.json` 与 `src/schema.d.ts`。页面消费生成类型，生成文件不手改。接口文档需要登录，因此要先给出账号（需具备用户管理角色，否则读不到文档）。
+- `contract:generate`：从当前源码启动的本地后端导出 OpenAPI，更新 `packages/api-contract/openapi.json` 与 `src/schema.d.ts`。页面消费生成类型，生成文件不手改。接口文档默认需要登录；当前文档访问不额外要求系统管理角色。
 - `smoke`：经 Vite 的 `/api` 代理走一遍「CSRF → 登录（含错误密码与未登录）→ MySQL 读写 → 参数校验 → 退出后会话失效」；每次追加一条 `SMOKE-` 合成记录，不清理或重置已有数据。密码经环境变量传入，不写在脚本里。
 
 `smoke` 在容器内默认访问同容器的 Vite `5173`。`contract:generate` 通过容器服务名访问 API。初次下载依赖较慢时可查看对应服务日志；状态未知时先查看 `status`，不删卷重试。
@@ -139,7 +143,7 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 
 **已经接真实的**：登录、退出、当前身份与 CSRF（Spring Security Session + HttpOnly Cookie，账号落 `sys_user`，密码 BCrypt 哈希）；用户、单位与角色的查询与写入；单位三级组织树与 50 行已授权组织参考数据；路由守卫、身份恢复、会话失效处理。
 
-**尚未实现**：功能权限与数据范围模型。当前的授权只有一道门——角色编码在 `merine.security.user-admin-role-codes`（默认 `SYSTEM_ADMIN`）里的账号才能调用用户管理与单位管理接口；角色能使用什么功能、能看哪些业务数据仍未定义，数据范围与角色定义的后台也没有。
+**尚未实现**：功能权限与数据范围模型。当前的授权只有一道门——角色编码在 `merine.security.system-admin-role-codes`（默认 `SYSTEM_ADMIN`）里的账号才能调用用户管理与单位管理接口；角色能使用什么功能、能看哪些业务数据仍未定义，数据范围与角色定义的后台也没有。
 
 **尚未实现的其它部分**：图谱查询、任务调度、AI 平台接入、情报流转、Neo4j、完整交付镜像；用户列表导出。也没有连接旧数据库或外部业务服务。
 

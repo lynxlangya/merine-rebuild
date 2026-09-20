@@ -7,11 +7,11 @@ import { errorText, isForbiddenError } from '../../shared/api-error';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { deleteUnit } from './api';
-import { UnitDetailPanel } from './UnitDetailPanel';
-import { UnitFormDrawer } from './UnitFormDrawer';
+import { UnitDetailPanel } from './components/UnitDetailPanel';
+import { UnitFormDrawer } from './components/UnitFormDrawer';
 import { findUnitName, findUnitTreeNode } from './model';
 import { unitKeys, useUnitTreeQuery } from './queries';
-import { UnitTreePanel } from './UnitTreePanel';
+import { UnitTreePanel } from './components/UnitTreePanel';
 import styles from './UnitListPage.module.css';
 
 interface DrawerState {

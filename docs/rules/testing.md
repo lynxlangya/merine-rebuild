@@ -33,20 +33,22 @@
 - 优先已有工具；缺测试框架时，先提出最小依赖方案并获得确认，再安装。JUnit、Boot 测试 starter、Vitest、Testing Library、Playwright、Testcontainers、ArchUnit 都不是由本规范自动授权的新依赖。
 - Spring Boot 4 按所用技术选择测试 starter，并核对当前版本的注解包。MVC 可评估 `spring-boot-starter-webmvc-test`；`@SpringBootTest` 需要 MockMvc 时显式配置 `@AutoConfigureMockMvc`，不照抄 Boot 3 依赖与 import。依据：[Boot 4 测试迁移](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-testing-features)。
 - Java 测试放 `apps/api/src/test/java`，确保命名/插件使测试被实际发现；使用 `*IT` 时需明确 Failsafe 等执行配置，不能只建文件就认为 `verify` 会执行。前端测试就近命名 `*.test.ts(x)`，需接入实际 test 命令后才成为自动门禁。
+- 测试包路径镜像被测能力，例如用户管理在 `com.merine.rebuild.system.user.admin`。Spring/MockMvc/CSRF/JSON 与实际测试库校验复用 `com.merine.rebuild.support.MockMvcRegressionSupport`；系统管理员 fixture 归 `system.security`，业务账号和单位 fixture 留在各自模块。单位测试不继承用户管理测试基类，通用基座不自动插入业务数据。
+- 移动 Java 或 Mapper XML 后，先清理本项目的编译输出，再运行检查；旧 class、测试和 XML 可能留在 target，不能用它们证明新结构有效。当前容器的 target 是卷挂载点，清理内部产物、保留目录本身；`mvn clean` 可能在删除挂载根时报告 `Device or resource busy`，须核对实际清理结果，不盲目重试或删卷。确认数据库隔离校验在业务 fixture 写库前执行，并核对实际测试报告，防止改包名后漏跑或重复发现旧测试。
 - 新增关键测试时，检查执行报告中的测试数量、跳过与失败，确保主检查入口实际执行它。没有测试、全部跳过或只启动上下文，都不能声称业务回归通过。
 
 ## 4. 当前命令及证据边界
 
-以下基于 2026-09-19 的[启动/检查脚本](../../scripts/dev.sh)、[接口冒烟](../../scripts/smoke.mjs)和[契约生成](../../scripts/generate-contract.mjs)。除纯文档检查外，容器内命令需要相应服务已就绪；不默认启动服务来检查文档。
+以下基于 2026-09-20 的[启动/检查脚本](../../scripts/dev.sh)、[接口冒烟](../../scripts/smoke.mjs)和[契约生成](../../scripts/generate-contract.mjs)。除纯文档检查外，容器内命令需要相应服务已就绪；不默认启动服务来检查文档。
 
-| 命令/操作                                                                                 | 能证明什么                                                                                                                                        | 不能证明什么                                                                       |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `./scripts/dev.sh check`                                                                  | 前端 TypeScript、Node 内置测试、Prettier、后端验证；先建好隔离测试库，再执行 `apps/api/src/test` 下的认证与会话、用户管理回归测试（连真实 MySQL） | 浏览器里的页面行为、未覆盖的业务分支，以及契约与真实 JSON 的差异仍需另行核对       |
-| `./scripts/dev.sh build`                                                                  | 前端生产构建和后端 jar 打包                                                                                                                       | 不是最终交付镜像、容器健康或页面行为验收                                           |
-| `docker compose --env-file .env -f infra/compose.yaml exec -T web pnpm contract:generate` | 从当前本地 API 导出 OpenAPI 和 TS 类型                                                                                                            | 旧进程可能给出旧契约；先启动当前代码，生成后检查差异及真实 JSON                    |
-| `docker compose --env-file .env -f infra/compose.yaml exec -T web pnpm smoke`             | 经 Vite 代理的认证链路（未登录 401、缺 CSRF 403、错误密码与不存在账号返回一致、登录、退出后会话失效）与 bootstrap 读写、参数校验、请求编号、404   | 每次追加一条 `SMOKE-` 合成记录，不清理；不覆盖功能权限与数据范围，也不覆盖页面行为 |
-| `./scripts/dev.sh status` + 受影响接口/页面实际操作                                       | 实际容器状态与指定链路行为                                                                                                                        | 只看状态不证明整套业务正确                                                         |
-| 文档链接核对、对变更文件的 Prettier 检查、`git diff --check`                              | 文档内容与格式质量                                                                                                                                | 不证明应用运行；新增未跟踪文件须另行检查，不能只看 git diff                        |
+| 命令/操作                                                                                 | 能证明什么                                                                                                                                      | 不能证明什么                                                                       |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `./scripts/dev.sh check`                                                                  | 前端 TypeScript、Node 内置测试、Prettier、后端验证；先建好隔离测试库，再执行认证与会话、用户管理、单位管理及异常日志回归（连真实 MySQL）        | 浏览器里的页面行为、未覆盖的业务分支，以及契约与真实 JSON 的差异仍需另行核对       |
+| `./scripts/dev.sh build`                                                                  | 前端生产构建和后端 jar 打包                                                                                                                     | 不是最终交付镜像、容器健康或页面行为验收                                           |
+| `docker compose --env-file .env -f infra/compose.yaml exec -T web pnpm contract:generate` | 从当前本地 API 导出 OpenAPI 和 TS 类型                                                                                                          | 旧进程可能给出旧契约；先启动当前代码，生成后检查差异及真实 JSON                    |
+| `docker compose --env-file .env -f infra/compose.yaml exec -T web pnpm smoke`             | 经 Vite 代理的认证链路（未登录 401、缺 CSRF 403、错误密码与不存在账号返回一致、登录、退出后会话失效）与 bootstrap 读写、参数校验、请求编号、404 | 每次追加一条 `SMOKE-` 合成记录，不清理；不覆盖功能权限与数据范围，也不覆盖页面行为 |
+| `./scripts/dev.sh status` + 受影响接口/页面实际操作                                       | 实际容器状态与指定链路行为                                                                                                                      | 只看状态不证明整套业务正确                                                         |
+| 文档链接核对、对变更文件的 Prettier 检查、`git diff --check`                              | 文档内容与格式质量                                                                                                                              | 不证明应用运行；新增未跟踪文件须另行检查，不能只看 git diff                        |
 
 不要为修复检查结果重排原始设计导出包或其他无关文件。遇到基线问题区分本次引入与原有问题，修复本次影响并复测；必要检查通过后不无依据扩大测试。
 

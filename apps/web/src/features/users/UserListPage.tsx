@@ -7,20 +7,19 @@ import { PageHeader } from '../../shared/ui/PageHeader';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import {
   EMPTY_USER_FILTERS,
-  changeUserStatus,
-  errorText,
-  isForbiddenError,
   isPageOutOfRangeError,
   isUserEnabled,
   isUserNotFoundError,
   toUserListQuery,
   type UserFilters,
   type UserListQuery,
-} from './api';
+} from './model';
+import { changeUserStatus } from './api';
+import { errorText, isForbiddenError } from '../../shared/api-error';
 import { userKeys, useUserListQuery } from './queries';
-import { UserFormDrawer } from './UserFormDrawer';
-import { UserSearchForm } from './UserSearchForm';
-import { UserTable } from './UserTable';
+import { UserFormDrawer } from './components/UserFormDrawer';
+import { UserSearchForm } from './components/UserSearchForm';
+import { UserTable } from './components/UserTable';
 import styles from './UserListPage.module.css';
 
 interface DrawerState {
