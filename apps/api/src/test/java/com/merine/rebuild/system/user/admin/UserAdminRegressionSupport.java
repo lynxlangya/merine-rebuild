@@ -342,22 +342,27 @@ abstract class UserAdminRegressionSupport extends MockMvcRegressionSupport {
         return objectMapper.writeValueAsString(body);
     }
 
-    /** 编辑请求体；newPassword 为 null 表示不改密码（字段省略，与前端一致）。 */
-    protected String updateBody(String displayName, String unitCode, List<String> roleCodes,
-                                String newPassword) throws Exception {
-        return updateBody(displayName, unitCode, roleCodes, newPassword, 0);
+    /** 编辑请求体：密码已拆成独立动作接口，不在编辑请求里。 */
+    protected String updateBody(String displayName, String unitCode, List<String> roleCodes)
+            throws Exception {
+        return updateBody(displayName, unitCode, roleCodes, 0);
     }
 
     protected String updateBody(String displayName, String unitCode, List<String> roleCodes,
-                                String newPassword, int version) throws Exception {
+                                int version) throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("version", version);
         body.put("displayName", displayName);
         body.put("unitCode", unitCode);
         body.put("roleCodes", roleCodes);
-        if (newPassword != null) {
-            body.put("newPassword", newPassword);
-        }
+        return objectMapper.writeValueAsString(body);
+    }
+
+    /** 重置密码请求体；这是独立动作接口，需要 system:user:reset-password 权限。 */
+    protected String resetPasswordBody(int version, String newPassword) throws Exception {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("version", version);
+        body.put("newPassword", newPassword);
         return objectMapper.writeValueAsString(body);
     }
 

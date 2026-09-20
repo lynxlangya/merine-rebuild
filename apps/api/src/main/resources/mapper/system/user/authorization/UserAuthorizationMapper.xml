@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- owner: system.user.authorization；本 XML 只写 sys_user.authorization_version -->
+<mapper namespace="com.merine.rebuild.system.user.authorization.persistence.UserAuthorizationMapper">
+
+    <!--
+      角色状态或权限集合变化后递增持有者的授权版本。已停用的账号同样递增：
+      它们本来也登录不了，统一处理比按状态分支更容易核对。
+    -->
+    <update id="bumpVersionForRoleHolders">
+        UPDATE sys_user u
+          JOIN sys_user_role ur ON ur.user_id = u.id
+          JOIN sys_role r ON r.id = ur.role_id
+           SET u.authorization_version = u.authorization_version + 1,
+               u.updated_at = CURRENT_TIMESTAMP(6)
+         WHERE r.role_code IN
+         <foreach item="code" collection="roleCodes" open="(" separator="," close=")">
+             CONVERT(#{code} USING ascii) COLLATE ascii_bin
+         </foreach>
+    </update>
+
+</mapper>

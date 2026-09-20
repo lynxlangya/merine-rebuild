@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- owner: system.user.usage；只读 sys_user / sys_unit / sys_user_role / sys_role -->
+<mapper namespace="com.merine.rebuild.system.user.usage.persistence.RoleUsageMapper">
+
+    <!--
+      role_code 是 ascii_bin，JDBC 参数是 utf8mb4：等值比较把参数转成 ascii，
+      含非 ASCII 的输入自然落空，而不是触发 collation 冲突（1267）变成 500。
+    -->
+    <select id="countHoldersByRoleCodes"
+            resultType="com.merine.rebuild.system.user.usage.RoleHolderCount">
+        SELECT r.role_code AS roleCode, COUNT(*) AS holderCount
+          FROM sys_user_role ur
+          JOIN sys_role r ON r.id = ur.role_id
+         WHERE r.role_code IN
+         <foreach item="code" collection="roleCodes" open="(" separator="," close=")">
+             CONVERT(#{code} USING ascii) COLLATE ascii_bin
+         </foreach>
+         GROUP BY r.role_code
+    </select>
+
+    <select id="countHolders" resultType="long">
+        SELECT COUNT(*)
+          FROM sys_user_role ur
+          JOIN sys_role r ON r.id = ur.role_id
+         WHERE r.role_code = CONVERT(#{roleCode} USING ascii) COLLATE ascii_bin
+    </select>
+
+    <!-- 成员清单按账号升序，稳定分页；含已停用账号，因为授予关系仍在 -->
+    <select id="findHolders" resultType="com.merine.rebuild.system.user.usage.RoleHolder">
+        SELECT u.id           AS id,
+               u.login_name   AS loginName,
+               u.display_name AS displayName,
+               un.unit_name   AS unitName,
+               u.status       AS status
+          FROM sys_user_role ur
+          JOIN sys_user u ON u.id = ur.user_id
+          JOIN sys_unit un ON un.id = u.unit_id
+          JOIN sys_role r ON r.id = ur.role_id
+         WHERE r.role_code = CONVERT(#{roleCode} USING ascii) COLLATE ascii_bin
+         ORDER BY u.login_name
+         LIMIT #{limit} OFFSET #{offset,jdbcType=BIGINT}
+    </select>
+
+</mapper>

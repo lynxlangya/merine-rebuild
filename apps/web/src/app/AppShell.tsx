@@ -1,4 +1,6 @@
 import {
+  FolderOutlined,
+  HomeOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -20,9 +22,15 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../features/auth/AuthProvider';
+import {
+  findBreadcrumb,
+  toNavItems,
+  useMyMenusQuery,
+  type NavItem,
+} from '../features/menus/public';
 import { ApiError } from '../shared/http';
-import { breadcrumbs, homeNavItem, navGroups, type NavItem } from './navigation';
 import { useThemeMode } from '../shared/theme/ThemeProvider';
+import { routeByKey } from './routeRegistry';
 import styles from './AppShell.module.css';
 
 const NAV_STORAGE_KEY = 'merine.nav';
@@ -38,10 +46,35 @@ function initialCollapsed(): boolean {
   return window.innerWidth <= 1439;
 }
 
-function activeKeyOf(pathname: string, items: NavItem[]): string | undefined {
-  const exact = items.find((item) => item.path === pathname);
+/** 首页不属于菜单权限模型：登录即可见，固定排在最上面。 */
+const HOME_ITEM: NavItem = { key: 'home', label: '首页', icon: <HomeOutlined />, path: '/' };
+
+function flattenNav(items: readonly NavItem[]): NavItem[] {
+  const all: NavItem[] = [];
+  for (const item of items) {
+    all.push(item);
+    if (item.children) all.push(...flattenNav(item.children));
+  }
+  return all;
+}
+
+/**
+ * 目录在前端注册表里没有图标（它不对应具体页面），但折叠态侧栏必须有图标才不会把标题竖排挤成两行，
+ * 因此统一给目录一个文件夹图标。
+ */
+function withFolderIcons(item: NavItem): NavItem {
+  return {
+    ...item,
+    icon: item.icon ?? <FolderOutlined />,
+    children: item.children?.map(withFolderIcons),
+  };
+}
+
+function activeKeyOf(pathname: string, items: readonly NavItem[]): string | undefined {
+  const flat = flattenNav(items);
+  const exact = flat.find((item) => item.path === pathname);
   if (exact) return exact.key;
-  return items.find((item) => item.path && pathname.startsWith(`${item.path}/`))?.key;
+  return flat.find((item) => item.path && pathname.startsWith(`${item.path}/`))?.key;
 }
 
 export function AppShell() {
@@ -52,6 +85,7 @@ export function AppShell() {
   const { mode, setMode } = useThemeMode();
   const location = useLocation();
   const navigate = useNavigate();
+  const myMenus = useMyMenusQuery();
 
   // 窄屏（1366×768 是本轮验收尺寸）优先折叠导航，把宽度让给内容。
   // 只响应“跨入窄屏”，变宽不自动展开——那会覆盖用户刚刚的手动选择。
@@ -65,9 +99,21 @@ export function AppShell() {
     return () => narrow.removeEventListener('change', listener);
   }, []);
 
-  const allItems = useMemo(() => [homeNavItem, ...navGroups.flatMap((group) => group.items)], []);
-  const activeKey = activeKeyOf(location.pathname, allItems);
   const user = state.status === 'authenticated' ? state.user : null;
+  // 导航完全由后端按会话权限下发；前端只把 route key 映射成组件路径与图标。
+  const resolveRoute = useMemo(
+    () => (routeKey: string) => {
+      const route = routeByKey(routeKey);
+      return route ? { path: route.path, icon: route.icon } : undefined;
+    },
+    [],
+  );
+  const navItems = useMemo(
+    () => toNavItems(myMenus.data ?? [], resolveRoute).map(withFolderIcons),
+    [myMenus.data, resolveRoute],
+  );
+  const visibleItems = useMemo(() => [HOME_ITEM, ...navItems], [navItems]);
+  const activeKey = activeKeyOf(location.pathname, visibleItems);
 
   const toggleNav = () => {
     setCollapsed((previous) => {
@@ -83,29 +129,31 @@ export function AppShell() {
 
   const menuItems = useMemo(
     () => [
-      // 首页不分组，固定排在最上面
-      { key: homeNavItem.key, icon: homeNavItem.icon, label: homeNavItem.label },
-      ...navGroups.map((group) => ({
-        type: 'group' as const,
-        key: group.key,
-        label: group.label,
-        children: group.items.map((item) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
+      { key: HOME_ITEM.key, icon: HOME_ITEM.icon, label: HOME_ITEM.label },
+      ...navItems.map((item) => ({
+        key: item.key,
+        icon: item.icon,
+        label: item.label,
+        children: item.children?.map((child) => ({
+          key: child.key,
+          icon: child.icon,
+          label: child.label,
         })),
       })),
     ],
-    [],
+    [navItems],
   );
 
   const pathByKey = useMemo(() => {
     const map = new Map<string, string>();
-    for (const item of allItems) if (item.path) map.set(item.key, item.path);
+    for (const item of flattenNav(visibleItems)) if (item.path) map.set(item.key, item.path);
     return map;
-  }, [allItems]);
+  }, [visibleItems]);
 
-  const crumbs = breadcrumbs[location.pathname];
+  const crumbs = useMemo(
+    () => findBreadcrumb(myMenus.data ?? [], location.pathname, resolveRoute),
+    [myMenus.data, location.pathname, resolveRoute],
+  );
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -148,6 +196,11 @@ export function AppShell() {
             if (path) void navigate(path);
           }}
         />
+        {!collapsed && !myMenus.isPending && navItems.length === 0 && (
+          <p className={styles.emptyNav}>
+            当前账号没有任何可用菜单。请联系管理员为你的角色勾选页面权限。
+          </p>
+        )}
       </Layout.Sider>
 
       <Layout className={styles.main}>

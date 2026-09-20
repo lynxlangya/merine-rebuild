@@ -11,7 +11,8 @@ import { toFormFieldErrors } from '../model';
 import { errorText, isForbiddenError } from '../../../shared/api-error';
 import { AuthorizationSummary } from './AuthorizationSummary';
 import { UnitTreeSelect, useUnitOptionsQuery } from '../../units/public';
-import { userKeys, useRoleOptionsQuery } from '../queries';
+import { useRoleOptionsQuery } from '../../roles/public';
+import { userKeys } from '../queries';
 import styles from './UserFormDrawer.module.css';
 
 /** 表单值：新建与编辑共用一个表单；账号只在新建时可填，密码在编辑时留空表示不改。 */
@@ -43,16 +44,14 @@ function toCreateInput(values: UserFormValues): CreateUser {
   };
 }
 
-/** 编辑请求的 newPassword 省略即表示不修改；全空格等同于留空。 */
+/** 编辑只改姓名、所属单位与角色：状态与密码各有独立的动作接口与权限码。 */
 function toUpdateInput(values: UserFormValues, version: number): UpdateUser {
-  const input: UpdateUser = {
+  return {
     version,
     displayName: values.displayName.trim(),
     unitCode: values.unitCode ?? '',
     roleCodes: values.roleCodes,
   };
-  if (values.password.trim()) input.newPassword = values.password;
-  return input;
 }
 
 /** 角色多选卡：设计稿是单选卡，后端是用户-角色多对多，这里按多选实现。 */
@@ -156,8 +155,7 @@ export function UserFormDrawer({
       if (editingUser) {
         const permissionsChanged =
           !sameCodes(editingUser.roleCodes, values.roleCodes) ||
-          editingUser.unitCode !== values.unitCode ||
-          Boolean(values.password.trim());
+          editingUser.unitCode !== values.unitCode;
         message.success(
           permissionsChanged
             ? `已保存用户 ${saved.displayName}，其现有会话已失效`
@@ -385,25 +383,20 @@ export function UserFormDrawer({
             />
           </Form.Item>
 
-          <Form.Item
-            name="password"
-            label={editingUser ? '重置密码' : '初始密码'}
-            extra={
-              editingUser
-                ? '留空表示不修改；新密码至少 6 个字符，最多 72 个 UTF-8 字节。'
-                : '至少 6 个字符，最多 72 个 UTF-8 字节（中文通常占 3 字节）。'
-            }
-            rules={[
-              { required: !editingUser, whitespace: true, message: '请输入初始密码' },
-              { min: 6, message: '密码至少 6 个字符' },
-              { validator: (_rule, value?: string) => validatePasswordLength(value) },
-            ]}
-          >
-            <Input.Password
-              autoComplete="new-password"
-              placeholder={editingUser ? '不修改请留空' : '至少 6 位'}
-            />
-          </Form.Item>
+          {!editingUser && (
+            <Form.Item
+              name="password"
+              label="初始密码"
+              extra="至少 6 个字符，最多 72 个 UTF-8 字节（中文通常占 3 字节）。重置密码是独立动作，创建后在列表里操作。"
+              rules={[
+                { required: true, whitespace: true, message: '请输入初始密码' },
+                { min: 6, message: '密码至少 6 个字符' },
+                { validator: (_rule, value?: string) => validatePasswordLength(value) },
+              ]}
+            >
+              <Input.Password autoComplete="new-password" placeholder="至少 6 位" />
+            </Form.Item>
+          )}
         </section>
 
         <section className={styles.section}>

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
-import com.merine.rebuild.system.security.SystemAdminGuard;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,8 +17,9 @@ import org.springframework.test.web.servlet.MvcResult;
  * 用户管理的关键行为回归。
  *
  * 每条用例都走完整的过滤器链与真实 MySQL：断言的是 HTTP 状态、错误码、字段错误、
- * 库中真实状态与登录行为，不是 mock 的调用次数。访问控制由 {@link SystemAdminGuard}
- * 按登录时下发的 {@code ROLE_<角色编码>} 判定，因此这里的调用方身份都靠真实登录取得。
+ * 库中真实状态与登录行为，不是 mock 的调用次数。访问控制由权限码门禁
+ * （{@code system/security/PermissionGuard}）判定，这里的调用方身份都靠真实登录取得：
+ * 管理员角色是配置里的内置角色，登录时展开为全部权限码。
  */
 @DisplayName("用户管理回归")
 class UserAdminRegressionTest extends UserAdminRegressionSupport {
@@ -325,7 +325,7 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
         assertThat(authorizationVersionInDatabase(ANALYST_LOGIN)).isZero();
 
         MvcResult updated = sendJson(put(USERS_PATH + "/" + analystId).content(
-                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(EDITOR_ROLE_CODE), null)), admin);
+                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(EDITOR_ROLE_CODE))), admin);
 
         assertThat(updated.getResponse().getStatus()).isEqualTo(200);
         assertThat((List<String>) jsonOf(bodyOf(updated), "$.data.roleCodes"))
@@ -348,7 +348,7 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
     }
 
     @Test
-    @DisplayName("编辑重置密码：authorization_version 递增，新密码可登录而旧密码返回 401")
+    @DisplayName("重置密码（独立动作）：authorization_version 递增，新密码可登录而旧密码返回 401")
     void resettingPasswordBumpsAuthorizationVersionAndReplacesTheCredential() throws Exception {
         String newPassword = "regr-user-reset-secret";
         long analystId = userId(ANALYST_LOGIN);
@@ -356,10 +356,14 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
 
         // 单位与角色都保持不变：版本递增只能来自密码变化
         MvcResult updated = sendJson(put(USERS_PATH + "/" + analystId).content(
-                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(ANALYST_ROLE_CODE), newPassword)),
+                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(ANALYST_ROLE_CODE))),
                 adminSession());
 
         assertThat(updated.getResponse().getStatus()).isEqualTo(200);
+        MvcResult reset = sendJson(post(USERS_PATH + "/" + analystId + "/reset-password").content(
+                resetPasswordBody(intOf(bodyOf(updated), "$.data.version"), newPassword)),
+                adminSession());
+        assertThat(reset.getResponse().getStatus()).as("重置密码走独立动作接口").isEqualTo(200);
         assertThat(authorizationVersionInDatabase(ANALYST_LOGIN))
                 .as("密码变化必须递增授权版本").isEqualTo(1);
 
@@ -445,10 +449,9 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
         String passwordHashBefore = passwordHashInDatabase(ADMIN_LOGIN);
         assertThat(countEnabledAdmins()).as("用例前提：库里只有一个启用状态的管理员").isEqualTo(1);
 
-        // 同一次请求里还改了姓名、归属单位与密码：被拒绝时这些写入同样不能留下
+        // 同一次请求里还改了姓名与归属单位：被拒绝时这些写入同样不能留下
         MvcResult rejected = sendJson(put(USERS_PATH + "/" + adminId).content(
-                updateBody("回归管理员（改）", UNIT_BETA, List.of(ANALYST_ROLE_CODE),
-                        "regr-last-admin-secret")), admin);
+                updateBody("回归管理员（改）", UNIT_BETA, List.of(ANALYST_ROLE_CODE))), admin);
 
         assertError(rejected, 409, "LAST_USER_ADMIN");
         assertThat((String) jsonOf(bodyOf(rejected), "$.message"))
@@ -484,7 +487,7 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
 
         // 只摘掉管理角色、保留另一个角色：调用方仍是可用管理员，因此这次编辑应当成功
         MvcResult updated = sendJson(put(USERS_PATH + "/" + secondAdminId).content(
-                updateBody("回归管理员二", UNIT_ALPHA, List.of(ANALYST_ROLE_CODE), null)), admin);
+                updateBody("回归管理员二", UNIT_ALPHA, List.of(ANALYST_ROLE_CODE))), admin);
 
         assertThat(updated.getResponse().getStatus()).isEqualTo(200);
         assertThat((List<String>) jsonOf(bodyOf(updated), "$.data.roleCodes"))
@@ -587,12 +590,14 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
     }
 
     @Test
-    @DisplayName("单位与角色查询同属这道门：非管理员 403，管理员拿得到本用例插入的合成行")
+    @DisplayName("单位与角色选项查询同属这道门：非管理员 403，管理员拿得到本用例插入的合成行")
     void unitAndRoleLookupsAreAdminOnly() throws Exception {
         MockHttpSession analystSession = signIn(ANALYST_LOGIN, RAW_PASSWORD);
         assertUnauthenticatedJson(getJson("/api/system/units", null));
         assertForbidden(getJson("/api/system/units", analystSession));
         assertForbidden(getJson("/api/system/roles", analystSession));
+        assertForbidden(getJson("/api/system/roles/options", analystSession));
+        assertForbidden(getJson("/api/system/menus", analystSession));
 
         MockHttpSession admin = adminSession();
         MvcResult units = getJson("/api/system/units", admin);
@@ -604,7 +609,7 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
             assertThat(row.get("status")).isEqualTo("ENABLED");
         });
 
-        MvcResult roles = getJson("/api/system/roles", admin);
+        MvcResult roles = getJson("/api/system/roles/options", admin);
         assertThat(roles.getResponse().getStatus()).isEqualTo(200);
         List<Map<String, Object>> roleRows = jsonOf(bodyOf(roles), "$.data");
         assertThat(roleRows).anySatisfy(row -> {
@@ -716,7 +721,7 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
         assertThat(countUsersWithLoginName(attemptedLogin)).as("被拒绝的新建不能落库").isZero();
 
         MvcResult updated = sendJson(put(USERS_PATH + "/" + analystId).content(
-                updateBody(ANALYST_DISPLAY, DISABLED_UNIT_CODE, List.of(ANALYST_ROLE_CODE), null)),
+                updateBody(ANALYST_DISPLAY, DISABLED_UNIT_CODE, List.of(ANALYST_ROLE_CODE))),
                 admin);
         assertError(updated, 400, "UNIT_DISABLED");
         assertThat(unitCodeInDatabase(analystId)).as("被拒绝的编辑不能改归属").isEqualTo(UNIT_ALPHA);
@@ -737,7 +742,7 @@ class UserAdminRegressionTest extends UserAdminRegressionSupport {
         assertThat(countUsersWithLoginName(attemptedLogin)).as("被拒绝的新建不能落库").isZero();
 
         MvcResult updated = sendJson(put(USERS_PATH + "/" + analystId).content(
-                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(DISABLED_ROLE_CODE), null)), admin);
+                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(DISABLED_ROLE_CODE))), admin);
         assertError(updated, 400, "ROLE_DISABLED");
         assertThat(roleCodesInDatabase(analystId)).as("被拒绝的编辑不能改角色")
                 .containsExactly(ANALYST_ROLE_CODE);

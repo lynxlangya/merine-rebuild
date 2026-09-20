@@ -1,8 +1,8 @@
 import { Button, Input, Select } from 'antd';
 import { useState } from 'react';
 import { UnitTreeSelect, useUnitOptionsQuery } from '../../units/public';
+import { useRoleOptionsQuery } from '../../roles/public';
 import { EMPTY_USER_FILTERS, type UserFilters, type UserStatusFilter } from '../model';
-import { useRoleOptionsQuery } from '../queries';
 import styles from './UserSearchForm.module.css';
 
 const STATUS_OPTIONS: { value: Exclude<UserStatusFilter, ''>; label: string }[] = [

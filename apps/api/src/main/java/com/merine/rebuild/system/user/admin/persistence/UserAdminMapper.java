@@ -1,7 +1,6 @@
 package com.merine.rebuild.system.user.admin.persistence;
 
 import java.util.List;
-import java.util.Set;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -43,20 +42,6 @@ public interface UserAdminMapper {
     int bumpAuthorizationVersion(@Param("id") long id);
 
     int updateStatus(@Param("ids") List<Long> ids, @Param("status") String status);
-
-    /**
-     * 统计排除这批账号之后，还剩几个**真正可用**的管理员。
-     *
-     * 判定口径必须与登录放行条件一致：账号启用、所属单位启用、角色启用，三者缺一
-     * 该账号就登不进来（见 UserAccount.enabled() 与登录时的角色聚合）。
-     * 只看 sys_user.status 会把“已停用单位下的管理员”算成可用，导致守卫放行了
-     * 停用最后一个管理员的请求。
-     *
-     * 加 FOR UPDATE 是为了让并发的停用/改角色请求在这组行上串行：
-     * 否则两个请求各自读到 2、各自排除自己后都得到 1，双双通过检查。
-     */
-    long countRemainingEnabledAdmins(@Param("adminRoleCodes") Set<String> adminRoleCodes,
-                                    @Param("excludingIds") List<Long> excludingIds);
 
     int deleteRoles(@Param("userId") long userId);
 

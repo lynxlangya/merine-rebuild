@@ -59,6 +59,15 @@
   display: none;
 }
 
+/* 没有可用菜单时的说明：比空白侧栏更容易理解原因 */
+.emptyNav {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
 .main {
   display: flex;
   flex-direction: column;

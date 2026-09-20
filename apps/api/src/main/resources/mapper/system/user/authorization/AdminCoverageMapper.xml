@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- owner: system.user.authorization（sys_user / sys_user_role）；只读 sys_role / sys_role_permission / sys_permission -->
+<mapper namespace="com.merine.rebuild.system.user.authorization.AdminCoverageMapper">
+
+    <!--
+      授权写入的串行锚点：内置管理员角色行。系统保证这一行存在（迁移 V12 建好），
+      所有可能减少管理覆盖的写入都先锁它，把并发请求排成一条队列。
+    -->
+    <select id="lockBuiltinRoleRows" resultType="long">
+        SELECT id
+          FROM sys_role
+         WHERE role_code IN
+         <foreach item="code" collection="builtinRoleCodes" open="(" separator="," close=")">
+             CONVERT(#{code} USING ascii) COLLATE ascii_bin
+         </foreach>
+         ORDER BY id
+           FOR UPDATE
+    </select>
+
+    <!--
+      可用管理账号的口径必须与登录放行条件一致（见 UserAccount.enabled()）：
+      账号启用、所属单位启用，且该账号要么持有某个启用的内置管理员角色，
+      要么通过启用角色同时拿到全部基线权限（默认 system:user:write 与 system:role:write）。
+      基线权限用「持有数量 = 基线数量」表达，以后增删基线权限不用改这段 SQL。
+      FOR UPDATE 让统计读最新已提交状态，不会被事务开始前的一致性快照糊弄。
+    -->
+    <select id="countUsableAdminAccounts" resultType="long">
+        SELECT COUNT(DISTINCT u.id)
+          FROM sys_user u
+          JOIN sys_unit un ON un.id = u.unit_id
+         WHERE u.status = 'ENABLED'
+           AND un.status = 'ENABLED'
+           AND (
+               EXISTS (SELECT 1
+                         FROM sys_user_role ur
+                         JOIN sys_role r ON r.id = ur.role_id
+                        WHERE ur.user_id = u.id
+                          AND r.status = 'ENABLED'
+                          AND r.role_code IN
+                          <foreach item="code" collection="builtinRoleCodes"
+                                   open="(" separator="," close=")">
+                              CONVERT(#{code} USING ascii) COLLATE ascii_bin
+                          </foreach>)
+               OR (SELECT COUNT(DISTINCT p.permission_code)
+                     FROM sys_user_role ur
+                     JOIN sys_role r ON r.id = ur.role_id
+                     JOIN sys_role_permission rp ON rp.role_id = r.id
+                     JOIN sys_permission p ON p.id = rp.permission_id
+                    WHERE ur.user_id = u.id
+                      AND r.status = 'ENABLED'
+                      AND p.permission_code IN
+                      <foreach item="code" collection="baselinePermissionCodes"
+                               open="(" separator="," close=")">
+                          CONVERT(#{code} USING ascii) COLLATE ascii_bin
+                      </foreach>) = #{baselineCount}
+           )
+           FOR UPDATE
+    </select>
+
+</mapper>

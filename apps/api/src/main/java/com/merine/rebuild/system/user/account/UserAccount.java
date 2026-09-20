@@ -18,11 +18,17 @@ public record UserAccount(
         String accountStatus,
         int authorizationVersion,
         List<String> roleCodes,
-        List<String> roleNames) {
+        List<String> roleNames,
+        /**
+         * 启用角色带来的功能权限码并集；内置管理员角色的展开发生在登录（AuthService），
+         * 因此这里对内置角色的账号可能为空——判定只认登录时下发的 authority。
+         */
+        List<String> permissionCodes) {
 
     public UserAccount {
         roleCodes = List.copyOf(roleCodes);
         roleNames = List.copyOf(roleNames);
+        permissionCodes = List.copyOf(permissionCodes);
     }
 
     public boolean enabled() {

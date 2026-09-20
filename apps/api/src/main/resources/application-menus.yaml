@@ -1,0 +1,13 @@
+# 恢复默认菜单专用 profile：补齐缺失的引导菜单与权限码后退出，不对外提供服务。
+# 用于「菜单管理入口本身被删掉」时的兜底——否则连恢复按钮都进不去。
+server:
+  port: 0
+
+spring:
+  main:
+    banner-mode: 'off'
+
+logging:
+  level:
+    root: warn
+    com.merine.rebuild: info

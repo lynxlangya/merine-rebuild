@@ -1,9 +1,11 @@
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { CreateProbe, ProbeRecord } from '@merine/api-contract';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Card, Form, Input, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Form, Input, Result, Table, Tag, Typography } from 'antd';
 import { ApiError } from '../../shared/http';
+import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { useAuth } from '../auth/public';
 import { createProbe, diagnosticsQueryKey, getDiagnostics } from './api';
 
 /**
@@ -12,6 +14,10 @@ import { createProbe, diagnosticsQueryKey, getDiagnostics } from './api';
  */
 export function DiagnosticsPage() {
   const { message } = App.useApp();
+  const { state } = useAuth();
+  const me = state.status === 'authenticated' ? state.user : null;
+  const canRead = hasPermission(me?.permissionCodes, PERMISSIONS.diagnosticsRead);
+  const canWrite = hasPermission(me?.permissionCodes, PERMISSIONS.diagnosticsWrite);
   const [form] = Form.useForm<CreateProbe>();
   const queryClient = useQueryClient();
   const status = useQuery({
@@ -27,6 +33,27 @@ export function DiagnosticsPage() {
     },
   });
   const connected = status.isSuccess;
+
+  if (!canRead) {
+    return (
+      <div>
+        <PageHeader
+          demo={false}
+          title="工程诊断"
+          description="页面 → API → MySQL 的最小读写链路与探针记录。用于本地开发验证，不是业务功能。"
+        />
+        <div style={{ padding: '0 var(--sp-4) var(--sp-4)' }}>
+          <Card>
+            <Result
+              status="403"
+              title="没有查看工程诊断的权限"
+              subTitle="工程诊断是开发工具；需要时可在「菜单管理 → 开发工具」里把它的权限分配给其它角色。"
+            />
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -78,7 +105,7 @@ export function DiagnosticsPage() {
               <Input
                 style={{ width: 320 }}
                 maxLength={120}
-                disabled={!connected || create.isPending}
+                disabled={!connected || create.isPending || !canWrite}
                 placeholder="例如：我的第一次前后端数据库联调"
               />
             </Form.Item>
@@ -87,7 +114,8 @@ export function DiagnosticsPage() {
               htmlType="submit"
               icon={<PlusOutlined />}
               loading={create.isPending}
-              disabled={!connected}
+              disabled={!connected || !canWrite}
+              title={canWrite ? undefined : '需要「工程诊断 · 写入」权限'}
             >
               写入测试记录
             </Button>

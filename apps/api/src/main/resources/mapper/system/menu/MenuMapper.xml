@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- owner: system.menu；读写 sys_menu，只读 sys_permission -->
+<mapper namespace="com.merine.rebuild.system.menu.persistence.MenuMapper">
+
+    <sql id="menuColumns">
+        m.id            AS id,
+        m.parent_id     AS parentId,
+        m.menu_type     AS type,
+        m.menu_name     AS name,
+        m.route_key     AS routeKey,
+        m.permission_id AS permissionId,
+        p.permission_code AS permissionCode,
+        m.description   AS description,
+        m.sort_order    AS sortOrder,
+        m.status        AS status,
+        m.version       AS version,
+        m.updated_at    AS updatedAt
+    </sql>
+
+    <!-- 全树一次读回，服务层负责组装与校验；排序在内存里按 (sortOrder, id) 再排一次 -->
+    <select id="findAll" resultType="com.merine.rebuild.system.menu.persistence.MenuRow">
+        SELECT <include refid="menuColumns"/>
+          FROM sys_menu m
+          LEFT JOIN sys_permission p ON p.id = m.permission_id
+         ORDER BY m.sort_order, m.id
+    </select>
+
+    <select id="findById" resultType="com.merine.rebuild.system.menu.persistence.MenuRow">
+        SELECT <include refid="menuColumns"/>
+          FROM sys_menu m
+          LEFT JOIN sys_permission p ON p.id = m.permission_id
+         WHERE m.id = #{id}
+    </select>
+
+    <select id="findByRouteKey" resultType="com.merine.rebuild.system.menu.persistence.MenuRow">
+        SELECT <include refid="menuColumns"/>
+          FROM sys_menu m
+          LEFT JOIN sys_permission p ON p.id = m.permission_id
+         WHERE m.route_key = CONVERT(#{routeKey} USING ascii) COLLATE ascii_bin
+    </select>
+
+    <select id="findByPermissionCode" resultType="com.merine.rebuild.system.menu.persistence.MenuRow">
+        SELECT <include refid="menuColumns"/>
+          FROM sys_menu m
+          JOIN sys_permission p ON p.id = m.permission_id
+         WHERE p.permission_code = CONVERT(#{permissionCode} USING ascii) COLLATE ascii_bin
+    </select>
+
+    <insert id="insert">
+        INSERT INTO sys_menu (parent_id, menu_type, menu_name, route_key, permission_id,
+                              sort_order, status, description)
+        VALUES (#{parentId}, #{type}, #{name},
+                <choose>
+                    <when test="routeKey != null">#{routeKey}</when>
+                    <otherwise>NULL</otherwise>
+                </choose>,
+                #{permissionId}, #{sortOrder}, #{status}, #{description,jdbcType=VARCHAR})
+    </insert>
+
+    <update id="updateBasic">
+        UPDATE sys_menu
+           SET parent_id = #{parentId},
+               menu_name = #{name},
+               route_key =
+               <choose>
+                   <when test="routeKey != null">#{routeKey}</when>
+                   <otherwise>NULL</otherwise>
+               </choose>,
+               sort_order = #{sortOrder},
+               status = #{status},
+               description = #{description,jdbcType=VARCHAR},
+               version = version + 1,
+               updated_at = CURRENT_TIMESTAMP(6)
+         WHERE id = #{id} AND version = #{version}
+    </update>
+
+    <delete id="deleteByIds">
+        DELETE FROM sys_menu
+         WHERE id IN
+         <foreach item="id" collection="ids" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+</mapper>

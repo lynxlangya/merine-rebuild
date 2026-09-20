@@ -48,6 +48,8 @@
 ## 3. 组件与状态的职责
 
 - 文件位置与导入边界以[目录与模块规则](structure.md)为准：app 装配 feature，feature 之间走显式 `public.ts`，shared 不反向依赖业务。共享主题状态在 `shared/theme`，tokens 与 Ant Design 映射留在 `app/theme`。
+- 功能权限码只在 `shared/permissions.ts` 声明一份；页面内的写操作按钮按对应权限码保留可见但禁用并写明原因（例如「需要『用户管理 · 新建』权限」）。前端只决定「显示什么」，判权仍在后端；无页面权限时显示 403 状态，不显示任何数据、也不退出登录。
+- 导航是数据驱动的：左侧菜单、面包屑与首页「可用入口」都来自 `GET /api/me/menus`，前端 `app/routeRegistry.tsx` 只保存 route key → 组件/路径/图标的注册表。遇到未注册的 route key 时跳过并在控制台告警，不回退到本地写死的菜单。菜单管理页维护这棵树，角色的权限勾选树就是同一棵树（目录只是分组，页面/页签/按钮各带一个权限码）。
 - 优先现有 Ant Design 控件，组件组合优于重写。公共搜索/表格先在用户管理跑通，再由角色或单位页验证复用；复用 props、children 和明确回调，不引入自建表格 DSL。
 - `PageHeader` 只做标题与操作区，`SearchForm` 负责查询交互，`DataTable` 负责呈现与分页，业务 feature 决定 API、列、权限与批量操作。是否抽取按实际重复决定，不先生成整套公共组件。
 - 请求函数不写在渲染逻辑中；服务端状态由 TanStack Query 管理，表单输入由 Form/局部 state 管理；可从现有数据计算的值不再复制进 state。Effect 只同步外部系统，不用来串联本可直接计算的数据。

@@ -29,7 +29,8 @@ public class UserAccountLookup {
         return new UserAccount(row.id(), row.loginName(), row.displayName(), row.passwordHash(),
                 row.unitName(), row.unitStatus(), row.accountStatus(), row.authorizationVersion(),
                 AggregatedColumns.split(row.aggregatedRoleCodes()),
-                AggregatedColumns.split(row.aggregatedRoleNames()));
+                AggregatedColumns.split(row.aggregatedRoleNames()),
+                AggregatedColumns.split(row.aggregatedPermissionCodes()));
     }
 
     @Transactional(readOnly = true)

@@ -1,0 +1,184 @@
+/* 角色抽屉（560px）：基本信息、功能权限与授权摘要三段 */
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
+}
+
+.desc {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-read);
+  line-height: var(--lh-ui);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  letter-spacing: var(--ls-mono);
+}
+
+.monoInput :global(input) {
+  font-family: var(--font-mono);
+  letter-spacing: var(--ls-mono);
+}
+
+.form :global(.ant-form-item) {
+  margin-bottom: var(--sp-3);
+}
+
+.form :global(.ant-form-item-label) > label {
+  color: var(--fg);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-ui);
+}
+
+.form :global(.ant-form-item-extra) {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+.failure {
+  margin-bottom: var(--sp-3);
+}
+
+/* ---------- 段落 ---------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--sp-4);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
+}
+
+.sectionNote {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-read);
+}
+
+/* ---------- 权限勾选（紧凑树） ---------- */
+
+/* 树本身只放宽行高，具体外观仍由 Ant Design Tree 提供 */
+.section :global(.ant-tree) {
+  background: transparent;
+  font-size: var(--fs-13);
+}
+
+.section :global(.ant-tree .ant-tree-node-content-wrapper) {
+  padding-inline: 4px;
+}
+
+.treeRow {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.treeName {
+  color: var(--fg);
+}
+
+.treeCode {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  letter-spacing: var(--ls-mono);
+}
+
+.treeTag {
+  margin: 0;
+  background: var(--tag-warning-bg);
+  border-color: var(--tag-border);
+  color: var(--fg);
+  font-size: var(--fs-11);
+}
+
+/* ---------- 授权摘要 ---------- */
+
+.summary {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  margin: 0;
+  padding: var(--sp-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  font-size: var(--fs-13);
+}
+
+.term {
+  padding: 7px 0;
+  color: var(--muted);
+  line-height: var(--lh-ui);
+}
+
+.detail {
+  margin: 0;
+  padding: 7px 0;
+  color: var(--fg);
+  line-height: var(--lh-ui);
+  overflow-wrap: anywhere;
+}
+
+.summary dt + dd {
+  border-bottom: 1px solid var(--border);
+}
+
+.summary dt:last-of-type + dd {
+  border-bottom: 0;
+}
+
+.builtinTag {
+  margin: 0 0 0 var(--sp-2);
+  border-radius: var(--r-2);
+  background: var(--tag-accent-bg);
+  border-color: var(--tag-border);
+  color: var(--accent);
+  font-size: var(--fs-11);
+}
+
+.selfNote {
+  display: block;
+  margin-top: 6px;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--tag-warning-bg);
+  border: 1px solid var(--tag-border);
+  border-radius: var(--r-3);
+  color: var(--fg);
+  font-size: var(--fs-12);
+}
+
+/* ---------- 底部操作 ---------- */
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.footNote {
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-ui);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}

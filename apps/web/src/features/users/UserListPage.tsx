@@ -3,8 +3,11 @@ import type { UserSummary } from '@merine/api-contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { App, Button, Result } from 'antd';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
+import { PERMISSIONS, hasPermission } from '../../shared/permissions';
+import { useAuth } from '../auth/public';
 import {
   EMPTY_USER_FILTERS,
   isPageOutOfRangeError,
@@ -18,6 +21,7 @@ import { changeUserStatus } from './api';
 import { errorText, isForbiddenError } from '../../shared/api-error';
 import { userKeys, useUserListQuery } from './queries';
 import { UserFormDrawer } from './components/UserFormDrawer';
+import { ResetPasswordDrawer } from './components/ResetPasswordDrawer';
 import { UserSearchForm } from './components/UserSearchForm';
 import { UserTable } from './components/UserTable';
 import styles from './UserListPage.module.css';
@@ -37,21 +41,37 @@ interface StatusChangeRequest {
 
 /**
  * P04 用户管理：查询、列表、编辑抽屉与启用/停用，数据全部来自 /api/system/users。
- * 设计稿里的「数据范围」单位树本轮没有后端模型，整块不做；「授权摘要」只保留
- * 角色与真实存在的会话失效说明。
+ * 设计稿里的「数据范围」单位树本轮仍没有后端模型，整块不做；「授权摘要」只保留
+ * 角色与真实存在的会话失效说明。角色带来的功能权限在角色管理里维护。
+ *
+ * 从角色管理的成员抽屉跳转过来时带 `?roleCode=`，据此初始化筛选，方便直接看到「谁在用这个角色」。
  */
 export function UserListPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const [query, setQuery] = useState<UserListQuery>(() => toUserListQuery(EMPTY_USER_FILTERS));
+  const { state } = useAuth();
+  const me = state.status === 'authenticated' ? state.user : null;
+  const [searchParams] = useSearchParams();
+  // 只在进入页面时读取一次：之后筛选由表单决定，URL 不再反向覆盖用户输入
+  const [query, setQuery] = useState<UserListQuery>(() =>
+    toUserListQuery({ ...EMPTY_USER_FILTERS, roleCode: searchParams.get('roleCode') ?? '' }),
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [drawer, setDrawer] = useState<DrawerState>({ target: null, open: false });
+  const [resetTarget, setResetTarget] = useState<UserSummary | null>(null);
   const [statusRequest, setStatusRequest] = useState<StatusChangeRequest | null>(null);
   const [permissionLost, setPermissionLost] = useState(false);
   const triggerRef = useRef<HTMLElement | null>(null);
 
   const list = useUserListQuery(query);
-  const forbidden = permissionLost || isForbiddenError(list.error);
+  const canCreate = hasPermission(me?.permissionCodes, PERMISSIONS.userCreate);
+  const canEdit = hasPermission(me?.permissionCodes, PERMISSIONS.userUpdate);
+  const canToggle = hasPermission(me?.permissionCodes, PERMISSIONS.userToggleStatus);
+  const canResetPassword = hasPermission(me?.permissionCodes, PERMISSIONS.userResetPassword);
+  const forbidden =
+    permissionLost ||
+    isForbiddenError(list.error) ||
+    !hasPermission(me?.permissionCodes, PERMISSIONS.userRead);
   const rows = list.data?.items ?? [];
   const hasFilters =
     query.keyword !== '' || query.unitCode !== '' || query.roleCode !== '' || query.status !== '';
@@ -107,6 +127,11 @@ export function UserListPage() {
   const openDrawer = (target: UserSummary | null, trigger: HTMLElement) => {
     triggerRef.current = trigger;
     setDrawer({ target, open: true });
+  };
+
+  const openResetPassword = (user: UserSummary, trigger: HTMLElement) => {
+    triggerRef.current = trigger;
+    setResetTarget(user);
   };
 
   const closeDrawer = () => setDrawer((previous) => ({ ...previous, open: false }));
@@ -178,7 +203,8 @@ export function UserListPage() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            disabled={forbidden}
+            disabled={forbidden || !canCreate}
+            title={canCreate ? undefined : '需要「用户管理 · 新建」权限'}
             onClick={(event) => openDrawer(null, event.currentTarget)}
           >
             新建用户
@@ -227,9 +253,13 @@ export function UserListPage() {
                 isRefreshing={list.isFetching}
                 refreshError={list.isError && list.data ? errorText(list.error) : null}
                 statusChangingIds={statusChangingIds}
+                canEdit={canEdit}
+                canToggle={canToggle}
+                canResetPassword={canResetPassword}
                 onPageChange={changePage}
                 onSelectedIdsChange={setSelectedIds}
                 onEdit={(user, trigger) => openDrawer(user, trigger)}
+                onResetPassword={openResetPassword}
                 onStatusAction={requestSingleChange}
                 onBulkDisable={requestBulkDisable}
                 onRefresh={() => void list.refetch()}
@@ -243,8 +273,9 @@ export function UserListPage() {
         <div className={styles.notice}>
           <LockOutlined className={styles.noticeIcon} />
           <p>
-            <b>权限边界：</b>用户管理只负责账号、所属单位与角色，<b>不因此获得</b>
-            查看其他单位业务资料的权限；业务数据的可见范围尚未建模，本轮没有可分配的「数据范围」。
+            <b>权限边界：</b>用户管理只负责账号、所属单位与角色。角色决定账号
+            <b>能使用哪些功能</b>（在角色管理里维护），<b>不代表能看哪些业务数据</b>
+            ；业务数据的可见范围尚未建模，本轮没有可分配的「数据范围」。
           </p>
         </div>
       </div>
@@ -255,6 +286,15 @@ export function UserListPage() {
         onClose={closeDrawer}
         onClosed={handleDrawerClosed}
         onSaved={closeDrawer}
+        onForbidden={() => setPermissionLost(true)}
+      />
+
+      <ResetPasswordDrawer
+        open={resetTarget !== null}
+        target={resetTarget}
+        onClose={() => setResetTarget(null)}
+        onClosed={handleDrawerClosed}
+        onSaved={() => setResetTarget(null)}
         onForbidden={() => setPermissionLost(true)}
       />
 

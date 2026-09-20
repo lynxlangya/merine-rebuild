@@ -3,7 +3,7 @@ import type {
   ChangeStatus,
   CreateUser,
   PageResultUserSummary,
-  RoleSummary,
+  ResetPassword,
   UpdateUser,
   UserSummary,
 } from '@merine/api-contract';
@@ -22,10 +22,6 @@ export function fetchUserPage(query: UserListQuery, signal?: AbortSignal) {
   return request<PageResultUserSummary>(`/api/system/users?${params}`, { signal });
 }
 
-export function fetchRoles(signal?: AbortSignal) {
-  return request<RoleSummary[]>('/api/system/roles', { signal });
-}
-
 export function createUser(input: CreateUser) {
   return request<UserSummary>('/api/system/users', {
     method: 'POST',
@@ -36,6 +32,14 @@ export function createUser(input: CreateUser) {
 export function updateUser(id: string, input: UpdateUser) {
   return request<UserSummary>(`/api/system/users/${id}`, {
     method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+/** 重置密码是独立动作：需要 system:user:reset-password，改完该账号的旧会话立即失效。 */
+export function resetUserPassword(id: string, input: ResetPassword) {
+  return request<UserSummary>(`/api/system/users/${id}/reset-password`, {
+    method: 'POST',
     body: JSON.stringify(input),
   });
 }

@@ -11,5 +11,6 @@ public record UserAccountRow(
         String accountStatus,
         int authorizationVersion,
         String aggregatedRoleCodes,
-        String aggregatedRoleNames) {
+        String aggregatedRoleNames,
+        String aggregatedPermissionCodes) {
 }

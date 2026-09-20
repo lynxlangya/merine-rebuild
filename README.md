@@ -2,7 +2,7 @@
 
 React + Java 的独立 monorepo。M1.1 打通了 React 页面 → API → 本地 MySQL 的最小链路；当前在此基础上完成了真实登录闭环、前端公共架构与基于设计稿的基础页面。
 
-> 当前进度：登录闭环、**用户管理**与**单位管理**的前后端都已接真实后端与本地 MySQL。应用保留首页、用户管理、单位管理、工程诊断四个页面；尚未实现功能权限与数据范围模型，详见[本轮边界](#本轮边界)。设计稿只作样式参考；账号与业务样例为合成数据，单位树来自已授权组织参考数据，不含联系人信息。
+> 当前进度：登录闭环与系统管理四个模块（**用户管理**、**角色管理**、**菜单管理**、**单位管理**）的前后端都已接真实后端与本地 MySQL，并已实现**菜单/页面/按钮级功能权限**：菜单树由数据库维护（页面绑定前端已注册的路由），登录后按权限下发导航，接口按按钮级权限码判定。应用保留首页与五个页面（含工程诊断）；**数据范围（能看哪些业务数据）仍未实现**，详见[本轮边界](#本轮边界)。设计稿只作样式参考；账号与业务样例为合成数据，单位树来自已授权组织参考数据，不含联系人信息。
 
 ## 启动
 
@@ -28,6 +28,9 @@ SEED_ROLE_NAME='系统管理员' SEED_DISPLAY_NAME='陈知远' ./scripts/dev.sh 
 | -------------------- | ----------------------------------------------- |
 | 登录页               | http://127.0.0.1:5173/login                     |
 | 应用首页（登录后）   | http://127.0.0.1:5173/                          |
+| 用户管理（登录后）   | http://127.0.0.1:5173/system/users              |
+| 角色管理（登录后）   | http://127.0.0.1:5173/system/roles              |
+| 菜单管理（登录后）   | http://127.0.0.1:5173/system/menus              |
 | 单位管理（登录后）   | http://127.0.0.1:5173/system/units              |
 | 工程诊断（联调探针） | http://127.0.0.1:5173/dev/diagnostics           |
 | 业务接口（需登录）   | http://127.0.0.1:9002/api/bootstrap             |
@@ -48,9 +51,10 @@ SEED_ROLE_NAME='系统管理员' SEED_DISPLAY_NAME='陈知远' ./scripts/dev.sh 
 apps/web/             React、TypeScript、Vite、Ant Design、Router、TanStack Query
   src/app/            路由、外壳、Provider、主题 token 与 Ant Design 映射
   src/features/       按用例拆分：页面、api/queries/model、内部 components，跨 feature 走 public.ts
+  src/app/routeRegistry.tsx  路由 key → 页面组件与图标的前端注册表
   src/shared/         统一请求、主题状态与经复用验证的展示组件
 apps/api/             Java 21、Spring Boot、MyBatis、Validation、Actuator、springdoc
-  src/main/java/com/merine/rebuild/   auth、system/unit、system/user 等业务能力及 common
+  src/main/java/com/merine/rebuild/   auth、system/{user,role,unit,permission,security} 等业务能力及 common
   src/main/resources/mapper/        按业务/用例归属组织的 MyBatis XML
   src/main/resources/db/migration/   Flyway SQL 迁移
 packages/api-contract/ 后端 OpenAPI 快照与生成的 TypeScript 类型
@@ -60,7 +64,7 @@ scripts/              启停、检查、类型生成和实际联调验证
 
 前端依赖方向为 `app → features → shared`。色彩、间距、圆角等语义 token 只在 `apps/web/src/app/theme/tokens.css` 维护一处；Ant Design 通过 `ConfigProvider` 映射到同一组 token，共享主题状态位于 `shared/theme`。
 
-后端按业务组织，复杂用例再分 `dto` / `persistence`；小模块保持平铺。文件位置、命名、公开能力及分层时机统一见[目录与模块规则](docs/rules/structure.md)。一条典型链路是 `features/units/UnitListPage → queries/api → system.unit.UnitController → UnitService → UnitMapper → mapper/system/unit/UnitMapper.xml`；用户表单通过 `features/units/public.ts` 复用单位选择能力。
+后端按业务组织，复杂用例再分 `dto` / `persistence`；小模块保持平铺。文件位置、命名、公开能力及分层时机统一见[目录与模块规则](docs/rules/structure.md)。一条典型链路是 `features/units/UnitListPage → queries/api → system.unit.UnitController → UnitService → UnitMapper → mapper/system/unit/UnitMapper.xml`；用户表单通过 `features/units/public.ts` 复用单位选择能力、通过 `features/roles/public.ts` 复用角色选项。
 
 前端依赖由根目录 pnpm workspace 管理，后端由 `apps/api/pom.xml` 与 Maven Wrapper 管理。仓库已提交到 `main` 并推送到 `origin`（`git@github.com:lynxlangya/merine-rebuild.git`）。
 
@@ -134,16 +138,22 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 
 ## 本轮边界
 
-应用有四个页面，全部接真实后端：
+应用有六个页面，全部接真实后端：
 
 - **首页** `/`：当前身份与可用入口。身份来自服务端会话，不摆没有数据支撑的指标卡。
 - **用户管理** `/system/users`：账号查询、新建、编辑、启用停用（单个与批量）。
+- **角色管理** `/system/roles`：角色查询、新增、编辑（名称、说明、功能权限）、启用停用与删除；成员清单只读，可跳到用户管理按角色筛选。
+- **菜单管理** `/system/menus`：维护目录、页面、页签与按钮；页面只能绑定前端已注册的路由 key，节点自带权限码，删除会连同子树与角色授权一起处理。
 - **单位管理** `/system/units`：三级组织树、直属下级与用户、单位新增/编辑/删除；删除只允许无下级且无用户的空单位。
 - **工程诊断** `/dev/diagnostics`：页面 → API → MySQL 的最小读写链路与探针记录。
 
-**已经接真实的**：登录、退出、当前身份与 CSRF（Spring Security Session + HttpOnly Cookie，账号落 `sys_user`，密码 BCrypt 哈希）；用户、单位与角色的查询与写入；单位三级组织树与 50 行已授权组织参考数据；路由守卫、身份恢复、会话失效处理。
+**已经接真实的**：登录、退出、当前身份与 CSRF（Spring Security Session + HttpOnly Cookie，账号落 `sys_user`，密码 BCrypt 哈希）；用户、角色、单位与功能权限的查询与写入；单位三级组织树与 50 行已授权组织参考数据；路由守卫、身份恢复、会话失效处理。
 
-**尚未实现**：功能权限与数据范围模型。当前的授权只有一道门——角色编码在 `merine.security.system-admin-role-codes`（默认 `SYSTEM_ADMIN`）里的账号才能调用用户管理与单位管理接口；角色能使用什么功能、能看哪些业务数据仍未定义，数据范围与角色定义的后台也没有。
+**授权模型（已实现的部分）**：用户 → 角色 → 菜单节点上的权限码（页面 `:read`，按钮 `:create`/`:update`/`:toggle-status`/`:delete`/`:reset-password`/`:restore`，工程诊断另有读与写两个码）。登录时把**内置管理员角色**（`merine.security.system-admin-role-codes`，默认 `SYSTEM_ADMIN`）展开为全部权限码，其余角色按 `sys_role_permission` 取权限；接口按按钮级权限码判定，`/api/me/menus` 按同一份权限下发导航，前端按钮按同一份权限码显示。角色状态或权限集合变化会让持有者旧会话失效。系统始终保留至少一个可用管理账号：停用账号、调整用户角色、停用角色、改角色权限、删角色或删菜单节点都会做覆盖校验，为 0 时 409 拒绝。
+
+**菜单与导航**：菜单树由迁移写入引导数据（系统管理 / 开发工具两个目录、五个页面与十六个按钮），之后在菜单管理里自由增删改；页面只能引用前端注册表（`apps/web/src/app/routeRegistry.tsx`）与后端清单（`RegisteredRoutes`）里已有的 route key，新增页面仍要前端发版。菜单停用只影响导航展示与可分配性，**隐藏菜单不等于禁止访问**——接口始终按权限码判定。删到没有入口时用页面上的「恢复默认菜单」补齐；连菜单管理入口都被删掉时用命令行兜底：`./scripts/dev.sh menus`（只补缺失项，不删除也不覆盖）。
+
+**尚未实现**：数据范围模型（账号能看哪些业务数据）。当前权限码只决定「能用哪些功能」，不代表能看哪些业务数据；分级/跨单位的可见范围、可管理单位限制与操作留痕都还没有实现。
 
 **尚未实现的其它部分**：图谱查询、任务调度、AI 平台接入、情报流转、Neo4j、完整交付镜像；用户列表导出。也没有连接旧数据库或外部业务服务。
 

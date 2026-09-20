@@ -1,7 +1,8 @@
 package com.merine.rebuild.system.unit;
 
 import com.merine.rebuild.common.ApiResponse;
-import com.merine.rebuild.system.security.SystemAdminGuard;
+import com.merine.rebuild.system.security.PermissionCodes;
+import com.merine.rebuild.system.security.PermissionGuard;
 import com.merine.rebuild.system.unit.dto.UnitRequests;
 import com.merine.rebuild.system.unit.dto.UnitSummary;
 import com.merine.rebuild.system.unit.dto.UnitTreeNode;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 单位管理与单位选项查询。
  *
  * 列表接口供用户管理选择所属单位；树与写接口供单位管理菜单使用。
- * 菜单和按钮只改善体验，所有接口都由系统管理门禁在后端判定。
+ * 菜单和按钮只改善体验，所有接口都由功能权限门禁在后端判定。
  */
 @RestController
 @RequestMapping("/api/system/units")
@@ -35,9 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class UnitController {
     private final UnitLookup units;
     private final UnitService admin;
-    private final SystemAdminGuard guard;
+    private final PermissionGuard guard;
 
-    public UnitController(UnitLookup units, UnitService admin, SystemAdminGuard guard) {
+    public UnitController(UnitLookup units, UnitService admin, PermissionGuard guard) {
         this.units = units;
         this.admin = admin;
         this.guard = guard;
@@ -47,7 +48,11 @@ public class UnitController {
     @Operation(summary = "查询全部单位选项")
     public ApiResponse<List<UnitSummary>> list(Authentication authentication,
                                                HttpServletRequest request) {
-        guard.require(authentication, "没有管理系统单位的权限");
+        // 单位选项同时服务单位管理页与用户表单：拥有任一相关权限即可读取，
+        // 否则只做用户管理的人会因为没有单位管理权限而选不了单位。
+        guard.requireAny(authentication,
+                List.of(PermissionCodes.UNIT_READ, PermissionCodes.USER_READ),
+                "没有查看单位选项的权限");
         return ApiResponse.success(units.listAll(), request);
     }
 
@@ -55,7 +60,7 @@ public class UnitController {
     @Operation(summary = "查询完整单位组织树")
     public ApiResponse<List<UnitTreeNode>> tree(Authentication authentication,
                                                 HttpServletRequest request) {
-        guard.require(authentication, "没有管理系统单位的权限");
+        guard.require(authentication, PermissionCodes.UNIT_READ, "没有查看单位的权限");
         return ApiResponse.success(admin.tree(), request);
     }
 
@@ -65,7 +70,7 @@ public class UnitController {
     public ApiResponse<UnitView> create(@Valid @RequestBody UnitRequests.CreateUnit input,
                                         Authentication authentication,
                                         HttpServletRequest request) {
-        guard.require(authentication, "没有管理系统单位的权限");
+        guard.require(authentication, PermissionCodes.UNIT_CREATE, "没有新增单位的权限");
         return ApiResponse.success(admin.create(input), request);
     }
 
@@ -75,7 +80,7 @@ public class UnitController {
                                         @Valid @RequestBody UnitRequests.UpdateUnit input,
                                         Authentication authentication,
                                         HttpServletRequest request) {
-        guard.require(authentication, "没有管理系统单位的权限");
+        guard.require(authentication, PermissionCodes.UNIT_UPDATE, "没有编辑单位的权限");
         return ApiResponse.success(admin.update(code, input), request);
     }
 
@@ -84,7 +89,7 @@ public class UnitController {
     public ApiResponse<Void> delete(@PathVariable String code,
                                     Authentication authentication,
                                     HttpServletRequest request) {
-        guard.require(authentication, "没有管理系统单位的权限");
+        guard.require(authentication, PermissionCodes.UNIT_DELETE, "没有删除单位的权限");
         admin.delete(code);
         return ApiResponse.success(null, request);
     }

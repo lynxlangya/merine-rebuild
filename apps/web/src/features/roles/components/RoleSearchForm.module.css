@@ -1,0 +1,36 @@
+.bar {
+  --search-actions-w: 168px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)) var(--search-actions-w);
+  gap: var(--sp-3);
+  align-items: end;
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-ui);
+  color: var(--fg);
+}
+
+.select {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-bottom: 1px;
+}

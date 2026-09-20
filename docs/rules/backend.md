@@ -30,12 +30,15 @@
 
 - M1 默认采用 Spring Security Session + HttpOnly Cookie，保持同源请求和 CSRF 防护；登录/退出/过期、HTTPS 下 Secure、SameSite、会话超时按实际环境配置。单实例重启后重登可以接受，不预建 JWT/Redis 方案。
 - 优先一条覆盖全应用的 SecurityFilterChain，明确最小公共路径，其余请求认证或拒绝。若以后拆多条链，最后仍保留覆盖所有请求的链；只给每条局部链写 `anyRequest()` 不足以保护未匹配路径。参见 [Spring Security 匹配规则](https://docs.spring.io/spring-security/reference/servlet/configuration/java.html#_choosing_securitymatcher_or_requestmatchers)。
-- 用户、角色和单位管理共用 `system/security/SystemAdminGuard`；允许调用的角色由 `merine.security.system-admin-role-codes` 配置，旧 `user-admin-role-codes` 不再使用。
-- 当前门禁在 HTTP Controller 调用；尚无功能权限与业务数据范围模型。以后新增任务、内部命令等非 HTTP 入口时，在实际用例边界补齐调用方授权，不能因绕过 Controller 而获得权限；系统管理门禁不能当作所有资源的授权。
+- 功能权限用权限码判定（`system/security/PermissionGuard`）：一个权限码对应一个菜单节点（页面 `:read`，按钮 `:create`/`:update`/`:toggle-status`/`:delete`/`:reset-password`/`:restore`），清单在 `PermissionCodes`、迁移与菜单管理里保持一致。`merine.security.system-admin-role-codes`（默认 `SYSTEM_ADMIN`）表示**内置管理员角色**：登录时展开为全部权限码，作为漏配权限时的兜底；旧 `user-admin-role-codes` 不再使用。判权只看登录时下发的 authority，不在每个请求里查库。
+- 菜单与导航（`system/menu`）：`GET /api/system/menus` 是管理树（含停用节点），`GET /api/me/menus` 是当前会话可见的导航树（登录即可访问，按权限码过滤、停用节点不下发、空目录收敛）。页面节点只能绑定后端 `RegisteredRoutes` 里已注册的 route key；权限码创建后不可修改。**隐藏菜单不等于禁止访问**，接口仍按权限码独立判定。
+- 删除菜单节点会连带删除子树与权限码，并在同一事务里解除相关角色授权、递增持有者授权版本；因此删除前先取管理底线锚点，删完核对覆盖。
+- 选项类查询允许「任一权限命中」（如单位选项同时服务单位管理与用户表单），拒绝文案仍由调用方写清当前操作。当前门禁在 HTTP Controller 调用；**数据范围（能看哪些业务数据）仍未实现**。以后新增任务、内部命令等非 HTTP 入口时，在实际用例边界补齐调用方授权，不能因绕过 Controller 而获得权限；功能权限不能当作业务数据的授权。
 - 公共路径限登录所需端点、静态资源和必要的无敏感详情健康探针。API 文档是否开放按环境显式决定，使用本仓库实际 `/api/openapi`、`/api/docs` 及所需资源路径核对，不照抄默认 `/v3/api-docs`；不放开整个 `/api/**` 或 `/actuator/**`。
 - 后端对每次列表、详情、数量、导出及命令执行操作权限和数据范围检查；先限定可见集合，再统计、分页或生成图谱。用户提交的单位筛选只可收窄范围，不能扩大授权。
 - 系统管理权限不自动授予行业数据权限。情报按直接参与单位/分支授权，不能仅凭行政级别或通用“全部范围”放行；对不可披露对象使用一致响应，不透露其存在。
-- 管理用户还需校验可管理单位与可授予角色/范围，防止借管理接口自提权。禁用、密码和授权变化使已有会话的旧身份/权限失效；首期用账号状态与授权版本等明确机制实现，前端清缓存配合。
+- 管理用户还需校验可管理单位与可授予角色/范围，防止借管理接口自提权（可管理单位限制属数据范围，尚未实现）。禁用、密码和授权变化使已有会话的旧身份/权限失效；角色的状态或权限集合变化同样递增持有者的授权版本，前端清缓存配合。
+- 「管理底线」由 `system/user/authorization/AdminCoverageGuard` 统一守卫：可用管理账号 = 账号启用 + 所属单位启用 +（持有内置管理员角色，或同时持有全部基线权限）。所有可能减少覆盖的写入（停用账号、改用户角色、停用角色、改角色权限、删角色）都先锁内置角色行作为串行锚点，改完再统计覆盖，为 0 就 409 回滚；不要为每种写入各推一套「变更后是否仍覆盖」。
 - 密码用框架支持的单向密码编码器，禁止明文/可逆保存与默认硬编码密码。认证错误不泄漏账号是否存在；业务请求、序列化与日志不携带密码哈希。
 
 ## 3. 事务与并发

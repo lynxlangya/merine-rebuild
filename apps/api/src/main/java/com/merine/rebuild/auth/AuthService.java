@@ -1,6 +1,8 @@
 package com.merine.rebuild.auth;
 
 import com.merine.rebuild.common.ApiException;
+import com.merine.rebuild.system.permission.PermissionLookup;
+import com.merine.rebuild.system.security.BuiltinAdminRoles;
 import com.merine.rebuild.system.user.account.UserAccount;
 import com.merine.rebuild.system.user.account.UserAccountCommands;
 import com.merine.rebuild.system.user.account.UserAccountLookup;
@@ -11,6 +13,7 @@ import jakarta.servlet.http.HttpSession;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -41,6 +44,8 @@ public class AuthService {
 
     private final UserAccountLookup accounts;
     private final UserAccountCommands accountCommands;
+    private final BuiltinAdminRoles builtinAdminRoles;
+    private final PermissionLookup permissions;
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
@@ -52,11 +57,14 @@ public class AuthService {
     private final String placeholderHash;
 
     public AuthService(UserAccountLookup accounts, UserAccountCommands accountCommands,
+                       BuiltinAdminRoles builtinAdminRoles, PermissionLookup permissions,
                        PasswordEncoder passwordEncoder,
                        SecurityContextRepository securityContextRepository,
                        CsrfTokenRepository csrfTokenRepository) {
         this.accounts = accounts;
         this.accountCommands = accountCommands;
+        this.builtinAdminRoles = builtinAdminRoles;
+        this.permissions = permissions;
         this.passwordEncoder = passwordEncoder;
         this.securityContextRepository = securityContextRepository;
         this.csrfTokenRepository = csrfTokenRepository;
@@ -80,7 +88,7 @@ public class AuthService {
                     "该账号已停用，请联系单位系统管理员");
         }
 
-        AuthenticatedAccount principal = AuthenticatedAccount.from(account);
+        AuthenticatedAccount principal = AuthenticatedAccount.from(effectiveAccount(account));
 
         // 登录时间先登记再建会话：登记失败就当作登录失败，不留下时间戳为空的“已登录”
         accountCommands.recordLogin(principal.userId(), Instant.now());
@@ -94,10 +102,12 @@ public class AuthService {
         // 这里是手写登录，不重签的话登录前被植入的令牌在登录后依然有效。
         csrfTokenRepository.saveToken(csrfTokenRepository.generateToken(request), request, response);
 
-        // 角色编码作为 authority 下发，授权判定统一看标准前缀 ROLE_；
-        // 目前只有用户管理用到它，功能权限与数据范围模型仍未实现。
-        List<SimpleGrantedAuthority> authorities = principal.roleCodes().stream()
-                .map(code -> new SimpleGrantedAuthority("ROLE_" + code))
+        // 两类 authority 一起下发：角色编码（ROLE_ 前缀，供展示类判断与历史语义）与
+        // 功能权限码（原样，判权只看它）。数据范围仍未实现，不属于本轮。
+        List<SimpleGrantedAuthority> authorities = Stream.concat(
+                        principal.roleCodes().stream().map(code -> "ROLE_" + code),
+                        principal.permissionCodes().stream())
+                .map(SimpleGrantedAuthority::new)
                 .toList();
         Authentication authentication = UsernamePasswordAuthenticationToken
                 .authenticated(principal, null, authorities);
@@ -108,6 +118,22 @@ public class AuthService {
 
         log.info("Login succeeded for userId={} rememberMe={}", principal.userId(), rememberMe);
         return principal;
+    }
+
+    /**
+     * 内置管理员角色在登录时展开为全部权限码：漏配某个权限时仍然进得去，不会把自己锁在外面。
+     * 判定只看登录那一刻的角色集合；之后角色变化会让授权版本递增，旧会话随即失效。
+     */
+    private UserAccount effectiveAccount(UserAccount account) {
+        boolean builtin = account.roleCodes().stream().anyMatch(builtinAdminRoles::isBuiltin);
+        if (!builtin) {
+            return account;
+        }
+        List<String> allCodes = permissions.listAllCodes();
+        return new UserAccount(account.id(), account.loginName(), account.displayName(),
+                account.passwordHash(), account.unitName(), account.unitStatus(),
+                account.accountStatus(), account.authorizationVersion(),
+                account.roleCodes(), account.roleNames(), allCodes);
     }
 
     public void logout(HttpServletRequest request) {

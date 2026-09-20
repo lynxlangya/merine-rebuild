@@ -143,28 +143,6 @@
            AND status != #{status}
     </update>
 
-    <!--
-      口径必须与登录放行一致：账号、所属单位、角色三者都启用，该账号才登得进来。
-      FOR UPDATE 让并发请求在这组行上串行，避免两个停用请求各自读到同一个计数。
-    -->
-    <select id="countRemainingEnabledAdmins" resultType="long">
-        SELECT COUNT(DISTINCT u.id)
-          FROM sys_user u
-          JOIN sys_unit un ON un.id = u.unit_id
-          JOIN sys_user_role ur ON ur.user_id = u.id
-          JOIN sys_role r ON r.id = ur.role_id
-         WHERE u.status = 'ENABLED'
-           AND un.status = 'ENABLED'
-           AND r.status = 'ENABLED'
-           AND r.role_code IN
-           <foreach item="code" collection="adminRoleCodes" open="(" separator="," close=")">
-               CONVERT(#{code} USING ascii) COLLATE ascii_bin
-           </foreach>
-           AND u.id NOT IN
-           <foreach item="id" collection="excludingIds" open="(" separator="," close=")">#{id}</foreach>
-         FOR UPDATE
-    </select>
-
     <delete id="deleteRoles">
         DELETE FROM sys_user_role WHERE user_id = #{userId}
     </delete>

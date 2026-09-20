@@ -1,0 +1,71 @@
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
+}
+
+.desc {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-read);
+  line-height: var(--lh-ui);
+}
+
+.form :global(.ant-form-item) {
+  margin-bottom: var(--sp-3);
+}
+
+.form :global(.ant-form-item-label) > label {
+  color: var(--fg);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-ui);
+}
+
+.form :global(.ant-form-item-extra) {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+.monoInput :global(input) {
+  font-family: var(--font-mono);
+  letter-spacing: var(--ls-mono);
+}
+
+.failure {
+  margin-bottom: var(--sp-3);
+}
+
+.readonlyNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.code {
+  margin: 0;
+  background: var(--tag-neutral-bg);
+  border-color: var(--tag-border);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.footNote {
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-ui);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}

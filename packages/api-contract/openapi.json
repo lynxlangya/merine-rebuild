@@ -15,12 +15,20 @@
       "description": "登录、退出与当前身份；会话保存在服务端，Cookie 只带会话标识"
     },
     {
+      "name": "角色管理",
+      "description": "角色查询、新增、编辑、启停、删除与成员查看"
+    },
+    {
+      "name": "导航",
+      "description": "当前账号可见的菜单树"
+    },
+    {
       "name": "单位管理",
       "description": "组织树查询、新增、编辑与删除"
     },
     {
-      "name": "角色",
-      "description": "角色查询，供用户管理选择与筛选"
+      "name": "菜单管理",
+      "description": "菜单资源树与按钮权限维护"
     },
     {
       "name": "用户管理",
@@ -63,7 +71,7 @@
         "tags": [
           "用户管理"
         ],
-        "summary": "编辑用户的基本信息、角色，或重置密码",
+        "summary": "编辑用户的姓名、所属单位与角色",
         "operationId": "update",
         "parameters": [
           {
@@ -170,6 +178,195 @@
         }
       }
     },
+    "/api/system/roles/{code}": {
+      "get": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "查询角色详情（含权限集合与成员数）",
+        "operationId": "detail_1",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRoleDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "编辑角色的名称、说明与功能权限",
+        "operationId": "update_2",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRole"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRoleDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "删除无成员、非内置的角色；需提交打开页面时的版本号",
+        "operationId": "delete_1",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": -1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/menus/{id}": {
+      "put": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "编辑节点名称、上级、排序、状态与说明",
+        "operationId": "update_3",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMenu"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMenuNode"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "删除节点及其子树，并解除相关角色的授权",
+        "operationId": "delete_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": -1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMenuDeleteImpact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/system/users": {
       "get": {
         "tags": [
@@ -263,6 +460,48 @@
         "responses": {
           "201": {
             "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUserSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/users/{id}/reset-password": {
+      "post": {
+        "tags": [
+          "用户管理"
+        ],
+        "summary": "重置账号密码；该账号的已有会话立即失效",
+        "operationId": "resetPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPassword"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
@@ -386,13 +625,234 @@
         }
       }
     },
+    "/api/system/roles": {
+      "get": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "分页查询角色",
+        "operationId": "list_2",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResultRoleListItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "新建角色",
+        "operationId": "create_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRole"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRoleDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/roles/enable": {
+      "post": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "启用角色（单个或批量）",
+        "operationId": "enable_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRoleStatus"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListRoleListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/roles/disable": {
+      "post": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "停用角色（单个或批量）；持有者会话立即失效",
+        "operationId": "disable_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRoleStatus"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListRoleListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/menus": {
+      "get": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "查询完整菜单树（含停用节点）",
+        "operationId": "tree",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMenuNode"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "新增菜单节点（目录/页面/页签/按钮）",
+        "operationId": "create_3",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMenu"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMenuNode"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/menus/restore": {
+      "post": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "恢复默认菜单：只补缺失的引导节点与权限码",
+        "operationId": "restore",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRestoreMenusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/bootstrap/probes": {
       "post": {
         "tags": [
           "bootstrap-controller"
         ],
         "summary": "写入一条本地合成联调记录",
-        "operationId": "create_2",
+        "operationId": "create_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -492,7 +952,7 @@
           "单位管理"
         ],
         "summary": "查询完整单位组织树",
-        "operationId": "tree",
+        "operationId": "tree_1",
         "responses": {
           "200": {
             "description": "OK",
@@ -507,13 +967,85 @@
         }
       }
     },
-    "/api/system/roles": {
+    "/api/system/roles/{code}/members": {
       "get": {
         "tags": [
-          "角色"
+          "角色管理"
         ],
-        "summary": "查询全部角色",
-        "operationId": "list_2",
+        "summary": "分页查询角色成员（只读）",
+        "operationId": "members",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResultRoleMember"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/roles/permission-tree": {
+      "get": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "查询权限勾选树（菜单资源树）",
+        "operationId": "permissionTree",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMenuNode"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/roles/options": {
+      "get": {
+        "tags": [
+          "角色管理"
+        ],
+        "summary": "查询全部角色选项",
+        "operationId": "options",
         "responses": {
           "200": {
             "description": "OK",
@@ -521,6 +1053,79 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListRoleSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/menus/{id}/delete-impact": {
+      "get": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "预览删除影响：子树节点数与将失去授权的角色数",
+        "operationId": "deleteImpact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMenuDeleteImpact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/menus/route-keys": {
+      "get": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "查询前端已注册的路由 key（页面节点只能从中选择）",
+        "operationId": "routeKeys",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListRouteKeyOption"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/menus": {
+      "get": {
+        "tags": [
+          "导航"
+        ],
+        "summary": "查询当前账号可见的导航树",
+        "operationId": "myMenus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListNavigationNode"
                 }
               }
             }
@@ -610,12 +1215,6 @@
               "minLength": 1
             },
             "minItems": 1
-          },
-          "newPassword": {
-            "type": "string",
-            "description": "重置密码；省略或为 null 表示不修改；至少 6 个字符，UTF-8 编码不超过 72 字节",
-            "maxLength": 72,
-            "minLength": 6
           }
         },
         "required": [
@@ -857,6 +1456,295 @@
           "version"
         ]
       },
+      "UpdateRole": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "打开编辑表单时取得的角色版本",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "角色说明，用于解释这个角色能用什么功能",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "permissionCodes": {
+            "type": "array",
+            "description": "功能权限码列表，可为空数组",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "name",
+          "permissionCodes",
+          "version"
+        ]
+      },
+      "ApiResponseRoleDetail": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RoleDetail"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "RoleDetail": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "角色说明；未填写为 null"
+          },
+          "status": {
+            "type": "string",
+            "description": "角色状态：ENABLED 启用，DISABLED 停用"
+          },
+          "builtin": {
+            "type": "boolean",
+            "description": "是否内置管理员角色：不可删除，且恒拥有全部权限"
+          },
+          "permissionCodes": {
+            "type": "array",
+            "description": "已分配的功能权限码；内置角色返回全部权限码",
+            "items": {
+              "type": "string"
+            }
+          },
+          "userCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "持有该角色的账号数，含已停用账号"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "编辑版本；保存时原样提交，冲突须重新读取"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最近修改时刻（UTC）"
+          }
+        },
+        "required": [
+          "builtin",
+          "code",
+          "name",
+          "permissionCodes",
+          "status",
+          "updatedAt",
+          "userCount",
+          "version"
+        ]
+      },
+      "UpdateMenu": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "上级节点 id；顶层节点为 null",
+            "pattern": "^[0-9]{1,19}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "routeKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的路由 key；仅页面节点需要",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9._-]{2,63}$"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "ENABLED|DISABLED"
+          }
+        },
+        "required": [
+          "name",
+          "sortOrder",
+          "status",
+          "version"
+        ]
+      },
+      "ApiResponseMenuNode": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MenuNode"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "MenuNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "上级节点 id；顶层为 null"
+          },
+          "type": {
+            "type": "string",
+            "description": "节点类型：DIRECTORY 目录，PAGE 页面，TAB 页签，BUTTON 按钮"
+          },
+          "name": {
+            "type": "string"
+          },
+          "routeKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的路由 key；仅页面节点有值"
+          },
+          "permissionCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "权限码；目录为 null"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "节点说明；未填写为 null"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "description": "节点状态：ENABLED 启用，DISABLED 停用；停用只影响导航与可分配性"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "编辑版本；保存时原样提交，冲突须重新读取"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最近修改时刻（UTC）"
+          },
+          "children": {
+            "type": "array",
+            "description": "下级节点，按排序升序",
+            "items": {
+              "$ref": "#/components/schemas/MenuNode"
+            }
+          }
+        },
+        "required": [
+          "children",
+          "id",
+          "name",
+          "sortOrder",
+          "status",
+          "type",
+          "updatedAt",
+          "version"
+        ]
+      },
       "CreateUser": {
         "type": "object",
         "properties": {
@@ -897,6 +1785,27 @@
           "password",
           "roleCodes",
           "unitCode"
+        ]
+      },
+      "ResetPassword": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "打开操作前的用户版本",
+            "minimum": 0
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "至少 6 个字符，UTF-8 编码不超过 72 字节",
+            "maxLength": 72,
+            "minLength": 6
+          }
+        },
+        "required": [
+          "newPassword",
+          "version"
         ]
       },
       "ChangeStatus": {
@@ -981,6 +1890,255 @@
           "areaCode",
           "code",
           "name"
+        ]
+      },
+      "CreateRole": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "角色说明，用于解释这个角色能用什么功能",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "permissionCodes": {
+            "type": "array",
+            "description": "功能权限码列表，可为空数组",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "permissionCodes"
+        ]
+      },
+      "ChangeRoleStatus": {
+        "type": "object",
+        "properties": {
+          "roleCodes": {
+            "type": "array",
+            "description": "角色编码列表",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "roleCodes"
+        ]
+      },
+      "ApiResponseListRoleListItem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleListItem"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "RoleListItem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "角色说明；未填写为 null"
+          },
+          "status": {
+            "type": "string",
+            "description": "角色状态：ENABLED 启用，DISABLED 停用"
+          },
+          "builtin": {
+            "type": "boolean",
+            "description": "是否内置管理员角色：不可删除，恒拥有全部权限"
+          },
+          "permissionCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "已分配的功能权限数；内置角色为全部权限码数量"
+          },
+          "userCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "持有该角色的账号数，含已停用账号"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "编辑版本；保存时原样提交，冲突须重新读取"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最近修改时刻（UTC）"
+          }
+        },
+        "required": [
+          "builtin",
+          "code",
+          "name",
+          "permissionCount",
+          "status",
+          "updatedAt",
+          "userCount",
+          "version"
+        ]
+      },
+      "CreateMenu": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "上级节点 id；顶层节点为 null",
+            "pattern": "^[0-9]{1,19}$"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "DIRECTORY|PAGE|TAB|BUTTON"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 0
+          },
+          "routeKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的路由 key；仅页面节点需要",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9._-]{2,63}$"
+          },
+          "permissionCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "权限码；页面、页签、按钮必填，目录留空",
+            "pattern": "^[a-z][a-z0-9-]*(:[a-z0-9-]{1,32}){1,3}$"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32",
+            "description": "同级排序，越小越靠前；缺省为 0",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "ApiResponseRestoreMenusResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RestoreMenusResult"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "RestoreMenusResult": {
+        "type": "object",
+        "properties": {
+          "createdMenus": {
+            "type": "integer",
+            "format": "int32",
+            "description": "新建的菜单节点数"
+          },
+          "createdPermissions": {
+            "type": "integer",
+            "format": "int32",
+            "description": "新建的权限码数"
+          }
+        },
+        "required": [
+          "createdMenus",
+          "createdPermissions"
         ]
       },
       "CreateProbe": {
@@ -1115,8 +2273,22 @@
           "unitName": {
             "type": "string"
           },
+          "roleCodes": {
+            "type": "array",
+            "description": "角色编码，按编码升序，与 roleNames 下标一一对应",
+            "items": {
+              "type": "string"
+            }
+          },
           "roleNames": {
             "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissionCodes": {
+            "type": "array",
+            "description": "有效功能权限码；内置管理员角色已在此展开为全部权限码",
             "items": {
               "type": "string"
             }
@@ -1124,7 +2296,7 @@
           "authorizationVersion": {
             "type": "integer",
             "format": "int32",
-            "description": "授权版本；角色或数据范围变化时递增，旧会话据此失效"
+            "description": "授权版本；角色、角色权限或单位变化时递增，旧会话据此失效"
           }
         },
         "required": [
@@ -1132,6 +2304,8 @@
           "displayName",
           "id",
           "loginName",
+          "permissionCodes",
+          "roleCodes",
           "roleNames",
           "unitName"
         ]
@@ -1367,6 +2541,186 @@
           "version"
         ]
       },
+      "ApiResponsePageResultRoleListItem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultRoleListItem"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "PageResultRoleListItem": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleListItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "ApiResponsePageResultRoleMember": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultRoleMember"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "PageResultRoleMember": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleMember"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "RoleMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "用户技术主键，十进制字符串"
+          },
+          "loginName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "unitName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "账号状态：ENABLED 启用，DISABLED 停用"
+          }
+        },
+        "required": [
+          "displayName",
+          "id",
+          "loginName",
+          "status",
+          "unitName"
+        ]
+      },
+      "ApiResponseListMenuNode": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MenuNode"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
       "ApiResponseListRoleSummary": {
         "type": "object",
         "properties": {
@@ -1419,6 +2773,179 @@
           "code",
           "name",
           "status"
+        ]
+      },
+      "ApiResponseMenuDeleteImpact": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MenuDeleteImpact"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "MenuDeleteImpact": {
+        "type": "object",
+        "properties": {
+          "deletedNodes": {
+            "type": "integer",
+            "format": "int32",
+            "description": "将删除/已删除的节点数（含子树）"
+          },
+          "affectedRoles": {
+            "type": "integer",
+            "format": "int32",
+            "description": "将失去授权/已失去授权的角色数"
+          }
+        },
+        "required": [
+          "affectedRoles",
+          "deletedNodes"
+        ]
+      },
+      "ApiResponseListRouteKeyOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteKeyOption"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "RouteKeyOption": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "前端注册表里的路由 key"
+          },
+          "label": {
+            "type": "string",
+            "description": "页面名称，便于选择"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ]
+      },
+      "ApiResponseListNavigationNode": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NavigationNode"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "NavigationNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "description": "节点类型：DIRECTORY 目录，PAGE 页面，TAB 页签，BUTTON 按钮"
+          },
+          "routeKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的路由 key；仅页面节点有值"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "节点说明；未填写为 null"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NavigationNode"
+            }
+          }
+        },
+        "required": [
+          "children",
+          "id",
+          "name",
+          "type"
         ]
       },
       "ApiResponseBootstrapStatus": {

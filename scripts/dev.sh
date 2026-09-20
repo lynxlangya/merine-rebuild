@@ -137,6 +137,17 @@ case "${1:-help}" in
     prepare_test_db
     printf '测试库 merine_rebuild_test 已就绪（与开发库 merine_rebuild 相互独立）。\n'
     ;;
+  menus)
+    # 恢复默认菜单：补齐缺失的引导菜单与权限码，不删除也不覆盖已有内容。
+    # 用途是「菜单管理入口被删掉、页面上已经点不到恢复按钮」时的兜底。
+    require_env
+    load_env
+    compose config --quiet
+    compose build api
+    compose up -d --wait --wait-timeout 180 mysql
+    compose run --rm --no-deps -T migrate < /dev/null
+    compose run --rm --no-deps -T -e SPRING_PROFILES_ACTIVE=menus api ./mvnw -B spring-boot:run
+    ;;
   check)
     require_env
     ensure_env_key MYSQL_TEST_PASSWORD
@@ -166,9 +177,10 @@ case "${1:-help}" in
       api ./mvnw -B -q package
     ;;
   *)
-    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|test-db|status|logs [service]|down|check|build}\n'
+    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|menus|test-db|status|logs [service]|down|check|build}\n'
     printf 'up starts the local development stack; down preserves all named volumes.\n'
     printf 'seed initializes a local demo account; test-db prepares the isolated test schema.\n'
+    printf 'menus restores missing bootstrap menu nodes and permission codes (works without the UI).\n'
     [[ "${1:-help}" == help ]] || exit 1
     ;;
 esac

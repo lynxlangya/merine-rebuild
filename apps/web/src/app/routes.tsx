@@ -1,13 +1,12 @@
 import { createBrowserRouter } from 'react-router';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RequireAuth } from '../features/auth/RequireAuth';
-import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
 import { HomePage } from '../features/home/HomePage';
-import { UnitListPage } from '../features/units/UnitListPage';
-import { UserListPage } from '../features/users/UserListPage';
 import { AppShell } from './AppShell';
 import { NotFoundPage } from './NotFoundPage';
+import { appRoutes } from './routeRegistry';
 
+/** 应用路由表由前端注册表拼装：菜单只决定可见性，页面本身仍由这里注册。 */
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   {
@@ -17,9 +16,10 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { index: true, element: <HomePage /> },
-          { path: 'system/users', element: <UserListPage /> },
-          { path: 'system/units', element: <UnitListPage /> },
-          { path: 'dev/diagnostics', element: <DiagnosticsPage /> },
+          ...appRoutes.map((route) => ({
+            path: route.path.replace(/^\//, ''),
+            element: route.element,
+          })),
           { path: '*', element: <NotFoundPage /> },
         ],
       },

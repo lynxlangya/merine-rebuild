@@ -1,6 +1,8 @@
 package com.merine.rebuild.auth;
 
 import com.merine.rebuild.support.MockMvcRegressionSupport;
+import com.merine.rebuild.system.security.PermissionCodes;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -48,6 +50,11 @@ abstract class AuthSessionRegressionSupport extends MockMvcRegressionSupport {
                 WHERE u.login_name LIKE ?
                 """, LOGIN_NAME_PREFIX + "%");
         jdbcTemplate.update("""
+                DELETE rp FROM sys_role_permission rp
+                 JOIN sys_role r ON r.id = rp.role_id
+                WHERE r.role_code LIKE ?
+                """, ROLE_CODE_PREFIX + "%");
+        jdbcTemplate.update("""
                 DELETE ur FROM sys_user_role ur
                  JOIN sys_role r ON r.id = ur.role_id
                 WHERE r.role_code LIKE ?
@@ -73,6 +80,14 @@ abstract class AuthSessionRegressionSupport extends MockMvcRegressionSupport {
                 ROLE_CODE_PREFIX + "ROLE", ROLE_NAME);
         roleId = jdbcTemplate.queryForObject("SELECT id FROM sys_role WHERE role_code = ?", Long.class,
                 ROLE_CODE_PREFIX + "ROLE");
+        // 认证回归用 /api/bootstrap 证明「已认证请求」的读写行为，因此这个角色要有工程诊断的两个权限码；
+        // 权限码在按钮级模型下也是普通权限，认证测试不关心菜单结构。
+        for (String code : List.of(PermissionCodes.DIAGNOSTICS_READ, PermissionCodes.DIAGNOSTICS_WRITE)) {
+            jdbcTemplate.update("""
+                    INSERT INTO sys_role_permission (role_id, permission_id)
+                    SELECT ?, id FROM sys_permission WHERE permission_code = ?
+                    """, roleId, code);
+        }
 
         jdbcTemplate.update("""
                 INSERT INTO sys_user (login_name, display_name, password_hash, unit_id)

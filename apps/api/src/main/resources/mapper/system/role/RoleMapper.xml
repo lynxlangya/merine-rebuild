@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- owner: system.role；读写 sys_role / sys_role_permission，只读 sys_permission -->
+<mapper namespace="com.merine.rebuild.system.role.persistence.RoleMapper">
+
+    <!--
+      权限数用相关子查询：JOIN 会按权限数放大行数，把分页与 count 口径一起搞错。
+      成员数不在这里统计（sys_user_role 归 user 模块），由 RoleUsageLookup 批量补齐。
+    -->
+    <sql id="roleColumns">
+        r.id          AS id,
+        r.role_code   AS code,
+        r.role_name   AS name,
+        r.description AS description,
+        r.status      AS status,
+        r.version     AS version,
+        r.updated_at  AS updatedAt,
+        (SELECT COUNT(*) FROM sys_role_permission rp WHERE rp.role_id = r.id) AS permissionCount
+    </sql>
+
+    <!-- list 与 count 复用同一份条件，避免两边口径不一致 -->
+    <!--
+      role_code 是 ascii_bin，而 JDBC 参数是 utf8mb4：关键字 LIKE 把列转成 utf8mb4
+      （编码里出现非 ASCII 字符也照常匹配），等值比较则反过来把参数转成 ascii。
+    -->
+    <sql id="roleFilters">
+        <where>
+            <if test="q.keywordPattern != null">
+                AND (CONVERT(r.role_code USING utf8mb4) COLLATE utf8mb4_0900_ai_ci
+                         LIKE #{q.keywordPattern}
+                     OR r.role_name LIKE #{q.keywordPattern})
+            </if>
+            <if test="q.status != null">
+                AND r.status = #{q.status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="findPage" resultType="com.merine.rebuild.system.role.persistence.RoleRow">
+        SELECT <include refid="roleColumns"/>
+          FROM sys_role r
+        <include refid="roleFilters"/>
+         ORDER BY r.role_code
+         LIMIT #{limit} OFFSET #{offset,jdbcType=BIGINT}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+          FROM sys_role r
+        <include refid="roleFilters"/>
+    </select>
+
+    <select id="findByCode" resultType="com.merine.rebuild.system.role.persistence.RoleRow">
+        SELECT <include refid="roleColumns"/>
+          FROM sys_role r
+         WHERE r.role_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin
+    </select>
+
+    <select id="findByCodes" resultType="com.merine.rebuild.system.role.persistence.RoleRow">
+        SELECT <include refid="roleColumns"/>
+          FROM sys_role r
+         WHERE r.role_code IN
+         <foreach item="code" collection="codes" open="(" separator="," close=")">
+             CONVERT(#{code} USING ascii) COLLATE ascii_bin
+         </foreach>
+         ORDER BY r.role_code
+    </select>
+
+    <select id="findPermissionCodesByRoleId" resultType="java.lang.String">
+        SELECT p.permission_code
+          FROM sys_role_permission rp
+          JOIN sys_permission p ON p.id = rp.permission_id
+         WHERE rp.role_id = #{roleId}
+         ORDER BY p.permission_code
+    </select>
+
+    <insert id="insert">
+        INSERT INTO sys_role (role_code, role_name, description)
+        VALUES (#{code}, #{name}, #{description,jdbcType=VARCHAR})
+    </insert>
+
+    <update id="updateBasic">
+        UPDATE sys_role
+           SET role_name = #{name},
+               description = #{description,jdbcType=VARCHAR},
+               version = version + 1,
+               updated_at = CURRENT_TIMESTAMP(6)
+         WHERE id = #{id} AND version = #{version}
+    </update>
+
+    <!-- 只更新状态确实不同的行；版本同时递增，让打开着的旧编辑表单失效 -->
+    <update id="updateStatus">
+        UPDATE sys_role
+           SET status = #{status},
+               version = version + 1,
+               updated_at = CURRENT_TIMESTAMP(6)
+         WHERE role_code IN
+         <foreach item="code" collection="codes" open="(" separator="," close=")">
+             CONVERT(#{code} USING ascii) COLLATE ascii_bin
+         </foreach>
+    </update>
+
+    <delete id="deletePermissions">
+        DELETE FROM sys_role_permission WHERE role_id = #{roleId}
+    </delete>
+
+    <delete id="deleteById">
+        DELETE FROM sys_role WHERE id = #{id}
+    </delete>
+
+    <insert id="insertPermissionByCode">
+        INSERT INTO sys_role_permission (role_id, permission_id)
+        SELECT #{roleId}, id FROM sys_permission
+         WHERE permission_code = CONVERT(#{permissionCode} USING ascii) COLLATE ascii_bin
+    </insert>
+
+    <!-- 菜单节点删除会连带删掉权限码：先查出受影响角色，再由调用方让持有者重新登录 -->
+    <select id="findRoleCodesByPermissionIds" resultType="java.lang.String">
+        SELECT DISTINCT r.role_code
+          FROM sys_role_permission rp
+          JOIN sys_role r ON r.id = rp.role_id
+         WHERE rp.permission_id IN
+         <foreach item="id" collection="permissionIds" open="(" separator="," close=")">#{id}</foreach>
+         ORDER BY r.role_code
+    </select>
+
+    <delete id="deleteGrantsByPermissionIds">
+        DELETE FROM sys_role_permission
+         WHERE permission_id IN
+         <foreach item="id" collection="permissionIds" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+</mapper>

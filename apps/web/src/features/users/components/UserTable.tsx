@@ -2,6 +2,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 import type { UserSummary } from '@merine/api-contract';
 import { Alert, Button, Empty, Skeleton, Switch, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
+import { TablePager } from '../../../shared/ui/TablePager';
 import { isUserEnabled } from '../model';
 import styles from './UserTable.module.css';
 
@@ -12,22 +13,6 @@ function formatLastLogin(value: UserSummary['lastLoginAt']): string {
   if (Number.isNaN(date.getTime())) return '时间未知';
   const pad = (part: number) => String(part).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-/** 页码按钮：首尾与当前页前后一页，其余折叠，避免页数多时铺满一行。 */
-function pageItems(current: number, pageCount: number): (number | 'gap')[] {
-  if (pageCount <= 7) return Array.from({ length: pageCount }, (_value, index) => index + 1);
-  const wanted = [1, current - 1, current, current + 1, pageCount]
-    .filter((page) => page >= 1 && page <= pageCount)
-    .sort((left, right) => left - right);
-  const items: (number | 'gap')[] = [];
-  let previous = 0;
-  for (const page of wanted) {
-    if (previous && page - previous > 1) items.push('gap');
-    items.push(page);
-    previous = page;
-  }
-  return items;
 }
 
 /**
@@ -46,9 +31,13 @@ export function UserTable({
   isRefreshing,
   refreshError,
   statusChangingIds,
+  canEdit,
+  canToggle,
+  canResetPassword,
   onPageChange,
   onSelectedIdsChange,
   onEdit,
+  onResetPassword,
   onStatusAction,
   onBulkDisable,
   onRefresh,
@@ -67,19 +56,20 @@ export function UserTable({
   refreshError: string | null;
   /** 正在提交启用/停用的用户 id；目标行显示 loading，其余行暂时禁用 */
   statusChangingIds: string[];
+  /** 按钮级权限：无权限时按钮保留可见但禁用，并写明原因 */
+  canEdit: boolean;
+  canToggle: boolean;
+  canResetPassword: boolean;
   onPageChange: (page: number) => void;
   onSelectedIdsChange: (ids: string[]) => void;
   onEdit: (user: UserSummary, trigger: HTMLElement) => void;
+  onResetPassword: (user: UserSummary, trigger: HTMLElement) => void;
   onStatusAction: (user: UserSummary) => void;
   onBulkDisable: () => void;
   onRefresh: () => void;
   onRetry: () => void;
   onClearFilters: () => void;
 }) {
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const from = users.length === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = users.length === 0 ? 0 : from + users.length - 1;
-
   const columns: TableColumnsType<UserSummary> = [
     {
       title: '账号',
@@ -118,9 +108,10 @@ export function UserTable({
             size="small"
             checked={enabled}
             loading={changing}
-            disabled={statusChangingIds.length > 0}
+            disabled={!canToggle || statusChangingIds.length > 0}
             checkedChildren="启用"
             unCheckedChildren="禁用"
+            title={canToggle ? undefined : '需要「用户管理 · 启停」权限'}
             aria-label={`${user.displayName}：${enabled ? '点击禁用账号' : '点击启用账号'}`}
             onChange={() => onStatusAction(user)}
           />
@@ -145,11 +136,26 @@ export function UserTable({
       title: '操作',
       key: 'actions',
       align: 'right',
-      width: 80,
+      width: 184,
       render: (_value, user) => (
         <span className={styles.actions}>
-          <Button type="text" size="small" onClick={(event) => onEdit(user, event.currentTarget)}>
+          <Button
+            type="text"
+            size="small"
+            disabled={!canEdit}
+            title={canEdit ? undefined : '需要「用户管理 · 编辑」权限'}
+            onClick={(event) => onEdit(user, event.currentTarget)}
+          >
             编辑
+          </Button>
+          <Button
+            type="text"
+            size="small"
+            disabled={!canResetPassword}
+            title={canResetPassword ? undefined : '需要「用户管理 · 重置密码」权限'}
+            onClick={(event) => onResetPassword(user, event.currentTarget)}
+          >
+            重置密码
           </Button>
         </span>
       ),
@@ -187,7 +193,12 @@ export function UserTable({
         <Tag className={styles.countTag}>{isInitialLoading ? '—' : total}</Tag>
         <span className={styles.spacer} />
         <span className={styles.selected}>{selectedIds.length} 项已选</span>
-        <Button size="small" disabled={selectedIds.length === 0} onClick={onBulkDisable}>
+        <Button
+          size="small"
+          disabled={!canToggle || selectedIds.length === 0}
+          title={canToggle ? undefined : '需要「用户管理 · 启停」权限'}
+          onClick={onBulkDisable}
+        >
           批量禁用
         </Button>
         <Button size="small" icon={<ReloadOutlined />} loading={isRefreshing} onClick={onRefresh}>
@@ -221,6 +232,8 @@ export function UserTable({
               rowKey="id"
               size="small"
               tableLayout="fixed"
+              // 列宽合计超过内容区时让横向滚动留在表格容器内，不挤掉操作列
+              scroll={{ x: 1220 }}
               loading={isRefreshing && !refreshError}
               dataSource={users}
               columns={columns}
@@ -239,48 +252,13 @@ export function UserTable({
         )}
       </div>
 
-      <div className={styles.pager}>
-        <span>
-          共 {total} 条 · 每页 {pageSize} 条 · {total === 0 ? '本页 0 条' : `本页 ${from}–${to}`}
-        </span>
-        <div className={styles.pagerPages}>
-          <button
-            type="button"
-            className={styles.pagerBtn}
-            aria-label="上一页"
-            disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
-          >
-            ‹
-          </button>
-          {pageItems(page, pageCount).map((item, index) =>
-            item === 'gap' ? (
-              <span key={`gap-${index}`} className={styles.pagerGap}>
-                …
-              </span>
-            ) : (
-              <button
-                key={item}
-                type="button"
-                className={styles.pagerBtn}
-                aria-current={item === page ? 'page' : undefined}
-                onClick={() => onPageChange(item)}
-              >
-                {item}
-              </button>
-            ),
-          )}
-          <button
-            type="button"
-            className={styles.pagerBtn}
-            aria-label="下一页"
-            disabled={page >= pageCount}
-            onClick={() => onPageChange(page + 1)}
-          >
-            ›
-          </button>
-        </div>
-      </div>
+      <TablePager
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        itemCount={users.length}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }

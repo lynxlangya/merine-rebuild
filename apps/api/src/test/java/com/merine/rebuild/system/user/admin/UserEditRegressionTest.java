@@ -45,7 +45,7 @@ class UserEditRegressionTest extends UserAdminRegressionSupport {
     }
 
     @Test
-    void staleFormCannotRestoreRevokedRolesOrReplaceThePassword() throws Exception {
+    void staleFormCannotRestoreRevokedRolesAndStaleResetIsRejected() throws Exception {
         var admin = adminSession();
         long id = userId(ANALYST_LOGIN);
         var opened = getJson(USERS_PATH + "/" + id, admin);
@@ -53,11 +53,15 @@ class UserEditRegressionTest extends UserAdminRegressionSupport {
         String originalHash = passwordHashInDatabase(ANALYST_LOGIN);
 
         var changed = sendJson(put(USERS_PATH + "/" + id).content(
-                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(EDITOR_ROLE_CODE), null, version)), admin);
+                updateBody(ANALYST_DISPLAY, UNIT_ALPHA, List.of(EDITOR_ROLE_CODE), version)), admin);
         assertThat(changed.getResponse().getStatus()).isEqualTo(200);
         var stale = sendJson(put(USERS_PATH + "/" + id).content(
-                updateBody("旧表单姓名", UNIT_BETA, List.of(ANALYST_ROLE_CODE), "unused-test-value", version)), admin);
+                updateBody("旧表单姓名", UNIT_BETA, List.of(ANALYST_ROLE_CODE), version)), admin);
         assertError(stale, 409, "USER_VERSION_CONFLICT");
+        // 密码是独立动作：拿着过期版本重置密码同样被拒绝，credential 不会被覆盖
+        var staleReset = sendJson(post(USERS_PATH + "/" + id + "/reset-password").content(
+                resetPasswordBody(version, "stale-reset-secret")), admin);
+        assertError(staleReset, 409, "USER_VERSION_CONFLICT");
         assertThat(roleCodesInDatabase(id)).containsExactly(EDITOR_ROLE_CODE);
         assertThat(displayNameInDatabase(ANALYST_LOGIN)).isEqualTo(ANALYST_DISPLAY);
         assertThat(unitCodeInDatabase(id)).isEqualTo(UNIT_ALPHA);
@@ -65,7 +69,7 @@ class UserEditRegressionTest extends UserAdminRegressionSupport {
         assertThat(authorizationVersionInDatabase(ANALYST_LOGIN)).isEqualTo(1);
 
         var retry = sendJson(put(USERS_PATH + "/" + id).content(updateBody("核对后的姓名", UNIT_ALPHA,
-                List.of(EDITOR_ROLE_CODE), null, intOf(bodyOf(changed), "$.data.version"))), admin);
+                List.of(EDITOR_ROLE_CODE), intOf(bodyOf(changed), "$.data.version"))), admin);
         assertThat(retry.getResponse().getStatus()).isEqualTo(200);
         assertThat(displayNameInDatabase(ANALYST_LOGIN)).isEqualTo("核对后的姓名");
     }
@@ -81,7 +85,7 @@ class UserEditRegressionTest extends UserAdminRegressionSupport {
         assertThat(sendJson(post(USERS_PATH + "/disable").content(statusBody(id)), admin)
                 .getResponse().getStatus()).isEqualTo(200);
         assertError(sendJson(put(USERS_PATH + "/" + id).content(
-                updateBody("过期姓名", UNIT_ALPHA, List.of(ANALYST_ROLE_CODE), null)), admin),
+                updateBody("过期姓名", UNIT_ALPHA, List.of(ANALYST_ROLE_CODE))), admin),
                 409, "USER_VERSION_CONFLICT");
     }
 
@@ -96,7 +100,7 @@ class UserEditRegressionTest extends UserAdminRegressionSupport {
                 assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
                 try {
                     service.update(id, new UserRequests.UpdateUser(0, "并发编辑", UNIT_BETA,
-                            List.of(EDITOR_ROLE_CODE), null));
+                            List.of(EDITOR_ROLE_CODE)));
                     return true;
                 } catch (ApiException conflict) {
                     assertThat(conflict.code()).isEqualTo("USER_VERSION_CONFLICT");
@@ -125,8 +129,8 @@ class UserEditRegressionTest extends UserAdminRegressionSupport {
             assertValidationError(sendJson(post(USERS_PATH).content(createBody(
                     LOGIN_NAME_PREFIX + "overlimit", "长度边界", UNIT_ALPHA,
                     List.of(ANALYST_ROLE_CODE), password)), admin), "password");
-            assertValidationError(sendJson(put(USERS_PATH + "/" + id).content(updateBody(
-                    ANALYST_DISPLAY, UNIT_ALPHA, List.of(ANALYST_ROLE_CODE), password)), admin), "newPassword");
+            assertValidationError(sendJson(post(USERS_PATH + "/" + id + "/reset-password").content(
+                    resetPasswordBody(0, password)), admin), "newPassword");
             assertValidationError(login(ANALYST_LOGIN, password, issueCsrfToken(null),
                     new MockHttpSession()), "password");
         }
@@ -147,8 +151,11 @@ class UserEditRegressionTest extends UserAdminRegressionSupport {
         long id = userIdInDatabase(loginName);
         String unicode = "字".repeat(24);
         var reset = sendJson(put(USERS_PATH + "/" + id).content(updateBody("长度边界", UNIT_ALPHA,
-                List.of(ANALYST_ROLE_CODE), unicode, intOf(bodyOf(created), "$.data.version"))), admin);
+                List.of(ANALYST_ROLE_CODE), intOf(bodyOf(created), "$.data.version"))), admin);
         assertThat(reset.getResponse().getStatus()).isEqualTo(200);
+        var resetPassword = sendJson(post(USERS_PATH + "/" + id + "/reset-password").content(
+                resetPasswordBody(intOf(bodyOf(reset), "$.data.version"), unicode)), admin);
+        assertThat(resetPassword.getResponse().getStatus()).isEqualTo(200);
         assertError(currentSession(session), 401, "UNAUTHENTICATED");
         assertThat(currentSession(signIn(loginName, unicode)).getResponse().getStatus()).isEqualTo(200);
     }

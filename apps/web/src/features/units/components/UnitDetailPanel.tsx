@@ -43,6 +43,9 @@ function ActionButton({
 export function UnitDetailPanel({
   node,
   parentName,
+  canCreate,
+  canUpdate,
+  canDelete,
   onSelectChild,
   onAddChild,
   onEdit,
@@ -50,6 +53,10 @@ export function UnitDetailPanel({
 }: {
   node: UnitTreeNode | null;
   parentName: string | null;
+  /** 按钮级权限：无权限时按钮保留可见但禁用，并写明原因 */
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
   onSelectChild: (code: string) => void;
   onAddChild: () => void;
   onEdit: () => void;
@@ -64,9 +71,10 @@ export function UnitDetailPanel({
   }
 
   const cannotAddChild = node.level >= 3;
-  const cannotDelete = node.childCount > 0 || node.userCount > 0;
-  const deleteReason =
-    node.childCount > 0
+  const blockedByReference = node.childCount > 0 || node.userCount > 0;
+  const deleteReason = !canDelete
+    ? '需要「单位管理 · 删除」权限'
+    : node.childCount > 0
       ? '该单位还有下级单位，不能删除'
       : node.userCount > 0
         ? '该单位还有用户，不能删除'
@@ -87,16 +95,30 @@ export function UnitDetailPanel({
         </div>
         <div className={styles.actions}>
           <ActionButton
-            disabled={cannotAddChild}
-            title={cannotAddChild ? '大队已是第三级，不能继续新增下级' : ''}
+            disabled={!canCreate || cannotAddChild}
+            title={
+              !canCreate
+                ? '需要「单位管理 · 新增」权限'
+                : cannotAddChild
+                  ? '大队已是第三级，不能继续新增下级'
+                  : ''
+            }
             onClick={onAddChild}
           >
             <PlusOutlined /> 新增下级
           </ActionButton>
-          <Button size="small" icon={<EditOutlined />} onClick={onEdit}>
-            编辑
-          </Button>
-          <ActionButton disabled={cannotDelete} title={deleteReason} onClick={onDelete}>
+          <ActionButton
+            disabled={!canUpdate}
+            title={canUpdate ? '' : '需要「单位管理 · 编辑」权限'}
+            onClick={onEdit}
+          >
+            <EditOutlined /> 编辑
+          </ActionButton>
+          <ActionButton
+            disabled={!canDelete || blockedByReference}
+            title={deleteReason}
+            onClick={onDelete}
+          >
             <DeleteOutlined /> 删除
           </ActionButton>
         </div>

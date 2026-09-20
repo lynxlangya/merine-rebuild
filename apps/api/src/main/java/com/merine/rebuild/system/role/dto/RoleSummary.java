@@ -1,8 +1,11 @@
-package com.merine.rebuild.system.role;
+package com.merine.rebuild.system.role.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/** 角色对外表示。对外引用用稳定编码 role_code；名称只用于展示。 */
+/**
+ * 角色选项的对外表示，供用户管理的筛选与表单选择使用。
+ * 对外引用用稳定编码 role_code；名称只用于展示。
+ */
 public record RoleSummary(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED,
                 description = "角色编码，区分大小写，全局唯一")

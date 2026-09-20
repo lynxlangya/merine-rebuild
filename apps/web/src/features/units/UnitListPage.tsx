@@ -4,8 +4,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { App, Button, Result, Skeleton } from 'antd';
 import { useEffect, useState } from 'react';
 import { errorText, isForbiddenError } from '../../shared/api-error';
+import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { useAuth } from '../auth/public';
 import { deleteUnit } from './api';
 import { UnitDetailPanel } from './components/UnitDetailPanel';
 import { UnitFormDrawer } from './components/UnitFormDrawer';
@@ -27,6 +29,8 @@ interface DrawerState {
 export function UnitListPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const { state } = useAuth();
+  const me = state.status === 'authenticated' ? state.user : null;
   const tree = useUnitTreeQuery();
   const nodes = tree.data ?? [];
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
@@ -35,7 +39,13 @@ export function UnitListPage() {
   const [deleting, setDeleting] = useState<UnitTreeNode | null>(null);
   const [permissionLost, setPermissionLost] = useState(false);
 
-  const forbidden = permissionLost || isForbiddenError(tree.error);
+  const canCreate = hasPermission(me?.permissionCodes, PERMISSIONS.unitCreate);
+  const canUpdate = hasPermission(me?.permissionCodes, PERMISSIONS.unitUpdate);
+  const canDelete = hasPermission(me?.permissionCodes, PERMISSIONS.unitDelete);
+  const forbidden =
+    permissionLost ||
+    isForbiddenError(tree.error) ||
+    !hasPermission(me?.permissionCodes, PERMISSIONS.unitRead);
   const selected = selectedCode ? findUnitTreeNode(nodes, selectedCode) : null;
   const parentName = selected ? findUnitName(nodes, selected.parentCode) : null;
 
@@ -104,7 +114,8 @@ export function UnitListPage() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            disabled={forbidden}
+            disabled={forbidden || !canCreate}
+            title={canCreate ? undefined : '需要「单位管理 · 新增」权限'}
             onClick={openCreateFromSelection}
           >
             新增单位
@@ -152,6 +163,9 @@ export function UnitListPage() {
           <UnitDetailPanel
             node={selected}
             parentName={parentName}
+            canCreate={canCreate}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
             onSelectChild={setSelectedCode}
             onAddChild={() => selected && openCreate(selected.code)}
             onEdit={openEdit}

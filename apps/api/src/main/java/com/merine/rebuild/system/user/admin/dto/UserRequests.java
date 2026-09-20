@@ -51,8 +51,8 @@ public final class UserRequests {
     }
 
     /**
-     * 编辑用户。账号不可修改，因此不在请求里；状态也不在这里改——
-     * 启用与停用走各自的动作接口，避免同一条规则有两条写入路径。
+     * 编辑用户。账号不可修改，因此不在请求里；状态与密码也不在这里改——
+     * 启用/停用与重置密码各自走独立动作接口，一个动作一个权限码，避免同一条规则有两条写入路径。
      */
     public record UpdateUser(
             @NotNull(message = "缺少编辑版本，请刷新用户后重试")
@@ -71,10 +71,19 @@ public final class UserRequests {
 
             @NotEmpty(message = "请至少选择一个角色")
             @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "角色编码列表")
-            List<@NotBlank(message = "角色编码不能为空") String> roleCodes,
+            List<@NotBlank(message = "角色编码不能为空") String> roleCodes) {
+    }
 
-            @Schema(description = "重置密码；省略或为 null 表示不修改；至少 6 个字符，UTF-8 编码不超过 72 字节")
+    /** 重置密码：独立动作，需要 system:user:reset-password 权限。 */
+    public record ResetPassword(
+            @NotNull(message = "缺少编辑版本，请刷新用户后重试")
+            @PositiveOrZero(message = "编辑版本不能为负数")
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "打开操作前的用户版本")
+            Integer version,
+
+            @NotBlank(message = "请输入新密码")
             @Size(min = 6, max = PasswordLimits.MAX_BYTES, message = "新密码至少 6 个字符，最多 72 个 UTF-8 字节")
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "至少 6 个字符，UTF-8 编码不超过 72 字节")
             String newPassword) {
     }
 

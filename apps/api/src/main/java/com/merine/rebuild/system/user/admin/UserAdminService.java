@@ -2,7 +2,7 @@ package com.merine.rebuild.system.user.admin;
 
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.common.PageResult;
-import com.merine.rebuild.system.security.SystemAdminGuard;
+import com.merine.rebuild.system.user.authorization.AdminCoverageGuard;
 import com.merine.rebuild.system.user.account.PasswordLimits;
 import com.merine.rebuild.system.user.admin.dto.UserRequests;
 import com.merine.rebuild.system.user.admin.dto.UserSummary;
@@ -12,7 +12,7 @@ import com.merine.rebuild.system.user.admin.persistence.UserRow;
 import com.merine.rebuild.system.unit.UnitLookup;
 import com.merine.rebuild.system.unit.dto.UnitSummary;
 import com.merine.rebuild.system.role.RoleLookup;
-import com.merine.rebuild.system.role.RoleSummary;
+import com.merine.rebuild.system.role.dto.RoleSummary;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -41,15 +41,15 @@ public class UserAdminService {
     private final UserAdminMapper mapper;
     private final UnitLookup units;
     private final RoleLookup roles;
-    private final SystemAdminGuard guard;
+    private final AdminCoverageGuard coverage;
     private final PasswordEncoder passwordEncoder;
 
     public UserAdminService(UserAdminMapper mapper, UnitLookup units, RoleLookup roles,
-                            SystemAdminGuard guard, PasswordEncoder passwordEncoder) {
+                            AdminCoverageGuard coverage, PasswordEncoder passwordEncoder) {
         this.mapper = mapper;
         this.units = units;
         this.roles = roles;
-        this.guard = guard;
+        this.coverage = coverage;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -104,13 +104,12 @@ public class UserAdminService {
 
     @Transactional
     public UserSummary update(long id, UserRequests.UpdateUser request) {
+        // 管理底线的串行锚点必须是事务里的第一条语句，理由见 AdminCoverageGuard
+        coverage.lock();
+
         UserRow current = requireUser(id);
         if (current.version() != request.version()) {
             throw editConflict();
-        }
-        boolean passwordChanged = request.newPassword() != null && !request.newPassword().isBlank();
-        if (passwordChanged) {
-            PasswordLimits.requireSupportedLength(request.newPassword(), "newPassword");
         }
         requireEnabledUnit(request.unitCode());
         List<String> roleCodes = requireEnabledRoles(request.roleCodes());
@@ -123,23 +122,35 @@ public class UserAdminService {
         boolean rolesChanged = !asSet(current.roleCodes()).equals(asSet(roleCodes));
         boolean unitChanged = !current.unitCode().equals(request.unitCode());
 
-        // 把最后一个管理员的角色摘掉，后果与停用账号一样是全员锁死
-        boolean wasAdmin = current.roleCodes().stream().anyMatch(guard.adminRoleCodes()::contains);
-        boolean staysAdmin = roleCodes.stream().anyMatch(guard.adminRoleCodes()::contains);
-        if (wasAdmin && !staysAdmin) {
-            requireUsableAdminRemains(List.of(id), "不能移除最后一个可用管理员的角色");
-        }
-
         if (rolesChanged) {
             replaceRoles(id, roleCodes);
         }
-        if (passwordChanged) {
-            mapper.updatePassword(id, passwordEncoder.encode(request.newPassword()));
-        }
-        // 角色、所属单位与密码的变化都必须让旧会话失效：统一靠身份与授权版本判定
-        if (rolesChanged || unitChanged || passwordChanged) {
+        // 角色与所属单位的变化都必须让旧会话失效：统一靠身份与授权版本判定
+        if (rolesChanged || unitChanged) {
             mapper.bumpAuthorizationVersion(id);
         }
+        // 改完再看覆盖：一次请求可能同时换单位与摘角色，直接查真实状态比逐条推导更可靠
+        if (rolesChanged || unitChanged) {
+            coverage.requireUsableAdminRemains("不能移除最后一个可用管理员的角色");
+        }
+        return UserSummary.from(requireUser(id));
+    }
+
+    /**
+     * 重置密码：独立动作与独立权限码。
+     *
+     * 「能编辑姓名与角色」不等于「能改别人的密码」，因此不复用编辑接口；
+     * 改完立即递增授权版本，让该账号的旧会话在下次请求失效。
+     */
+    @Transactional
+    public UserSummary resetPassword(long id, UserRequests.ResetPassword request) {
+        PasswordLimits.requireSupportedLength(request.newPassword(), "newPassword");
+        UserRow current = requireUser(id);
+        if (current.version() != request.version()) {
+            throw editConflict();
+        }
+        mapper.updatePassword(id, passwordEncoder.encode(request.newPassword()));
+        mapper.bumpAuthorizationVersion(id);
         return UserSummary.from(requireUser(id));
     }
 
@@ -151,30 +162,19 @@ public class UserAdminService {
      */
     @Transactional
     public List<UserSummary> changeStatus(List<String> rawIds, boolean enable) {
+        coverage.lock();
+
         List<Long> ids = parseIds(rawIds);
-        if (!enable) {
-            requireUsableAdminRemains(ids, "不能停用最后一个可用管理员的账号");
-        }
         mapper.updateStatus(ids, enable ? "ENABLED" : "DISABLED");
         // 已经处于目标状态是幂等成功，不重复递增版本；仍区分全部对象不存在的情形。
         List<UserSummary> updated = mapper.findByIds(ids).stream().map(UserSummary::from).toList();
         if (updated.isEmpty()) {
             throw userNotFound();
         }
-        return updated;
-    }
-
-    /**
-     * 守住「系统里始终至少有一个能登录、且能管理用户的管理员」。
-     *
-     * 停用账号与移除管理角色是两条不同的写入路径，但会通向同一个后果：
-     * 没有任何账号能再调用用户管理接口，只能靠 seed 或直接改库恢复。
-     * 因此两条路径都走这里判定，且都按与登录一致的可用性口径统计。
-     */
-    private void requireUsableAdminRemains(List<Long> excludedIds, String message) {
-        if (mapper.countRemainingEnabledAdmins(guard.adminRoleCodes(), excludedIds) == 0) {
-            throw new ApiException(HttpStatus.CONFLICT, "LAST_USER_ADMIN", message);
+        if (!enable) {
+            coverage.requireUsableAdminRemains("不能停用最后一个可用管理员的账号");
         }
+        return updated;
     }
 
     private void replaceRoles(long userId, List<String> roleCodes) {

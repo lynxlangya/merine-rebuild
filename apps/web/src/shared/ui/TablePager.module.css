@@ -1,0 +1,54 @@
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
+.pagerPages {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.pagerBtn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  background: var(--surface);
+  border: 1px solid var(--border-control);
+  border-radius: var(--r-2);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.pagerBtn:hover:not([disabled]) {
+  background: var(--surface-hover);
+}
+
+.pagerBtn[aria-current='page'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: var(--fw-strong);
+}
+
+.pagerBtn[disabled] {
+  background: var(--disabled-bg);
+  border-color: var(--border);
+  color: var(--disabled-fg);
+  cursor: not-allowed;
+}
+
+.pagerGap {
+  align-self: center;
+  padding: 0 2px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+}

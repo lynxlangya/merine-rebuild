@@ -62,7 +62,11 @@ com.merine.rebuild/
   bootstrap/                 工程联调，不作为正式业务模块的扩展模板
   auth/                      登录、会话、安全过滤链
   system/                    系统管理的分组，不是所有类均可互访的边界
-    security/                SystemAdminGuard，共用系统管理门禁
+    security/                PermissionGuard、PermissionCodes、BuiltinAdminRoles，共用功能权限门禁
+    permission/              权限码字典（sys_permission）：清单查询与菜单管理调用的写命令
+    menu/                    菜单资源树（sys_menu）：注册表、管理用例、导航与授权勾选树
+      dto/                   请求、管理树节点、导航节点、页面清单与影响回执
+      persistence/           MenuMapper、MenuRow
     unit/                    单位用例：Controller、Service、Lookup
       dto/                   请求与对外结果
       persistence/           UnitMapper、UnitRow
@@ -72,21 +76,32 @@ com.merine.rebuild/
       admin/                 用户管理 Controller、Service
         dto/                 管理接口请求、响应
         persistence/         管理 SQL、查询条件、结果投射
-      usage/                 对单位用例公开的直属用户数查询
+      authorization/         管理底线守卫：授权写入的串行锚点、覆盖统计、持有者授权版本递增
+        persistence/         覆盖统计与授权版本写入的 Mapper
+      usage/                 对单位用例公开的直属用户数、对角色用例公开的成员数与成员清单
       support/               用户模块内部共享的纯函数
-    role/                    角色选项查询；当前规模小，保持平铺
+    role/                    角色用例：RoleLookup（选项）与 RoleService（维护）
+      dto/                   请求、列表行、详情、成员与选项
+      persistence/           RoleMapper、RoleRow、RoleQuery
     seed/                    仅 seed profile 执行的本地账号初始化
 
 apps/api/src/main/resources/
+  mapper/system/menu/MenuMapper.xml
+  mapper/system/role/RoleMapper.xml
   mapper/system/unit/UnitMapper.xml
   mapper/system/user/account/UserAccountMapper.xml
   mapper/system/user/admin/UserAdminMapper.xml
+  mapper/system/user/authorization/*.xml
+  mapper/system/user/usage/RoleUsageMapper.xml
   db/migration/              全项目统一编号的 Flyway 迁移
 
 apps/api/src/test/java/com/merine/rebuild/
   support/                   无业务 fixture 的 MockMvcRegressionSupport
   auth/                      认证回归与账号 fixture
   system/security/           可复用的系统管理员 fixture
+  system/permission/         权限码清单与代码常量、引导菜单清单的一致性回归
+  system/menu/               菜单与按钮级权限回归（导航过滤、删除级联、恢复默认菜单）
+  system/role/               角色管理回归与专属 fixture
   system/user/admin/         用户管理回归与专属 fixture
   system/unit/               单位管理回归与专属 fixture
   common/                    异常与日志回归
@@ -96,7 +111,7 @@ apps/api/src/test/java/com/merine/rebuild/
 
 - Controller 处理 HTTP 协议和入口校验；Service 编排用例、事务和业务规则；Lookup 提供有明确消费者的查询契约；Mapper 负责 SQL。内部简单查询可直接使用现有 Service，不为每张表再造 Lookup 或无职责转发层。
 - 小模块可以平铺。像单位维护、用户管理这样需要区分公开 DTO 与数据库投射的用例，拆出 `dto` / `persistence`。`account`、`admin`、`usage` 是 user 内的不同能力，不是各自拥有一套用户表的独立业务模块；其他模块不照抄这套子包名称。
-- Java 的 `public` 不等于项目允许跨模块使用。当前公开能力是 `user.account` 的账号查询、登录时间登记及相关结果/凭据约束，`user.usage.UserUnitUsageLookup` 的直属用户计数，`unit.UnitLookup` 和 `UnitSummary`，以及 `role.RoleLookup` 和 `RoleSummary`。系统管理用例共用 `SystemAdminGuard`。新增跨模块消费者时，先确定所需的最小公开能力。
+- Java 的 `public` 不等于项目允许跨模块使用。当前公开能力是 `user.account` 的账号查询、登录时间登记及相关结果/凭据约束，`user.usage.UserUnitUsageLookup` 的直属用户计数与 `RoleUsageLookup` 的成员数/成员清单，`user.authorization` 的管理底线守卫与持有者授权版本递增，`unit.UnitLookup` 和 `UnitSummary`，`role.RoleLookup` 和 `RoleSummary`（角色选项）与 `role.RolePermissionCommands`（菜单删除时解除授权），`permission.PermissionLookup`（登录展开内置角色）与 `permission.PermissionCommands`（菜单管理建码/改名/删码），以及 `menu.MenuLookup` 和 `MenuNode`（菜单管理树，同时是角色的权限勾选树）。系统管理用例共用 `PermissionGuard`。新增跨模块消费者时，先确定所需的最小公开能力。
 - 跨模块不导入 Mapper、数据库投射或内部 Service。公开请求/结果不得依赖持久化类型；SQL 聚合列在 owner 内转换。例如 `UserAccountRow` 留在 persistence，`UserAccountLookup` 转成含角色列表的 `UserAccount` 后才交给 auth。
 - 同形、无敏感字段且语义一致的简单查询可以直接映射到公开 record，例如 `RoleSummary`、`UserAccountState`；不为形式统一复制 VO/BO/DO。含密码哈希的账号结果仅用于服务端认证，不进入会话、HTTP 响应或日志。
 - 依赖检查要看具体能力：当前 `user.admin → unit.UnitLookup`，`unit.UnitService → user.usage`，两条查询能力都不反向调用管理 Service。禁止形成类/Bean 的循环依赖或业务用例相互回调；目录名称本身不能证明边界有效。
@@ -105,7 +120,7 @@ apps/api/src/test/java/com/merine/rebuild/
 ### SQL 与数据归属
 
 - **一张业务表只有一个业务写入 owner，不等于一个表只能有一个 Mapper。** 同一 owner 内可以按用例拆 Mapper：账号查询、登录时间登记、管理操作与统计各有职责；不能让不同入口各自复制同一套写入规则。普通用例优先复用已有 Mapper，不无依据拆分或合并。
-- 当前 user 拥有 `sys_user`、`sys_user_role`，unit 拥有 `sys_unit`，role 拥有 `sys_role`。seed 是本地初始化入口，只补缺失数据，不供在线业务调用；它的事务与幂等约束独立明确。它不是新增业务跨表写入的模板。
+- 当前 user 拥有 `sys_user`、`sys_user_role`，unit 拥有 `sys_unit`，role 拥有 `sys_role`、`sys_role_permission`，permission 拥有 `sys_permission`，menu 拥有 `sys_menu`。角色状态或权限变化需要让持有者会话失效时，role 调用 user 的授权命令，不直接写 `sys_user`；菜单删除要解除角色授权时，menu 调用 role 的 `RolePermissionCommands`，再由调用方递增持有者授权版本；成员数与成员清单由 user 的 `RoleUsageLookup` 回答。seed 是本地初始化入口，只补缺失数据，不供在线业务调用；它的事务与幂等约束独立明确。它不是新增业务跨表写入的模板。
 - XML 文件名与 Mapper 接口同名；`namespace` 必须等于 Mapper **完整类名**。资源目录按业务/用例路径对应，**省略根包和技术子包 `persistence`**：`system.user.account.persistence.UserAccountMapper` 对应 `mapper/system/user/account/UserAccountMapper.xml`。由 `mybatis.mapper-locations` 显式扫描，不依赖同包自动发现。
 - 简单固定 SQL 可以用注解，动态筛选、多表关联和复杂映射优先 XML。同一方法不同时在注解和 XML 定义 SQL。复杂注解 SQL 在受影响时迁移，不为凑目录一致性改动全部历史代码。
 - 跨模块读取优先批量公开查询，避免逐行调用。确需同库只读 JOIN 时，由查询 owner 公开契约，并说明参与表、授权条件和结果归属，有真实 MySQL 验证；不能反向写表或绕过数据权限。当前账号和用户列表关联单位、角色属于这种查询。

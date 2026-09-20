@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<!-- owner: system.user；本 XML 只读 sys_user / sys_unit / sys_user_role / sys_role -->
+<!-- owner: system.user；本 XML 只读 sys_user / sys_unit / sys_user_role / sys_role / sys_role_permission / sys_permission -->
 <mapper namespace="com.merine.rebuild.system.user.account.persistence.UserAccountMapper">
 
     <!--
-      登录时按登录名取账号事实。角色用相关子查询聚合，避免一对多 JOIN 放大行数；
+      登录时按登录名取账号事实。角色与权限都用相关子查询聚合，避免一对多 JOIN 放大行数；
       login_name 是唯一键上的等值条件，单行结果。
-      停用的角色不计入 roleNames，但账号是否可登录只由账号与单位状态决定。
+      停用的角色不计入 roleNames 与权限，但账号是否可登录只由账号与单位状态决定。
+      跨 owner 只读 JOIN sys_role_permission / sys_permission（归 role 模块）：
+      登录必须一次取到有效权限码，返回给认证模块的只是权限码列表，不暴露 SQL 聚合格式。
     -->
     <select id="findByLoginName" resultType="com.merine.rebuild.system.user.account.persistence.UserAccountRow">
         SELECT u.id                     AS id,
@@ -28,7 +30,15 @@
                   FROM sys_user_role ur
                   JOIN sys_role r ON r.id = ur.role_id
                  WHERE ur.user_id = u.id
-                   AND r.status = 'ENABLED') AS aggregatedRoleNames
+                   AND r.status = 'ENABLED') AS aggregatedRoleNames,
+               <!-- 权限用 DISTINCT：多个角色可能授予同一个权限码 -->
+               (SELECT GROUP_CONCAT(DISTINCT p.permission_code ORDER BY p.permission_code SEPARATOR ',')
+                  FROM sys_user_role ur
+                  JOIN sys_role r ON r.id = ur.role_id
+                  JOIN sys_role_permission rp ON rp.role_id = r.id
+                  JOIN sys_permission p ON p.id = rp.permission_id
+                 WHERE ur.user_id = u.id
+                   AND r.status = 'ENABLED') AS aggregatedPermissionCodes
           FROM sys_user u
           JOIN sys_unit un ON un.id = u.unit_id
          WHERE u.login_name = CONVERT(#{loginName} USING ascii) COLLATE ascii_bin
