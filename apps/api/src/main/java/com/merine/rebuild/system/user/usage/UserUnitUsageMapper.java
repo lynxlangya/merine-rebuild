@@ -22,4 +22,22 @@ public interface UserUnitUsageMapper {
             </script>
             """)
     List<UserUnitCount> countByUnitIds(@Param("ids") Collection<Long> ids);
+
+    /**
+     * 写路径口径的计数：锁定读拿最新已提交状态。
+     * DELETE 前的引用校验不能依赖一致性读——它可能停在取锁之前的快照。
+     */
+    @Select("""
+            <script>
+            SELECT unit_id AS unitId, COUNT(*) AS userCount
+              FROM sys_user
+             WHERE unit_id IN
+             <foreach item="id" collection="ids" open="(" separator="," close=")">
+                 #{id}
+             </foreach>
+             GROUP BY unit_id
+              FOR SHARE
+            </script>
+            """)
+    List<UserUnitCount> countByUnitIdsForShare(@Param("ids") Collection<Long> ids);
 }

@@ -144,7 +144,7 @@ abstract class UserAdminRegressionSupport extends MockMvcRegressionSupport {
         insertSyntheticRows();
     }
 
-    /** 删除顺序固定为 sys_user_role → sys_user → sys_role → sys_unit，避免撞外键。 */
+    /** 删除顺序固定为 sys_user_role → sys_user → sys_role → sys_unit，保持引用关系自洽。 */
     private void deleteSyntheticRows() {
         jdbcTemplate.update("""
                 DELETE ur FROM sys_user_role ur

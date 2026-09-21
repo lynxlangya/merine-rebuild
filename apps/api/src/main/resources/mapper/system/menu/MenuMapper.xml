@@ -27,6 +27,31 @@
          ORDER BY m.sort_order, m.id
     </select>
 
+    <!--
+      菜单树写路径的引用锁：全表排他锁，让整棵树的校验与写入串行化。
+      它替代已移除的外键父行锁（见迁移 V17 与 docs/rules/database.md）：
+      「删除子树」与「新建/改父节点」不会再互相穿透。必须在读树之前执行。
+    -->
+    <select id="lockAllIds" resultType="long">
+        SELECT id
+          FROM sys_menu
+         ORDER BY id
+           FOR UPDATE
+    </select>
+
+    <!--
+      写路径的树读取：与 findAll 同形，但用锁定读。
+      一致性读可能停在取锁之前的快照，会把「取锁前刚提交的删除」看漏，
+      于是父级校验通过、写出的却是挂在不存在的父节点上的子节点。
+    -->
+    <select id="findAllForShare" resultType="com.merine.rebuild.system.menu.persistence.MenuRow">
+        SELECT <include refid="menuColumns"/>
+          FROM sys_menu m
+          LEFT JOIN sys_permission p ON p.id = m.permission_id
+         ORDER BY m.sort_order, m.id
+           FOR SHARE OF m
+    </select>
+
     <select id="findById" resultType="com.merine.rebuild.system.menu.persistence.MenuRow">
         SELECT <include refid="menuColumns"/>
           FROM sys_menu m

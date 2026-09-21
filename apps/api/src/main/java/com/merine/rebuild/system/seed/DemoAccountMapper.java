@@ -13,7 +13,16 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface DemoAccountMapper {
 
-    @Select("SELECT id FROM sys_unit WHERE unit_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin")
+    /**
+     * 取单位时一并加共享锁：账号要引用这个单位，和写用户路径同一条规则——
+     * 没有外键，引用前必须锁住被引用行（见 docs/rules/database.md）。
+     */
+    @Select("""
+            SELECT id
+              FROM sys_unit
+             WHERE unit_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin
+              FOR SHARE
+            """)
     Long findUnitId(@Param("code") String code);
 
     @Select("SELECT id FROM sys_role WHERE role_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin")

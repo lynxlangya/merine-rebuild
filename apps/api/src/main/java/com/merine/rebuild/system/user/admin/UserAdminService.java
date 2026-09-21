@@ -86,6 +86,9 @@ public class UserAdminService {
     public UserSummary create(UserRequests.CreateUser request) {
         PasswordLimits.requireSupportedLength(request.password(), "password");
         String loginName = request.loginName().strip();
+        // 新建用户会写授权关系，纳入管理底线的串行锚点；同时把取锁顺序固定为
+        // 「授权锚点 → 引用锁 → 关系表」，与 update / changeStatus 一致，避免死锁。
+        coverage.lock();
         // 不做「先查再插」：那既多一次查询，也留下查与插之间的竞态窗口。
         // 唯一约束是唯一判据，冲突统一翻译成 409。
         requireEnabledUnit(request.unitCode());
@@ -195,7 +198,9 @@ public class UserAdminService {
     }
 
     private void requireEnabledUnit(String unitCode) {
-        UnitSummary unit = units.findByCode(unitCode);
+        // 引用锁：共享锁住目标单位行（已移除的外键父行锁由它替代）。
+        // 与 UnitService 删除单位时的全表 FOR UPDATE 互斥，「删单位」与「写用户」不会互相穿透。
+        UnitSummary unit = units.lockByCode(unitCode);
         if (unit == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "UNKNOWN_UNIT", "所属单位不存在");
         }

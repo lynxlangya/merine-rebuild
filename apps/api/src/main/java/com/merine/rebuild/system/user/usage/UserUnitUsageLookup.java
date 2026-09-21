@@ -31,4 +31,20 @@ public class UserUnitUsageLookup {
         }
         return result;
     }
+
+    /**
+     * 写路径口径的计数：锁定读，必须在调用方事务里使用。
+     * 单位删除前的引用校验用它，避免一致性读把「取锁前刚提交的用户」看漏。
+     */
+    @Transactional
+    public Map<Long, Long> countByUnitIdsForShare(Collection<Long> unitIds) {
+        if (unitIds == null || unitIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> result = new LinkedHashMap<>();
+        for (UserUnitCount count : mapper.countByUnitIdsForShare(unitIds)) {
+            result.put(count.unitId(), count.userCount());
+        }
+        return result;
+    }
 }

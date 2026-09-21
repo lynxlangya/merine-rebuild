@@ -94,7 +94,10 @@ public class MenuService {
 
     @Transactional
     public MenuNode create(MenuRequests.CreateMenu request) {
-        List<MenuRow> rows = mapper.findAll();
+        // 引用锁先于读树：校验依据不能落后于锁（取锁顺序见 docs/rules/database.md）
+        mapper.lockAllIds();
+        // 锁后用锁定读：一致性读可能停在取锁之前的快照，会把刚提交的删除看漏
+        List<MenuRow> rows = mapper.findAllForShare();
         String type = request.type();
         Long parentId = parseIdOrNull(request.parentId());
         MenuRow parent = parentId == null ? null : requireRow(rows, parentId);
@@ -132,7 +135,9 @@ public class MenuService {
     @Transactional
     public MenuNode update(String rawId, MenuRequests.UpdateMenu request) {
         long id = parseId(rawId);
-        List<MenuRow> rows = mapper.findAll();
+        // 引用锁先于读树：改父节点与并发删除子树必须互斥
+        mapper.lockAllIds();
+        List<MenuRow> rows = mapper.findAllForShare();
         MenuRow current = requireRow(rows, id);
         if (current.version() != request.version()) {
             throw versionConflict();
@@ -172,17 +177,19 @@ public class MenuService {
 
     /**
      * 删除节点（含子树）：先解除相关角色授权并让持有者会话失效，再删节点与权限码。
-     * 顺序不能反：反了会先撞外键，也说不清「谁因为这次删除失去了权限」。
+     * 顺序不能反：反了会留下指向已删权限的授权关系，也说不清「谁因为这次删除失去了权限」。
+     * 先取授权锚点再锁整棵菜单树：删除期间不会有新节点挂到被删子树上。
      */
     @Transactional
     public MenuDeleteImpact delete(String rawId, int version) {
         coverage.lock();
+        mapper.lockAllIds();
 
         if (version < 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_VERSION",
                     "缺少菜单版本号，请刷新页面后重试");
         }
-        List<MenuRow> rows = mapper.findAll();
+        List<MenuRow> rows = mapper.findAllForShare();
         MenuRow root = requireRow(rows, parseId(rawId));
         if (root.version() != version) {
             throw versionConflict();
@@ -213,7 +220,9 @@ public class MenuService {
         int createdMenus = 0;
         int createdPermissions = 0;
         Map<String, Long> idByKey = new HashMap<>();
-        List<MenuRow> rows = mapper.findAll();
+        // 引用锁先于读树：补齐的节点不能挂到正在被删除的父节点上
+        mapper.lockAllIds();
+        List<MenuRow> rows = mapper.findAllForShare();
 
         for (MenuBootstrap.Entry entry : bootstrap.entries()) {
             Long parentId = entry.parentKey() == null ? null : idByKey.get(entry.parentKey());
@@ -271,7 +280,7 @@ public class MenuService {
 
     /**
      * 按深度从深到浅分批删除：同一深度的节点互不为父子，可以一次删掉；
-     * 先把叶子删完再删上层，自引用外键才不会挡住。
+     * 先把叶子删完再删上层，避免中途留下指向不存在父节点的子节点。
      */
     private void deleteDeepestFirst(List<MenuRow> rows, long rootId, List<Long> subtreeIds) {
         Map<Long, Long> parentById = new HashMap<>();

@@ -39,6 +39,35 @@
          WHERE u.unit_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin
     </select>
 
+    <!--
+      引用锁：写路径引用单位前先共享锁住目标单位行。
+      它与 UnitService 的 lockAllIds（全表 FOR UPDATE）互斥，替代已移除的外键父行锁，
+      使「删除单位」与「写入用户」不会互相穿透（见 docs/rules/database.md）。
+      走主键：锁定读会同时锁二级索引记录与主键记录，而删行是按主键加锁再删索引，
+      两边的加锁顺序相反时会死锁——按主键取锁就没有这个反向顺序。
+      OF u 只锁单位行，不连带锁 LEFT JOIN 出的上级行。
+    -->
+    <select id="findByIdForShare" resultType="com.merine.rebuild.system.unit.persistence.UnitRow">
+        SELECT <include refid="unitColumns"/>
+          FROM sys_unit u
+          LEFT JOIN sys_unit p ON p.id = u.parent_id
+         WHERE u.id = #{id}
+           FOR SHARE OF u
+    </select>
+
+    <!--
+      写路径的树读取：与 findAll 同形，但用锁定读。
+      一致性读可能停在取锁之前的快照，会把「取锁前刚提交的删除」看漏，
+      于是父级校验通过、写出的却是悬空引用。
+    -->
+    <select id="findAllForShare" resultType="com.merine.rebuild.system.unit.persistence.UnitRow">
+        SELECT <include refid="unitColumns"/>
+          FROM sys_unit u
+          LEFT JOIN sys_unit p ON p.id = u.parent_id
+         ORDER BY u.unit_level, u.unit_code
+           FOR SHARE OF u
+    </select>
+
     <insert id="insert">
         INSERT INTO sys_unit (unit_code, unit_name, parent_id, unit_level, area_code, status)
         VALUES (#{code},

@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * 写路径先锁定全部单位行，再校验单根、最多三级、父级存在、无循环和删除引用；
  * 当前组织规模约 50 行，串行化维护换来清楚的层级不变量。
+ * 引用完整性不靠外键：这里的全表排他锁与写用户时取的单位引用锁互斥，
+ * 删除前再校验下级与用户，越过用例的直接写入由巡检回归发现（见 docs/rules/database.md）。
  */
 @Service
 public class UnitService {
@@ -46,7 +47,8 @@ public class UnitService {
     @Transactional
     public UnitView create(UnitRequests.CreateUnit request) {
         mapper.lockAllIds();
-        List<UnitRow> rows = mapper.findAll();
+        // 锁后用锁定读：一致性读可能停在取锁之前的快照，会把刚提交的删除/新增看漏
+        List<UnitRow> rows = mapper.findAllForShare();
 
         String code = request.code().strip();
         String name = request.name().strip();
@@ -67,7 +69,7 @@ public class UnitService {
     @Transactional
     public UnitView update(String rawCode, UnitRequests.UpdateUnit request) {
         mapper.lockAllIds();
-        List<UnitRow> rows = mapper.findAll();
+        List<UnitRow> rows = mapper.findAllForShare();
 
         String code = rawCode.strip();
         UnitRow current = requireUnit(rows, code);
@@ -95,33 +97,29 @@ public class UnitService {
             throw unitNotFound();
         }
         long childCount = directChildCount(rows, current.id());
-        long userCount = userCounts(rows).getOrDefault(current.id(), 0L);
+        long userCount = userCountsForWrite(rows).getOrDefault(current.id(), 0L);
         return toView(changed, childCount, userCount);
     }
 
     @Transactional
     public void delete(String rawCode) {
         mapper.lockAllIds();
-        List<UnitRow> rows = mapper.findAll();
+        List<UnitRow> rows = mapper.findAllForShare();
         UnitRow target = requireUnit(rows, rawCode.strip());
 
         if (directChildCount(rows, target.id()) > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_CHILDREN",
                     "该单位还有下级单位，不能删除");
         }
-        long userCount = userCounts(rows).getOrDefault(target.id(), 0L);
+        long userCount = userCountsForWrite(rows).getOrDefault(target.id(), 0L);
         if (userCount > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_USERS",
                     "该单位还有用户，不能删除");
         }
 
-        try {
-            mapper.deleteById(target.id());
-        } catch (DataIntegrityViolationException error) {
-            // 行锁已经把普通并发串行化；这里兜底处理越过接口约束写入的引用。
-            throw new ApiException(HttpStatus.CONFLICT, "UNIT_IN_USE",
-                    "该单位仍被下级或用户引用，不能删除");
-        }
+        // 无外键兜底：并发安全来自上面的行锁与写用户侧的引用锁互斥，
+        // 意外完整性错误交回统一 500 + 日志，不在这里翻译成业务冲突。
+        mapper.deleteById(target.id());
     }
 
     private ParentChoice resolveParent(List<UnitRow> rows, String parentCode, Long movingId) {
@@ -220,6 +218,14 @@ public class UnitService {
 
     private Map<Long, Long> userCounts(List<UnitRow> rows) {
         return userUsage.countByUnitIds(rows.stream().map(UnitRow::id).toList());
+    }
+
+    /**
+     * 写路径的用户计数必须走锁定读：一致性读会停在取锁之前的快照，
+     * 「取锁前刚提交的用户」会被看漏，删除就会留下指向已删单位的用户。
+     */
+    private Map<Long, Long> userCountsForWrite(List<UnitRow> rows) {
+        return userUsage.countByUnitIdsForShare(rows.stream().map(UnitRow::id).toList());
     }
 
     private static List<UnitTreeNode> buildTree(List<UnitRow> rows, Map<Long, Long> userCounts) {

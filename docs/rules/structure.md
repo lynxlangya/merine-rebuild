@@ -102,6 +102,7 @@ apps/api/src/main/resources/
 
 apps/api/src/test/java/com/merine/rebuild/
   support/                   无业务 fixture 的 MockMvcRegressionSupport
+  schema/                    结构强规则（无物理外键）与悬空引用巡检
   auth/                      认证回归与账号 fixture
   system/security/           可复用的系统管理员 fixture
   system/permission/         权限码清单与代码常量、引导菜单清单的一致性回归
@@ -117,10 +118,10 @@ apps/api/src/test/java/com/merine/rebuild/
 
 - Controller 处理 HTTP 协议和入口校验；Service 编排用例、事务和业务规则；Lookup 提供有明确消费者的查询契约；Mapper 负责 SQL。内部简单查询可直接使用现有 Service，不为每张表再造 Lookup 或无职责转发层。
 - 小模块可以平铺。像单位维护、用户管理这样需要区分公开 DTO 与数据库投射的用例，拆出 `dto` / `persistence`。`account`、`admin`、`usage` 是 user 内的不同能力，不是各自拥有一套用户表的独立业务模块；其他模块不照抄这套子包名称。
-- Java 的 `public` 不等于项目允许跨模块使用。当前公开能力是 `user.account` 的账号查询、登录时间登记及相关结果/凭据约束，`user.usage.UserUnitUsageLookup` 的直属用户计数与 `RoleUsageLookup` 的成员数/成员清单，`user.authorization` 的管理底线守卫与持有者授权版本递增，`unit.UnitLookup` 和 `UnitSummary`，`role.RoleLookup` 和 `RoleSummary`（角色选项）与 `role.RolePermissionCommands`（菜单删除时解除授权），`permission.PermissionLookup`（登录展开内置角色）与 `permission.PermissionCommands`（菜单管理建码/改名/删码），`menu.MenuLookup` 和 `MenuNode`（菜单管理树，同时是角色的权限勾选树），以及 `dictionary.DictionaryLookup` 与 `DictionaryView`（其他模块按 code 复用参考数据，目前只由字典接口使用）。系统管理用例共用 `PermissionGuard`。新增跨模块消费者时，先确定所需的最小公开能力。
+- Java 的 `public` 不等于项目允许跨模块使用。当前公开能力是 `user.account` 的账号查询、登录时间登记及相关结果/凭据约束，`user.usage.UserUnitUsageLookup` 的直属用户计数与 `RoleUsageLookup` 的成员数/成员清单，`user.authorization` 的管理底线守卫与持有者授权版本递增，`unit.UnitLookup` 和 `UnitSummary`（单位选项，以及写路径引用单位时的引用锁 `lockByCode`），`role.RoleLookup` 和 `RoleSummary`（角色选项）与 `role.RolePermissionCommands`（菜单删除时解除授权），`permission.PermissionLookup`（登录展开内置角色）与 `permission.PermissionCommands`（菜单管理建码/改名/删码），`menu.MenuLookup` 和 `MenuNode`（菜单管理树，同时是角色的权限勾选树），以及 `dictionary.DictionaryLookup` 与 `DictionaryView`（其他模块按 code 复用参考数据，目前只由字典接口使用）。系统管理用例共用 `PermissionGuard`。新增跨模块消费者时，先确定所需的最小公开能力。
 - 跨模块不导入 Mapper、数据库投射或内部 Service。公开请求/结果不得依赖持久化类型；SQL 聚合列在 owner 内转换。例如 `UserAccountRow` 留在 persistence，`UserAccountLookup` 转成含角色列表的 `UserAccount` 后才交给 auth。
 - 同形、无敏感字段且语义一致的简单查询可以直接映射到公开 record，例如 `RoleSummary`、`UserAccountState`；不为形式统一复制 VO/BO/DO。含密码哈希的账号结果仅用于服务端认证，不进入会话、HTTP 响应或日志。
-- 依赖检查要看具体能力：当前 `user.admin → unit.UnitLookup`，`unit.UnitService → user.usage`，两条查询能力都不反向调用管理 Service。禁止形成类/Bean 的循环依赖或业务用例相互回调；目录名称本身不能证明边界有效。
+- 依赖检查要看具体能力：当前 `user.admin → unit.UnitLookup`（查询单位选项，并在改所属单位时用 `lockByCode` 取引用锁维持 `sys_user.unit_id` 的引用完整性，没有物理外键可依赖），`unit.UnitService → user.usage`，两条能力都不反向调用管理 Service。禁止形成类/Bean 的循环依赖或业务用例相互回调；目录名称本身不能证明边界有效。
 - `common` / 模块内 `support` 不反向依赖其调用方；不要为 Javadoc 链接引入业务实现 import。公共技术层不收纳用户实体、单位范围或情报状态。
 
 ### SQL 与数据归属

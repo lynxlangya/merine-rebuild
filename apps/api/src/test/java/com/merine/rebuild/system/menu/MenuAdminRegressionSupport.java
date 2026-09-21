@@ -70,7 +70,7 @@ abstract class MenuAdminRegressionSupport extends MockMvcRegressionSupport {
         deleteTestMenus();
     }
 
-    /** 反复删除「已经没有子节点」的测试节点，直到整棵测试子树清空（自引用外键要求从叶子删起）。 */
+    /** 反复删除「已经没有子节点」的测试节点，直到整棵测试子树清空（父节点引用要求从叶子删起）。 */
     private void deleteTestMenus() {
         jdbcTemplate.update("""
                 DELETE rp FROM sys_role_permission rp

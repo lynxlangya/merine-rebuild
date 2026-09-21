@@ -17,6 +17,19 @@ public interface MenuMapper {
 
     List<MenuRow> findAll();
 
+    /**
+     * 写路径的树读取：结果与 {@link #findAll()} 相同，但走锁定读。
+     * 一致性读可能停在取锁之前的快照，父级存在与唯一性校验必须拿最新已提交状态。
+     */
+    List<MenuRow> findAllForShare();
+
+    /**
+     * 菜单树写路径的引用锁：先排他锁住全部菜单行，再读树校验父子、层级与唯一性。
+     * 必须在一致性读之前执行：先读后锁会让校验依据落后于锁。
+     * 返回主键只是为了让 MyBatis 执行一条明确的 SELECT ... FOR UPDATE。
+     */
+    List<Long> lockAllIds();
+
     MenuRow findById(@Param("id") long id);
 
     MenuRow findByRouteKey(@Param("routeKey") String routeKey);

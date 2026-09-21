@@ -49,7 +49,7 @@ public final class MenuTree {
                 .toList();
     }
 
-    /** 子树 id（含自身），按深度从深到浅排序：删除时先删叶子，避免自引用外键挡住。 */
+    /** 子树 id（含自身），按深度从深到浅排序：删除时先删叶子，避免中途留下悬空的子节点。 */
     public static List<Long> subtreeIdsDeepestFirst(List<MenuRow> rows, long rootId) {
         Map<Long, List<MenuRow>> childrenByParent = childrenByParent(rows);
         Map<Long, Integer> depthById = new HashMap<>();
