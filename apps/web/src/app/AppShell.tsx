@@ -25,6 +25,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../features/auth/AuthProvider';
 import { useDictionariesQuery } from '../features/dictionaries/public';
 import {
+  ancestorKeysOf,
   findBreadcrumb,
   toNavItems,
   useMyMenusQuery,
@@ -120,6 +121,27 @@ export function AppShell() {
   );
   const visibleItems = useMemo(() => [HOME_ITEM, ...navItems], [navItems]);
   const activeKey = activeKeyOf(location.pathname, visibleItems);
+  // 当前页面所在目录的 key 链：刷新后据它把子菜单恢复成展开，而不是全部收起
+  const activeAncestorKeys = useMemo(
+    () => ancestorKeysOf(visibleItems, activeKey),
+    [visibleItems, activeKey],
+  );
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+
+  // 折叠态不保留展开集合：inline 目录折叠后会变成悬停浮层，留着状态会立刻弹出来
+  useEffect(() => {
+    if (collapsed) setOpenKeys((previous) => (previous.length === 0 ? previous : []));
+  }, [collapsed]);
+
+  // 刷新、登录后菜单数据到达，或跳到别的页面时，把当前页面所在的目录并进展开集合；
+  // 用户手动收起的其它目录不会被重新打开
+  useEffect(() => {
+    if (collapsed || activeAncestorKeys.length === 0) return;
+    setOpenKeys((previous) => {
+      const merged = new Set([...previous, ...activeAncestorKeys]);
+      return merged.size === previous.length ? previous : [...merged];
+    });
+  }, [collapsed, activeAncestorKeys]);
 
   const toggleNav = () => {
     setCollapsed((previous) => {
@@ -196,6 +218,8 @@ export function AppShell() {
           mode="inline"
           inlineCollapsed={collapsed}
           selectedKeys={activeKey ? [activeKey] : []}
+          openKeys={openKeys}
+          onOpenChange={setOpenKeys}
           items={menuItems}
           onClick={({ key }) => {
             const path = pathByKey.get(key);

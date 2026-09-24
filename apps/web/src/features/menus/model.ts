@@ -96,8 +96,26 @@ export function toHomeEntries(
   return entries;
 }
 
-/** 面包屑：按当前路径在导航树里回溯「目录 → 页面」的名字。 */
-export function findBreadcrumb(
+/**
+ * 当前页面（导航 key）所在目录的 key 链。
+ * 刷新后侧栏没有 antd 的内部展开态，靠它在拿到菜单数据后把当前页面所在的目录恢复成展开。
+ */
+export function ancestorKeysOf(items: readonly NavItem[], key: string | undefined): string[] {
+  if (!key) return [];
+  const walk = (nodes: readonly NavItem[], trail: string[]): string[] | undefined => {
+    for (const node of nodes) {
+      if (node.key === key) return trail;
+      if (node.children) {
+        const found = walk(node.children, [...trail, node.key]);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+  return walk(items, []) ?? [];
+}
+
+/** 面包屑：按当前路径在导航树里回溯「目录 → 页面」的名字。 */ export function findBreadcrumb(
   nodes: readonly NavigationNode[],
   pathname: string,
   resolve: (routeKey: string) => ResolvedRoute | undefined,

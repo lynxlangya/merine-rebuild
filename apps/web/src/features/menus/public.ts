@@ -6,6 +6,7 @@
  */
 export { menuKeys, useMenuTreeQuery, useMyMenusQuery, useRouteKeysQuery } from './queries';
 export {
+  ancestorKeysOf,
   findBreadcrumb,
   flattenMenuTree,
   toHomeEntries,

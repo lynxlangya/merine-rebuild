@@ -3,12 +3,14 @@ import { describe, it } from 'node:test';
 import type { MenuNode, NavigationNode } from '@merine/api-contract';
 import {
   allowedChildTypes,
+  ancestorKeysOf,
   defaultMenuExpandedKeys,
   findBreadcrumb,
   permissionCodePrefix,
   toHomeEntries,
   toMenuRows,
   toNavItems,
+  type NavItem,
 } from './model.ts';
 
 const routes: Record<string, { path: string; icon: string }> = {
@@ -238,5 +240,44 @@ describe('菜单表格行与默认展开', () => {
   it('没有下级的树不产生任何展开项', () => {
     const flat = [node({ id: 'page:only', name: '孤立页面', type: 'PAGE' })];
     assert.deepEqual(defaultMenuExpandedKeys(toMenuRows(flat)), []);
+  });
+});
+
+describe('当前页面所在目录的展开链路', () => {
+  const items: NavItem[] = [
+    { key: 'home', label: '首页', path: '/' },
+    {
+      key: 'collab',
+      label: '业务协同',
+      children: [
+        { key: 'collab.tasks', label: '任务处置', path: '/collaboration/tasks' },
+        { key: 'collab.flows', label: '信息流转', path: '/collaboration/flows' },
+      ],
+    },
+    {
+      key: 'system',
+      label: '系统管理',
+      children: [
+        {
+          key: 'system.user',
+          label: '用户管理',
+          children: [{ key: 'system.user.list', label: '用户列表', path: '/system/users' }],
+        },
+      ],
+    },
+  ];
+
+  it('二级页面的目录被展开，刷新后子菜单不会收起', () => {
+    assert.deepEqual(ancestorKeysOf(items, 'collab.tasks'), ['collab']);
+  });
+
+  it('多级页面返回从外到内的完整链路', () => {
+    assert.deepEqual(ancestorKeysOf(items, 'system.user.list'), ['system', 'system.user']);
+  });
+
+  it('顶层页面、未知 key 与空 key 都不展开任何目录', () => {
+    assert.deepEqual(ancestorKeysOf(items, 'home'), []);
+    assert.deepEqual(ancestorKeysOf(items, 'unknown'), []);
+    assert.deepEqual(ancestorKeysOf(items, undefined), []);
   });
 });
