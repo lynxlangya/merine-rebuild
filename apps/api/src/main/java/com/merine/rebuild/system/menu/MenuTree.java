@@ -116,8 +116,9 @@ public final class MenuTree {
         path.remove(row.id());
         return new MenuNode(Long.toString(row.id()),
                 row.parentId() == null ? null : Long.toString(row.parentId()),
-                row.type(), row.name(), row.routeKey(), row.permissionCode(), row.description(),
-                row.sortOrder(), row.status(), row.version(), row.updatedAt(), children);
+                row.type(), row.name(), row.routeKey(), row.iconName(), row.permissionCode(),
+                row.description(), row.sortOrder(), row.status(), row.version(), row.updatedAt(),
+                children);
     }
 
     private static NavigationNode toNavigationNode(MenuRow row,
@@ -136,12 +137,12 @@ public final class MenuTree {
             return children.isEmpty()
                     ? null
                     : new NavigationNode(Long.toString(row.id()), row.name(), row.type(), null,
-                            row.description(), children);
+                            row.iconName(), row.description(), children);
         }
         if (row.permissionCode() == null || !granted.contains(row.permissionCode())) {
             return null;
         }
         return new NavigationNode(Long.toString(row.id()), row.name(), row.type(), row.routeKey(),
-                row.description(), children);
+                row.iconName(), row.description(), children);
     }
 }

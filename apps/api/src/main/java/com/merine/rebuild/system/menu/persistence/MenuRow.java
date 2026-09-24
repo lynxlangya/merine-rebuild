@@ -9,6 +9,7 @@ public record MenuRow(
         String type,
         String name,
         String routeKey,
+        String iconName,
         Long permissionId,
         String permissionCode,
         String description,

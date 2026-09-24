@@ -32,6 +32,7 @@ import {
 } from '../features/menus/public';
 import { ApiError } from '../shared/http';
 import { useThemeMode } from '../shared/theme/ThemeProvider';
+import { resolveIcon } from './iconRegistry';
 import { routeByKey } from './routeRegistry';
 import styles from './AppShell.module.css';
 
@@ -61,13 +62,13 @@ function flattenNav(items: readonly NavItem[]): NavItem[] {
 }
 
 /**
- * 目录在前端注册表里没有图标（它不对应具体页面），但折叠态侧栏必须有图标才不会把标题竖排挤成两行，
- * 因此统一给目录一个文件夹图标。
+ * 目录在前端注册表里没有默认图标（它不对应具体页面），但折叠态侧栏必须有图标才不会把标题竖排挤成两行，
+ * 因此没配图标（或名称未登记）时统一给一个文件夹图标；数据库配置的图标优先。
  */
 function withFolderIcons(item: NavItem): NavItem {
   return {
     ...item,
-    icon: item.icon ?? <FolderOutlined />,
+    icon: resolveIcon(item.iconName, item.icon) ?? <FolderOutlined />,
     children: item.children?.map(withFolderIcons),
   };
 }

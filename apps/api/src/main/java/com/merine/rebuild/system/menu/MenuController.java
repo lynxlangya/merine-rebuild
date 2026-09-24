@@ -1,6 +1,7 @@
 package com.merine.rebuild.system.menu;
 
 import com.merine.rebuild.common.ApiResponse;
+import com.merine.rebuild.system.menu.dto.IconOption;
 import com.merine.rebuild.system.menu.dto.MenuDeleteImpact;
 import com.merine.rebuild.system.menu.dto.MenuNode;
 import com.merine.rebuild.system.menu.dto.MenuRequests;
@@ -59,6 +60,14 @@ public class MenuController {
                                                        HttpServletRequest request) {
         guard.require(authentication, PermissionCodes.MENU_READ, "没有查看菜单的权限");
         return ApiResponse.success(service.routeKeys(), request);
+    }
+
+    @GetMapping("/icons")
+    @Operation(summary = "查询前端已注册的导航图标（目录与页面节点只能从中选择）")
+    public ApiResponse<List<IconOption>> icons(Authentication authentication,
+                                               HttpServletRequest request) {
+        guard.require(authentication, PermissionCodes.MENU_READ, "没有查看菜单的权限");
+        return ApiResponse.success(service.icons(), request);
     }
 
     @GetMapping("/{id}/delete-impact")

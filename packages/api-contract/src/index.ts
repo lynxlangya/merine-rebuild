@@ -41,6 +41,7 @@ export type ChangeRoleStatus = components['schemas']['ChangeRoleStatus'];
 export type MenuNode = components['schemas']['MenuNode'];
 export type NavigationNode = components['schemas']['NavigationNode'];
 export type RouteKeyOption = components['schemas']['RouteKeyOption'];
+export type IconOption = components['schemas']['IconOption'];
 export type CreateMenu = components['schemas']['CreateMenu'];
 export type UpdateMenu = components['schemas']['UpdateMenu'];
 export type MenuDeleteImpact = components['schemas']['MenuDeleteImpact'];

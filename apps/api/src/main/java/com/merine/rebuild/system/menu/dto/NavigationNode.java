@@ -16,6 +16,8 @@ public record NavigationNode(
                 description = "节点类型：DIRECTORY 目录，PAGE 页面，TAB 页签，BUTTON 按钮")
         String type,
         @Schema(description = "前端已注册的路由 key；仅页面节点有值", nullable = true) String routeKey,
+        @Schema(description = "前端已注册的图标名称；为空时前端回落到默认图标", nullable = true)
+        String iconName,
         @Schema(description = "节点说明；未填写为 null", nullable = true) String description,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<NavigationNode> children) {
 }

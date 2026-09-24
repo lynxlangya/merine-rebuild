@@ -179,7 +179,7 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
                 writeStarted.countDown();
                 // 父节点已经被锁住：能不能建成功完全取决于引用锁有没有生效
                 return menuService.create(new MenuRequests.CreateMenu(
-                        Long.toString(directoryId), "BUTTON", "回归引用锁按钮", null,
+                        Long.toString(directoryId), "BUTTON", "回归引用锁按钮", null, null,
                         PERMISSION_CODE, null, 0));
             });
             assertThat(writeStarted.await(5, TimeUnit.SECONDS)).as("建菜单的线程必须真的跑起来").isTrue();

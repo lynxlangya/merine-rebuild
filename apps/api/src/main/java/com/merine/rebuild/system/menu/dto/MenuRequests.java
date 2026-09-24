@@ -44,6 +44,11 @@ public final class MenuRequests {
             @Schema(description = "前端已注册的路由 key；仅页面节点需要", nullable = true)
             String routeKey,
 
+            @Size(max = 64, message = "图标名称最多 64 个字符")
+            @Schema(description = "前端已注册的图标名称；仅目录与页面可设置，留空表示默认图标",
+                    nullable = true)
+            String iconName,
+
             @Pattern(regexp = PERMISSION_CODE_PATTERN,
                     message = "权限码形如 system:user:create，只能使用小写字母、数字、连字符与冒号")
             @Schema(description = "权限码；页面、页签、按钮必填，目录留空", nullable = true)
@@ -76,6 +81,11 @@ public final class MenuRequests {
             @Pattern(regexp = ROUTE_KEY_PATTERN, message = "路由 key 格式不正确")
             @Schema(description = "前端已注册的路由 key；仅页面节点需要", nullable = true)
             String routeKey,
+
+            @Size(max = 64, message = "图标名称最多 64 个字符")
+            @Schema(description = "前端已注册的图标名称；仅目录与页面可设置，留空表示默认图标",
+                    nullable = true)
+            String iconName,
 
             @Size(max = 200, message = "说明最多 200 个字符")
             @Schema(nullable = true)

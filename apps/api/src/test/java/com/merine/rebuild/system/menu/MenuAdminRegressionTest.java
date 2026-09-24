@@ -1,6 +1,7 @@
 package com.merine.rebuild.system.menu;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -68,6 +70,67 @@ class MenuAdminRegressionTest extends MenuAdminRegressionSupport {
         assertThat(keys)
                 .containsExactlyInAnyOrder("system.users", "system.roles", "system.menus",
                         "system.units", "system.dictionaries", "dev.diagnostics");
+    }
+
+    @Test
+    @DisplayName("导航图标：目录与页面可选注册清单内的图标，未注册名称与页签/按钮被拒")
+    void navigationIconsAreLimitedToRegisteredNamesAndNavigableTypes() throws Exception {
+        MockHttpSession admin = adminSession();
+
+        // 图标清单来自后端注册表；只读账号没有菜单查看权限
+        MvcResult icons = getWithSession(get(MENUS_PATH + "/icons"), admin);
+        assertThat(icons.getResponse().getStatus()).isEqualTo(200);
+        List<String> iconNames = jsonOf(bodyOf(icons), "$.data[*].name");
+        assertThat(iconNames).contains("TeamOutlined", "FolderOutlined").doesNotHaveDuplicates();
+        assertForbidden(getWithSession(get(MENUS_PATH + "/icons"), readerSession()));
+
+        // 目录可以设置图标，管理树与数据库都能读回
+        String directoryId = (String) jsonOf(bodyOf(createMenu(null, "DIRECTORY",
+                TEST_DIRECTORY_NAME, null, "FolderOutlined", null, 10, admin)), "$.data.id");
+        assertThat(findNode(getMenus(admin), TEST_DIRECTORY_NAME).get("iconName"))
+                .isEqualTo("FolderOutlined");
+        assertThat(iconNameInDatabase(TEST_DIRECTORY_NAME)).isEqualTo("FolderOutlined");
+
+        // 未注册名称 400，且不创建节点
+        MvcResult unknownIcon = createMenu(directoryId, "DIRECTORY",
+                NAME_PREFIX + "未知图标目录", null, "SparklesOutlined", null, 20, admin);
+        assertError(unknownIcon, 400, "MENU_ICON_UNKNOWN");
+        assertThat(menuNamed(NAME_PREFIX + "未知图标目录")).isFalse();
+
+        // 按钮不参与导航渲染，不接受图标
+        Map<String, Object> usersPage = findNode(getMenus(admin), "用户管理");
+        MvcResult buttonWithIcon = createMenu(idOf(usersPage), "BUTTON",
+                NAME_PREFIX + "带图标按钮", null, "TeamOutlined", CODE_PREFIX + "icon-button",
+                10, admin);
+        assertError(buttonWithIcon, 400, "MENU_FIELD_NOT_ALLOWED");
+
+        // 页面改图标：管理树、数据库与会话导航三处同步；清空后导航回落到默认图标
+        Map<String, Object> menusPage = findNode(getMenus(admin), "菜单管理");
+        MvcResult configured = updateMenu(idOf(menusPage), versionOf(menusPage),
+                (String) menusPage.get("parentId"), "菜单管理", "system.menus", "TeamOutlined",
+                (String) menusPage.get("description"),
+                ((Number) menusPage.get("sortOrder")).intValue(), "ENABLED", admin);
+        assertThat(configured.getResponse().getStatus()).isEqualTo(200);
+        assertThat(findNode(getMenus(admin), "菜单管理").get("iconName")).isEqualTo("TeamOutlined");
+        assertThat(iconNameInDatabase("菜单管理")).isEqualTo("TeamOutlined");
+        assertThat(findNode(getMyMenus(admin), "菜单管理").get("iconName"))
+                .as("会话导航也要带上数据库配置的图标").isEqualTo("TeamOutlined");
+
+        Map<String, Object> configuredPage = findNode(getMenus(admin), "菜单管理");
+        MvcResult cleared = updateMenu(idOf(configuredPage), versionOf(configuredPage),
+                (String) configuredPage.get("parentId"), "菜单管理", "system.menus", null,
+                (String) configuredPage.get("description"),
+                ((Number) configuredPage.get("sortOrder")).intValue(), "ENABLED", admin);
+        assertThat(cleared.getResponse().getStatus()).isEqualTo(200);
+        assertThat(iconNameInDatabase("菜单管理")).isNull();
+        assertThat(findNode(getMyMenus(admin), "菜单管理").get("iconName"))
+                .as("清空图标后由前端回落到路由注册表默认图标").isNull();
+
+        // 数据库 CHECK 是绕过用例写入的最后一道口子：按钮行不允许出现图标
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "UPDATE sys_menu SET icon_name = 'TeamOutlined' WHERE menu_type = 'BUTTON'"))
+                .isInstanceOf(UncategorizedSQLException.class)
+                .hasMessageContaining("ck_sys_menu_icon");
     }
 
     @Test

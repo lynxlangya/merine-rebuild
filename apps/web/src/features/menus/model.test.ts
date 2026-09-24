@@ -18,7 +18,13 @@ const routes: Record<string, { path: string; icon: string }> = {
 const resolve = (key: string) => routes[key];
 
 function navNode(partial: Partial<NavigationNode> & Pick<NavigationNode, 'id' | 'name' | 'type'>) {
-  return { routeKey: null, description: null, children: [], ...partial } as NavigationNode;
+  return {
+    routeKey: null,
+    iconName: null,
+    description: null,
+    children: [],
+    ...partial,
+  } as NavigationNode;
 }
 
 describe('导航树转换', () => {
@@ -79,6 +85,35 @@ describe('导航树转换', () => {
     assert.equal(entries[0].path, '/system/users');
   });
 
+  it('导航与首页入口原样带上菜单配置的图标名称，由渲染侧解析并回落到默认图标', () => {
+    const configured: NavigationNode[] = [
+      navNode({
+        id: '1',
+        name: '系统管理',
+        type: 'DIRECTORY',
+        iconName: 'FolderOutlined',
+        children: [
+          navNode({
+            id: '2',
+            name: '用户管理',
+            type: 'PAGE',
+            routeKey: 'system.users',
+            iconName: 'TeamOutlined',
+          }),
+        ],
+      }),
+    ];
+    const items = toNavItems(configured, resolve);
+    assert.equal(items[0].iconName, 'FolderOutlined');
+    assert.equal(items[0].children?.[0].iconName, 'TeamOutlined');
+    assert.equal(
+      items[0].children?.[0].icon,
+      routes['system.users'].icon,
+      '默认图标仍在，供回落用',
+    );
+    assert.equal(toHomeEntries(configured, resolve)[0].iconName, 'TeamOutlined');
+  });
+
   it('面包屑按当前路径回溯「目录 → 页面」', () => {
     assert.deepEqual(findBreadcrumb(tree, '/system/users', resolve), ['系统管理', '用户管理']);
     assert.deepEqual(findBreadcrumb(tree, '/system/roles', resolve), ['系统管理', '角色管理']);
@@ -112,6 +147,7 @@ describe('菜单树与权限码', () => {
     ({
       parentId: null,
       routeKey: null,
+      iconName: null,
       description: null,
       sortOrder: 0,
       status: 'ENABLED',

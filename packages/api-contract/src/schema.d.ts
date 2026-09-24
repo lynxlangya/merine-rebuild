@@ -454,6 +454,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/system/menus/icons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询前端已注册的导航图标（目录与页面节点只能从中选择） */
+        get: operations["icons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/menus": {
         parameters: {
             query?: never;
@@ -678,6 +695,8 @@ export interface components {
             name: string;
             /** @description 前端已注册的路由 key；仅页面节点需要 */
             routeKey?: string | null;
+            /** @description 前端已注册的图标名称；仅目录与页面可设置，留空表示默认图标 */
+            iconName?: string | null;
             description?: string | null;
             /** Format: int32 */
             sortOrder: number;
@@ -700,6 +719,8 @@ export interface components {
             name: string;
             /** @description 前端已注册的路由 key；仅页面节点有值 */
             routeKey?: string | null;
+            /** @description 前端已注册的图标名称；仅目录与页面可设置，为空表示默认图标 */
+            iconName?: string | null;
             /** @description 权限码；目录为 null */
             permissionCode?: string | null;
             /** @description 节点说明；未填写为 null */
@@ -886,6 +907,8 @@ export interface components {
             name: string;
             /** @description 前端已注册的路由 key；仅页面节点需要 */
             routeKey?: string | null;
+            /** @description 前端已注册的图标名称；仅目录与页面可设置，留空表示默认图标 */
+            iconName?: string | null;
             /** @description 权限码；页面、页签、按钮必填，目录留空 */
             permissionCode?: string | null;
             description?: string | null;
@@ -1163,6 +1186,20 @@ export interface components {
             /** @description 页面名称，便于选择 */
             label: string;
         };
+        ApiResponseListIconOption: {
+            code: string;
+            message: string;
+            data: components["schemas"]["IconOption"][];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        IconOption: {
+            /** @description 图标名称，与前端 iconRegistry 注册的组件一致 */
+            name: string;
+            /** @description 图标含义，便于选择 */
+            label: string;
+        };
         ApiResponseListDictionaryListItem: {
             code: string;
             message: string;
@@ -1206,6 +1243,8 @@ export interface components {
             type: string;
             /** @description 前端已注册的路由 key；仅页面节点有值 */
             routeKey?: string | null;
+            /** @description 前端已注册的图标名称；为空时前端回落到默认图标 */
+            iconName?: string | null;
             /** @description 节点说明；未填写为 null */
             description?: string | null;
             children: components["schemas"]["NavigationNode"][];
@@ -2161,6 +2200,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListRouteKeyOption"];
+                };
+            };
+        };
+    };
+    icons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListIconOption"];
                 };
             };
         };

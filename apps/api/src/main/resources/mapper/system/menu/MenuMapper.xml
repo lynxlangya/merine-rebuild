@@ -10,6 +10,7 @@
         m.menu_type     AS type,
         m.menu_name     AS name,
         m.route_key     AS routeKey,
+        m.icon_name     AS iconName,
         m.permission_id AS permissionId,
         p.permission_code AS permissionCode,
         m.description   AS description,
@@ -74,13 +75,14 @@
     </select>
 
     <insert id="insert">
-        INSERT INTO sys_menu (parent_id, menu_type, menu_name, route_key, permission_id,
+        INSERT INTO sys_menu (parent_id, menu_type, menu_name, route_key, icon_name, permission_id,
                               sort_order, status, description)
         VALUES (#{parentId}, #{type}, #{name},
                 <choose>
                     <when test="routeKey != null">#{routeKey}</when>
                     <otherwise>NULL</otherwise>
                 </choose>,
+                #{iconName,jdbcType=VARCHAR},
                 #{permissionId}, #{sortOrder}, #{status}, #{description,jdbcType=VARCHAR})
     </insert>
 
@@ -93,6 +95,7 @@
                    <when test="routeKey != null">#{routeKey}</when>
                    <otherwise>NULL</otherwise>
                </choose>,
+               icon_name = #{iconName,jdbcType=VARCHAR},
                sort_order = #{sortOrder},
                status = #{status},
                description = #{description,jdbcType=VARCHAR},

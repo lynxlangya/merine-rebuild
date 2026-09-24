@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, App, Button, Empty, Result, Skeleton, Table, Tag } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { useMemo, useRef, useState } from 'react';
+import { iconByName } from '../../app/iconRegistry';
 import { errorText, isForbiddenError } from '../../shared/api-error';
 import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
@@ -18,7 +19,7 @@ import {
   type MenuRow,
   type MenuType,
 } from './model';
-import { menuKeys, useMenuTreeQuery, useRouteKeysQuery } from './queries';
+import { menuKeys, useIconOptionsQuery, useMenuTreeQuery, useRouteKeysQuery } from './queries';
 import styles from './MenuListPage.module.css';
 
 interface DrawerState {
@@ -53,6 +54,7 @@ export function MenuListPage() {
 
   const tree = useMenuTreeQuery(canRead);
   const routeKeys = useRouteKeysQuery(canRead);
+  const iconOptions = useIconOptionsQuery(canRead);
   const typeDictionary = useDictionary(DICTIONARY_CODES.menuType).data;
   const statusDictionary = useDictionary(DICTIONARY_CODES.status).data;
   const nodes = tree.data ?? [];
@@ -145,6 +147,20 @@ export function MenuListPage() {
       dataIndex: 'type',
       width: 84,
       render: (value: string) => <DictTag dictionary={typeDictionary} value={value} />,
+    },
+    {
+      title: '图标',
+      dataIndex: 'iconName',
+      width: 132,
+      render: (value: string | null) =>
+        value ? (
+          <span className={styles.iconCell}>
+            {iconByName(value)}
+            <span className={styles.mono}>{value}</span>
+          </span>
+        ) : (
+          <span className={styles.muted}>默认</span>
+        ),
     },
     {
       title: '路由 key',
@@ -286,6 +302,9 @@ export function MenuListPage() {
               {routeKeys.isError && (
                 <span className={styles.hint}>路由 key 清单加载失败，新增页面会缺少可选项。</span>
               )}
+              {iconOptions.isError && (
+                <span className={styles.hint}>图标清单加载失败，设置导航图标时会缺少可选项。</span>
+              )}
               <Button
                 size="small"
                 icon={<ReloadOutlined />}
@@ -347,6 +366,7 @@ export function MenuListPage() {
         target={drawer.target}
         parent={drawer.parent}
         routeKeys={routeKeys.data ?? []}
+        iconOptions={iconOptions.data ?? []}
         onClose={() => setDrawer((previous) => ({ ...previous, open: false }))}
         onClosed={handleDrawerClosed}
         onSaved={() => setDrawer((previous) => ({ ...previous, open: false }))}

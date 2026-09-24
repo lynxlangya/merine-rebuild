@@ -93,6 +93,12 @@
   gap: var(--sp-1);
 }
 
+.iconCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
 .mono {
   font-family: var(--font-mono);
   font-size: var(--fs-12);

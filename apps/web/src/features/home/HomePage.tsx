@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useAuth } from '../auth/public';
 import { toHomeEntries, useMyMenusQuery } from '../menus/public';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { resolveIcon } from '../../app/iconRegistry';
 import { routeByKey } from '../../app/routeRegistry';
 import styles from './HomePage.module.css';
 
@@ -73,7 +74,7 @@ export function HomePage() {
             renderItem={(item) => (
               <List.Item>
                 <List.Item.Meta
-                  avatar={item.icon}
+                  avatar={resolveIcon(item.iconName, item.icon)}
                   title={<Link to={item.path}>{item.title}</Link>}
                   description={item.description}
                 />

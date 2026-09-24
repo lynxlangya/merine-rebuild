@@ -1,6 +1,7 @@
 package com.merine.rebuild.system.menu;
 
 import com.merine.rebuild.common.ApiException;
+import com.merine.rebuild.system.menu.dto.IconOption;
 import com.merine.rebuild.system.menu.dto.MenuDeleteImpact;
 import com.merine.rebuild.system.menu.dto.MenuNode;
 import com.merine.rebuild.system.menu.dto.MenuRequests;
@@ -76,6 +77,13 @@ public class MenuService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<IconOption> icons() {
+        return RegisteredIcons.all().stream()
+                .map(icon -> new IconOption(icon.name(), icon.label()))
+                .toList();
+    }
+
     /** 当前账号可见的导航树：停用节点不下发，未授权的页面/按钮不下发，空目录自动收敛。 */
     @Transactional(readOnly = true)
     public List<NavigationNode> navigation(Collection<String> permissionCodes) {
@@ -104,6 +112,7 @@ public class MenuService {
         requireHierarchy(parent, type);
 
         String routeKey = blankToNull(request.routeKey());
+        String iconName = requireIcon(type, blankToNull(request.iconName()));
         String permissionCode = blankToNull(request.permissionCode());
         if (PAGE.equals(type)) {
             requireRegisteredRoute(routeKey);
@@ -126,7 +135,7 @@ public class MenuService {
             requirePermissionCodeFree(permissionCode);
             permissionId = ensurePermission(permissionCode, request.name(), request.description()).id();
         }
-        mapper.insert(parentId, type, request.name().strip(), routeKey, permissionId,
+        mapper.insert(parentId, type, request.name().strip(), routeKey, iconName, permissionId,
                 request.sortOrder() == null ? 0 : request.sortOrder(), ENABLED,
                 blankToNull(request.description()));
         return requireNode(Long.toString(mapper.lastInsertId()));
@@ -154,6 +163,7 @@ public class MenuService {
         }
 
         String routeKey = blankToNull(request.routeKey());
+        String iconName = requireIcon(current.type(), blankToNull(request.iconName()));
         if (PAGE.equals(current.type())) {
             requireRegisteredRoute(routeKey);
             requireRouteKeyFree(rows, routeKey, current.id());
@@ -164,7 +174,7 @@ public class MenuService {
 
         String name = request.name().strip();
         String description = blankToNull(request.description());
-        if (mapper.updateBasic(current.id(), parentId, name, routeKey, request.sortOrder(),
+        if (mapper.updateBasic(current.id(), parentId, name, routeKey, iconName, request.sortOrder(),
                 request.status(), description, request.version()) == 0) {
             throw versionConflict();
         }
@@ -236,7 +246,7 @@ public class MenuService {
                     idByKey.put(entry.key(), existing.get().id());
                     continue;
                 }
-                mapper.insert(parentId, DIRECTORY, entry.name(), null, null, entry.sortOrder(),
+                mapper.insert(parentId, DIRECTORY, entry.name(), null, null, null, entry.sortOrder(),
                         ENABLED, entry.description());
                 idByKey.put(entry.key(), mapper.lastInsertId());
                 createdMenus++;
@@ -257,7 +267,7 @@ public class MenuService {
                 createdPermissions++;
             }
             String type = entry.type().name();
-            mapper.insert(parentId, type, entry.name(), entry.routeKey(), permission.id(),
+            mapper.insert(parentId, type, entry.name(), entry.routeKey(), null, permission.id(),
                     entry.sortOrder(), ENABLED, entry.description());
             idByKey.put(entry.key(), mapper.lastInsertId());
             createdMenus++;
@@ -363,6 +373,25 @@ public class MenuService {
             case BUTTON -> "按钮";
             default -> type;
         };
+    }
+
+    /**
+     * 导航图标只服务目录与页面：页签/按钮不出现在侧栏与首页入口，带了值也没有渲染处，直接拒绝。
+     * 目录与页面允许留空（沿用默认图标）；填了就必须在注册清单内，否则存下来也渲染不出来。
+     */
+    private static String requireIcon(String type, String iconName) {
+        if (DIRECTORY.equals(type) || PAGE.equals(type)) {
+            if (iconName != null && !RegisteredIcons.contains(iconName)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "MENU_ICON_UNKNOWN",
+                        "该图标未在注册清单中，无法使用：" + iconName);
+            }
+            return iconName;
+        }
+        if (iconName != null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "MENU_FIELD_NOT_ALLOWED",
+                    "只有目录与页面可以设置导航图标");
+        }
+        return null;
     }
 
     private static void requireRegisteredRoute(String routeKey) {

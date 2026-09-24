@@ -1330,6 +1330,27 @@
         }
       }
     },
+    "/api/system/menus/icons": {
+      "get": {
+        "tags": [
+          "菜单管理"
+        ],
+        "summary": "查询前端已注册的导航图标（目录与页面节点只能从中选择）",
+        "operationId": "icons",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListIconOption"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/menus": {
       "get": {
         "tags": [
@@ -1860,6 +1881,15 @@
             "description": "前端已注册的路由 key；仅页面节点需要",
             "pattern": "^[a-zA-Z][a-zA-Z0-9._-]{2,63}$"
           },
+          "iconName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的图标名称；仅目录与页面可设置，留空表示默认图标",
+            "maxLength": 64,
+            "minLength": 0
+          },
           "description": {
             "type": [
               "string",
@@ -1942,6 +1972,13 @@
               "null"
             ],
             "description": "前端已注册的路由 key；仅页面节点有值"
+          },
+          "iconName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的图标名称；仅目录与页面可设置，为空表示默认图标"
           },
           "permissionCode": {
             "type": [
@@ -2533,6 +2570,15 @@
             ],
             "description": "前端已注册的路由 key；仅页面节点需要",
             "pattern": "^[a-zA-Z][a-zA-Z0-9._-]{2,63}$"
+          },
+          "iconName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的图标名称；仅目录与页面可设置，留空表示默认图标",
+            "maxLength": 64,
+            "minLength": 0
           },
           "permissionCode": {
             "type": [
@@ -3405,6 +3451,56 @@
           "label"
         ]
       },
+      "ApiResponseListIconOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IconOption"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "IconOption": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "图标名称，与前端 iconRegistry 注册的组件一致"
+          },
+          "label": {
+            "type": "string",
+            "description": "图标含义，便于选择"
+          }
+        },
+        "required": [
+          "label",
+          "name"
+        ]
+      },
       "ApiResponseListDictionaryListItem": {
         "type": "object",
         "properties": {
@@ -3536,6 +3632,13 @@
               "null"
             ],
             "description": "前端已注册的路由 key；仅页面节点有值"
+          },
+          "iconName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "前端已注册的图标名称；为空时前端回落到默认图标"
           },
           "description": {
             "type": [

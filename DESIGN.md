@@ -33,7 +33,7 @@
 | 状态可信   | 加载、无匹配、无数据、失败、无权限分别表达；不能用旧数据或演示数据伪装成功                 |
 | 布局稳定   | hover 不改变几何尺寸；切换主题保留输入与查询；面板打开后仍能知道正在处理谁                 |
 
-品牌名使用“海防研判工作台”，标识复用 [brand-mark.svg](apps/web/public/brand-mark.svg)：导航中 28px，登录页中 40px。功能图标使用已安装的 `@ant-design/icons`，导航图标由 [路由注册表](apps/web/src/app/routeRegistry.tsx) 配置。图标跟随文字颜色；纯图标按钮提供可理解的名称与提示。
+品牌名使用“海防研判工作台”，标识复用 [brand-mark.svg](apps/web/public/brand-mark.svg)：导航中 28px，登录页中 40px。功能图标使用已安装的 `@ant-design/icons`，导航图标默认由[路由注册表](apps/web/src/app/routeRegistry.tsx)给出；目录与页面可在菜单管理里从[图标注册清单](apps/web/src/app/iconRegistry.tsx)另行选择，未配置时回落到默认图标。图标跟随文字颜色；纯图标按钮提供可理解的名称与提示。
 
 不沿用旧项目的深藏青顶栏、emoji 图标或旧组件类名。业务区不添加渐变背景、发光边框、卡片悬浮位移和装饰性入场动画；登录页已有港口配图是独立入口的视觉资产。
 

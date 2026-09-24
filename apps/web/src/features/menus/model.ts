@@ -13,6 +13,8 @@ export interface NavItem {
   key: string;
   label: string;
   icon?: ReactNode;
+  /** 菜单配置的图标名称；渲染侧用 iconRegistry 解析，未配置时用默认图标 */
+  iconName?: string;
   path?: string;
   children?: NavItem[];
 }
@@ -23,12 +25,15 @@ export interface HomeEntry {
   description: string;
   path: string;
   icon?: ReactNode;
+  /** 菜单配置的图标名称；渲染侧用 iconRegistry 解析，未配置时用默认图标 */
+  iconName?: string;
 }
 
 /**
  * 导航树只保留目录与页面：页签与按钮属于页面内部，不进左侧菜单。
- * 页面必须能在前端注册表里找到组件与图标；找不到就跳过并告警——
+ * 页面必须能在前端注册表里找到组件与默认图标；找不到就跳过并告警——
  * 后端只校验 route key 在注册清单里，前端注册表滞后时不能把用户带进死链。
+ * 数据库配置的 iconName 原样带上，由渲染侧（iconRegistry）解析并回落到默认图标。
  */
 export function toNavItems(
   nodes: readonly NavigationNode[],
@@ -38,7 +43,14 @@ export function toNavItems(
   for (const node of nodes) {
     if (node.type === 'DIRECTORY') {
       const children = toNavItems(node.children, resolve);
-      if (children.length > 0) items.push({ key: node.id, label: node.name, children });
+      if (children.length > 0) {
+        items.push({
+          key: node.id,
+          label: node.name,
+          iconName: node.iconName ?? undefined,
+          children,
+        });
+      }
       continue;
     }
     if (node.type !== 'PAGE' || !node.routeKey) continue;
@@ -47,7 +59,13 @@ export function toNavItems(
       console.warn(`菜单 ${node.name} 引用了未注册的路由 key：${node.routeKey}`);
       continue;
     }
-    items.push({ key: node.id, label: node.name, icon: route.icon, path: route.path });
+    items.push({
+      key: node.id,
+      label: node.name,
+      icon: route.icon,
+      iconName: node.iconName ?? undefined,
+      path: route.path,
+    });
   }
   return items;
 }
@@ -72,6 +90,7 @@ export function toHomeEntries(
       description: node.description ?? '',
       path: route.path,
       icon: route.icon,
+      iconName: node.iconName ?? undefined,
     });
   }
   return entries;

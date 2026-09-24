@@ -1,6 +1,7 @@
 /** 菜单管理与导航的 HTTP 请求与生成契约绑定。 */
 import type {
   CreateMenu,
+  IconOption,
   MenuDeleteImpact,
   MenuNode,
   NavigationNode,
@@ -21,6 +22,10 @@ export function fetchMenuTree(signal?: AbortSignal) {
 
 export function fetchRouteKeys(signal?: AbortSignal) {
   return request<RouteKeyOption[]>('/api/system/menus/route-keys', { signal });
+}
+
+export function fetchIconOptions(signal?: AbortSignal) {
+  return request<IconOption[]>('/api/system/menus/icons', { signal });
 }
 
 export function fetchMenuDeleteImpact(id: string, signal?: AbortSignal) {

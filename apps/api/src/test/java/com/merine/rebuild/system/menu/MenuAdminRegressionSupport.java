@@ -107,6 +107,12 @@ abstract class MenuAdminRegressionSupport extends MockMvcRegressionSupport {
                     SET page.parent_id = dev_dir.id
                  WHERE page.route_key = 'dev.diagnostics'
                 """);
+        // 用例可能给引导页面设置过导航图标：清回默认，避免用例之间互相干扰
+        jdbcTemplate.update("""
+                UPDATE sys_menu SET icon_name = NULL
+                 WHERE route_key IN ('system.users', 'system.roles', 'system.menus',
+                                     'system.units', 'system.dictionaries', 'dev.diagnostics')
+                """);
     }
 
     private void deleteFixtureRows() {
@@ -196,11 +202,18 @@ abstract class MenuAdminRegressionSupport extends MockMvcRegressionSupport {
 
     protected String createMenuBody(String parentId, String type, String name, String routeKey,
                                     String permissionCode, Integer sortOrder) throws Exception {
+        return createMenuBody(parentId, type, name, routeKey, null, permissionCode, sortOrder);
+    }
+
+    protected String createMenuBody(String parentId, String type, String name, String routeKey,
+                                    String iconName, String permissionCode, Integer sortOrder)
+            throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("parentId", parentId);
         body.put("type", type);
         body.put("name", name);
         body.put("routeKey", routeKey);
+        body.put("iconName", iconName);
         body.put("permissionCode", permissionCode);
         body.put("description", "回归用节点");
         body.put("sortOrder", sortOrder);
@@ -208,13 +221,15 @@ abstract class MenuAdminRegressionSupport extends MockMvcRegressionSupport {
     }
 
     protected String updateMenuBody(int version, String parentId, String name, String routeKey,
-                                    int sortOrder, String status) throws Exception {
+                                    String iconName, String description, int sortOrder, String status)
+            throws Exception {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("version", version);
         body.put("parentId", parentId);
         body.put("name", name);
         body.put("routeKey", routeKey);
-        body.put("description", "回归用节点");
+        body.put("iconName", iconName);
+        body.put("description", description);
         body.put("sortOrder", sortOrder);
         body.put("status", status);
         return objectMapper.writeValueAsString(body);
@@ -227,15 +242,39 @@ abstract class MenuAdminRegressionSupport extends MockMvcRegressionSupport {
     protected MvcResult updateMenu(String id, int version, String parentId, String name,
                                    String routeKey, int sortOrder, String status,
                                    MockHttpSession session) throws Exception {
+        return updateMenu(id, version, parentId, name, routeKey, null, "回归用节点", sortOrder,
+                status, session);
+    }
+
+    protected MvcResult updateMenu(String id, int version, String parentId, String name,
+                                   String routeKey, String iconName, int sortOrder, String status,
+                                   MockHttpSession session) throws Exception {
+        return updateMenu(id, version, parentId, name, routeKey, iconName, "回归用节点", sortOrder,
+                status, session);
+    }
+
+    /** 编辑引导节点时把原说明回写，避免用例顺带改掉迁移写入的内容。 */
+    protected MvcResult updateMenu(String id, int version, String parentId, String name,
+                                   String routeKey, String iconName, String description,
+                                   int sortOrder, String status, MockHttpSession session)
+            throws Exception {
         return sendJson(put(MENUS_PATH + "/" + id).content(
-                updateMenuBody(version, parentId, name, routeKey, sortOrder, status)), session);
+                updateMenuBody(version, parentId, name, routeKey, iconName, description, sortOrder,
+                        status)), session);
     }
 
     protected MvcResult createMenu(String parentId, String type, String name, String routeKey,
                                    String permissionCode, Integer sortOrder, MockHttpSession session)
             throws Exception {
+        return createMenu(parentId, type, name, routeKey, null, permissionCode, sortOrder, session);
+    }
+
+    protected MvcResult createMenu(String parentId, String type, String name, String routeKey,
+                                   String iconName, String permissionCode, Integer sortOrder,
+                                   MockHttpSession session) throws Exception {
         return sendJson(post(MENUS_PATH).content(
-                createMenuBody(parentId, type, name, routeKey, permissionCode, sortOrder)), session);
+                createMenuBody(parentId, type, name, routeKey, iconName, permissionCode, sortOrder)),
+                session);
     }
 
     // ---- 库中真实状态与树查询 ----
@@ -277,6 +316,13 @@ abstract class MenuAdminRegressionSupport extends MockMvcRegressionSupport {
     protected boolean menuNamed(String name) {
         return jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_menu WHERE menu_name = ?", Long.class, name) > 0;
+    }
+
+    /** 库中真实图标名称：节点不存在时返回 null，便于断言「拒绝的写入没有落库」。 */
+    protected String iconNameInDatabase(String menuName) {
+        List<String> values = jdbcTemplate.queryForList(
+                "SELECT icon_name FROM sys_menu WHERE menu_name = ?", String.class, menuName);
+        return values.isEmpty() ? null : values.getFirst();
     }
 
     protected long grantsOf(String permissionCode) {

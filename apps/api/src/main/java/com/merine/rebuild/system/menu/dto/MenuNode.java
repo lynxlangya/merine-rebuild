@@ -18,6 +18,8 @@ public record MenuNode(
         String type,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
         @Schema(description = "前端已注册的路由 key；仅页面节点有值", nullable = true) String routeKey,
+        @Schema(description = "前端已注册的图标名称；仅目录与页面可设置，为空表示默认图标", nullable = true)
+        String iconName,
         @Schema(description = "权限码；目录为 null", nullable = true) String permissionCode,
         @Schema(description = "节点说明；未填写为 null", nullable = true) String description,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) int sortOrder,

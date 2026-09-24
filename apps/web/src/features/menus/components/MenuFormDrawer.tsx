@@ -1,4 +1,4 @@
-import type { RouteKeyOption } from '@merine/api-contract';
+import type { IconOption, RouteKeyOption } from '@merine/api-contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert, App, Button, Drawer, Form, Input, Select, Tag } from 'antd';
 import type { InputRef } from 'antd';
@@ -14,12 +14,14 @@ import {
 import { createMenu, updateMenu } from '../api';
 import { allowedChildTypes, permissionCodePrefix, type MenuRow, type MenuType } from '../model';
 import { menuKeys } from '../queries';
+import { IconPicker } from './IconPicker';
 import styles from './MenuFormDrawer.module.css';
 
 interface MenuFormValues {
   type: MenuType;
   name: string;
   routeKey?: string;
+  iconName?: string;
   permissionCode?: string;
   description?: string;
   sortOrder: number;
@@ -27,7 +29,15 @@ interface MenuFormValues {
 }
 
 /** 字段名与后端请求一致；校验失败时错误能落回对应输入框。 */
-const FORM_FIELDS = ['type', 'name', 'routeKey', 'permissionCode', 'description', 'sortOrder'];
+const FORM_FIELDS = [
+  'type',
+  'name',
+  'routeKey',
+  'iconName',
+  'permissionCode',
+  'description',
+  'sortOrder',
+];
 
 function toFieldErrors(fieldErrors: readonly { field: string; message: string }[]) {
   const fields: Partial<Record<string, string>> = {};
@@ -51,6 +61,7 @@ export function MenuFormDrawer({
   target,
   parent,
   routeKeys,
+  iconOptions,
   onClose,
   onClosed,
   onSaved,
@@ -62,6 +73,7 @@ export function MenuFormDrawer({
   /** 新增时的上级节点；null 表示顶层 */
   parent: MenuRow | null;
   routeKeys: RouteKeyOption[];
+  iconOptions: IconOption[];
   onClose: () => void;
   onClosed: () => void;
   onSaved: () => void;
@@ -86,12 +98,16 @@ export function MenuFormDrawer({
   const save = useMutation({
     mutationFn: (values: MenuFormValues) => {
       const parentId = editing ? (target.parentId ?? null) : (parent?.id ?? null);
+      // 图标只对目录与页面开放：页签/按钮强制为空，与后端校验一致
+      const iconName =
+        values.type === 'DIRECTORY' || values.type === 'PAGE' ? (values.iconName ?? null) : null;
       if (editing) {
         return updateMenu(target.id, {
           version: target.version,
           parentId,
           name: values.name.trim(),
           routeKey: values.type === 'PAGE' ? (values.routeKey ?? '') : null,
+          iconName,
           description: values.description?.trim() ?? '',
           sortOrder: values.sortOrder,
           status: values.status,
@@ -102,6 +118,7 @@ export function MenuFormDrawer({
         type: values.type,
         name: values.name.trim(),
         routeKey: values.type === 'PAGE' ? (values.routeKey ?? '') : null,
+        iconName,
         permissionCode: values.type === 'DIRECTORY' ? null : (values.permissionCode ?? '').trim(),
         description: values.description?.trim() ?? '',
         sortOrder: values.sortOrder,
@@ -127,6 +144,9 @@ export function MenuFormDrawer({
       if (error.code === 'MENU_ROUTE_KEY_UNKNOWN' || error.code === 'MENU_ROUTE_KEY_TAKEN') {
         mapped.fields.routeKey ??= error.message;
       }
+      if (error.code === 'MENU_ICON_UNKNOWN') {
+        mapped.fields.iconName ??= error.message;
+      }
       if (error.code === 'PERMISSION_CODE_TAKEN' || error.code === 'MENU_PERMISSION_TAKEN') {
         mapped.fields.permissionCode ??= error.message;
       }
@@ -148,6 +168,7 @@ export function MenuFormDrawer({
         type: target.type as MenuType,
         name: target.name,
         routeKey: target.routeKey ?? undefined,
+        iconName: target.iconName ?? undefined,
         permissionCode: target.permissionCode ?? undefined,
         description: target.description ?? '',
         sortOrder: target.sortOrder,
@@ -193,7 +214,8 @@ export function MenuFormDrawer({
                 : '新增顶层节点'}
           </div>
           <div className={styles.desc}>
-            节点类型与权限码创建后不可修改；页面只能绑定前端已注册的路由 key。
+            节点类型与权限码创建后不可修改；页面只能绑定前端已注册的路由
+            key，导航图标从注册清单选择。
           </div>
         </div>
       }
@@ -266,6 +288,15 @@ export function MenuFormDrawer({
                 label: `${route.label}（${route.key}）`,
               }))}
             />
+          </Form.Item>
+        )}
+        {(watchedType === 'DIRECTORY' || watchedType === 'PAGE') && (
+          <Form.Item
+            name="iconName"
+            label="导航图标"
+            extra="默认表示回落到路由注册表图标（目录为文件夹）；图标清单与前端注册表同步。"
+          >
+            <IconPicker options={iconOptions} />
           </Form.Item>
         )}
         {watchedType && watchedType !== 'DIRECTORY' && (
