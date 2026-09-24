@@ -21,6 +21,8 @@ public final class RegisteredRoutes {
             new Route("system.menus", "菜单管理"),
             new Route("system.units", "单位管理"),
             new Route("system.dictionaries", "字典管理"),
+            new Route("collaboration.tasks", "任务处置"),
+            new Route("collaboration.flows", "信息流转"),
             new Route("dev.diagnostics", "工程诊断"));
 
     private RegisteredRoutes() {

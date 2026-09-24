@@ -4,7 +4,9 @@ import {
   MenuOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
+  SwapOutlined,
   TeamOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { lazy, type ReactNode } from 'react';
 
@@ -32,6 +34,16 @@ const DictionaryListPage = lazy(() =>
 const DiagnosticsPage = lazy(() =>
   import('../features/diagnostics/DiagnosticsPage').then((module) => ({
     default: module.DiagnosticsPage,
+  })),
+);
+const TaskHandlingPage = lazy(() =>
+  import('../features/tasks/TaskHandlingPage').then((module) => ({
+    default: module.TaskHandlingPage,
+  })),
+);
+const InformationFlowPage = lazy(() =>
+  import('../features/flows/InformationFlowPage').then((module) => ({
+    default: module.InformationFlowPage,
   })),
 );
 
@@ -79,6 +91,18 @@ export const appRoutes: RegisteredRoute[] = [
     path: '/system/dictionaries',
     element: <DictionaryListPage />,
     icon: <BookOutlined />,
+  },
+  {
+    key: 'collaboration.tasks',
+    path: '/collaboration/tasks',
+    element: <TaskHandlingPage />,
+    icon: <ThunderboltOutlined />,
+  },
+  {
+    key: 'collaboration.flows',
+    path: '/collaboration/flows',
+    element: <InformationFlowPage />,
+    icon: <SwapOutlined />,
   },
   {
     key: 'dev.diagnostics',

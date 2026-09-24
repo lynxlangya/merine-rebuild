@@ -66,10 +66,14 @@ class MenuAdminRegressionTest extends MenuAdminRegressionSupport {
 
         MvcResult routeKeys = getWithSession(get(MENUS_PATH + "/route-keys"), admin);
         assertThat(routeKeys.getResponse().getStatus()).isEqualTo(200);
+        // 清单来自后端注册表，不在这里再抄一份：注册表加页面时测试不需要跟着改
         List<String> keys = jsonOf(bodyOf(routeKeys), "$.data[*].key");
         assertThat(keys)
-                .containsExactlyInAnyOrder("system.users", "system.roles", "system.menus",
-                        "system.units", "system.dictionaries", "dev.diagnostics");
+                .containsExactlyInAnyOrderElementsOf(RegisteredRoutes.all().stream()
+                        .map(RegisteredRoutes.Route::key)
+                        .toList());
+        List<String> labels = jsonOf(bodyOf(routeKeys), "$.data[*].label");
+        assertThat(labels).allSatisfy(label -> assertThat(label).as("页面名称不能为空").isNotBlank());
     }
 
     @Test
