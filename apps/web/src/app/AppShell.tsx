@@ -178,10 +178,12 @@ export function AppShell() {
     return map;
   }, [visibleItems]);
 
-  const crumbs = useMemo(
-    () => findBreadcrumb(myMenus.data ?? [], location.pathname, resolveRoute),
-    [myMenus.data, location.pathname, resolveRoute],
-  );
+  const crumbs = useMemo(() => {
+    const base = findBreadcrumb(myMenus.data ?? [], location.pathname, resolveRoute);
+    return base && /^\/collaboration\/tasks\/[^/]+$/.test(location.pathname)
+      ? [...base, '任务详情']
+      : base;
+  }, [myMenus.data, location.pathname, resolveRoute]);
 
   const handleSignOut = async () => {
     if (signingOut) return;

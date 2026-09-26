@@ -3,6 +3,7 @@ package com.merine.rebuild.system.user.account;
 import com.merine.rebuild.system.user.account.persistence.UserAccountMapper;
 import com.merine.rebuild.system.user.account.persistence.UserAccountRow;
 import com.merine.rebuild.system.user.support.AggregatedColumns;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,12 @@ public class UserAccountLookup {
                 AggregatedColumns.split(row.aggregatedRoleCodes()),
                 AggregatedColumns.split(row.aggregatedRoleNames()),
                 AggregatedColumns.split(row.aggregatedPermissionCodes()));
+    }
+
+    /** 仅供开发环境账号选择器展示，不读取密码哈希。 */
+    @Transactional(readOnly = true)
+    public List<DevLoginAccountOption> listEnabledForDevLogin() {
+        return mapper.listEnabledForDevLogin();
     }
 
     @Transactional(readOnly = true)

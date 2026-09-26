@@ -36,7 +36,7 @@ const DiagnosticsPage = lazy(() =>
     default: module.DiagnosticsPage,
   })),
 );
-const TaskHandlingPage = lazy(() =>
+export const TaskHandlingPage = lazy(() =>
   import('../features/tasks/TaskHandlingPage').then((module) => ({
     default: module.TaskHandlingPage,
   })),

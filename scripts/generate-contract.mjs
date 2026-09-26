@@ -1,23 +1,16 @@
 /**
  * 从当前运行的后端导出 OpenAPI 快照与 TypeScript 类型。
  *
- * 接口文档默认要求登录（merine.security.public-api-docs=false），因此这里先建立会话：
- *   API_LOGIN_NAME=... API_PASSWORD=... docker compose ... exec -T web pnpm contract:generate
- * 账号口令只经环境变量传入，不写在脚本与仓库里；缺失时直接失败，不静默跳过。
+ * 接口文档默认要求登录（merine.security.public-api-docs=false）。本地开发使用
+ * dev profile 的账号选择入口；交付环境使用 API_LOGIN_NAME / API_PASSWORD 建立会话。
+ * 口令只经环境变量传入，不写在脚本与仓库里。
  */
 import { writeFile } from 'node:fs/promises';
 import openapiTS, { astToString } from 'openapi-typescript';
 
 const base = process.env.API_BASE_URL ?? 'http://127.0.0.1:9002';
-const loginName = process.env.API_LOGIN_NAME;
+const loginName = process.env.API_LOGIN_NAME ?? 'demo.hq.admin';
 const password = process.env.API_PASSWORD;
-
-if (!loginName || !password) {
-  console.error(
-    '缺少 API_LOGIN_NAME / API_PASSWORD。先运行 ./scripts/dev.sh seed 初始化演示账号，再带上这两个变量运行。',
-  );
-  process.exit(1);
-}
 
 /** 最小 Cookie 罐：fetch 不保存 Cookie，而会话与 CSRF 令牌都要跨请求保持。 */
 const jar = new Map();
@@ -47,13 +40,17 @@ async function call(path, options = {}) {
 }
 
 await call('/api/auth/csrf');
-const login = await call('/api/auth/session', {
+const login = await call(password ? '/api/auth/session' : '/api/auth/dev/session', {
   method: 'POST',
   headers: { 'X-XSRF-TOKEN': jar.get('XSRF-TOKEN') ?? '' },
-  body: JSON.stringify({ loginName, password }),
+  body: JSON.stringify(password ? { loginName, password } : { loginName }),
 });
 if (!login.ok) {
-  console.error(`登录失败（${login.status}），无法导出接口文档。请确认账号口令与权限。`);
+  console.error(
+    password
+      ? `登录失败（${login.status}），无法导出接口文档。请确认账号口令与权限。`
+      : `本地免密登录失败（${login.status}），无法导出接口文档。请确认 dev API 已启动；非 dev 环境请提供 API_LOGIN_NAME / API_PASSWORD。`,
+  );
   process.exit(1);
 }
 

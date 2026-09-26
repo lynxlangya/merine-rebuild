@@ -25,6 +25,8 @@ public class MenuBootstrap {
     private static final List<Entry> ENTRIES = List.of(
             new Entry("dir:system", null, Type.DIRECTORY, "系统管理", null, null, 10,
                     "账号、角色、菜单与单位维护"),
+            new Entry("dir:collaboration", null, Type.DIRECTORY, "业务协同", null, null, 30,
+                    "任务处置与业务协同"),
             new Entry("dir:dev", null, Type.DIRECTORY, "开发工具", null, null, 90,
                     "本地联调与诊断入口"),
 
@@ -40,6 +42,8 @@ public class MenuBootstrap {
                     "system.dictionaries", PermissionCodes.DICT_READ, 50, "字典类型与字典项维护"),
             new Entry("page:diagnostics", "dir:dev", Type.PAGE, "工程诊断", "dev.diagnostics",
                     PermissionCodes.DIAGNOSTICS_READ, 10, "页面 → API → MySQL 的最小链路"),
+            new Entry("page:tasks", "dir:collaboration", Type.PAGE, "任务处置",
+                    "collaboration.tasks", PermissionCodes.TASK_READ, 10, "任务受理、下发与结果交付"),
 
             new Entry("btn:user:create", "page:users", Type.BUTTON, "新建用户",
                     null, PermissionCodes.USER_CREATE, 10, "新建账号并设置初始密码"),
@@ -76,7 +80,25 @@ public class MenuBootstrap {
             new Entry("btn:dict:update", "page:dictionaries", Type.BUTTON, "编辑字典",
                     null, PermissionCodes.DICT_UPDATE, 20, "修改字典名称、说明、排序与启停状态"),
             new Entry("btn:diagnostics:write", "page:diagnostics", Type.BUTTON, "写入探针记录",
-                    null, PermissionCodes.DIAGNOSTICS_WRITE, 10, "写入探针记录"));
+                    null, PermissionCodes.DIAGNOSTICS_WRITE, 10, "写入探针记录"),
+            new Entry("btn:task:create", "page:tasks", Type.BUTTON, "新建任务",
+                    null, PermissionCodes.TASK_CREATE, 10, "向直属下级创建并下发任务"),
+            new Entry("btn:task:accept", "page:tasks", Type.BUTTON, "承接任务",
+                    null, PermissionCodes.TASK_ACCEPT, 20, "承接本单位当前待办分支"),
+            new Entry("btn:task:progress", "page:tasks", Type.BUTTON, "追加进展",
+                    null, PermissionCodes.TASK_PROGRESS, 30, "追加本单位办理进展"),
+            new Entry("btn:task:dispatch", "page:tasks", Type.BUTTON, "向下下发",
+                    null, PermissionCodes.TASK_DISPATCH, 40, "向直属下级新增独立责任分支"),
+            new Entry("btn:task:return", "page:tasks", Type.BUTTON, "退回任务",
+                    null, PermissionCodes.TASK_RETURN, 50, "承接前说明原因退回原发送单位"),
+            new Entry("btn:task:result", "page:tasks", Type.BUTTON, "提交结果",
+                    null, PermissionCodes.TASK_SUBMIT_RESULT, 60, "提交本单位分支正式处置结果"),
+            new Entry("btn:task:transfer-request", "page:tasks", Type.BUTTON, "申请支队交接",
+                    null, PermissionCodes.TASK_TRANSFER_REQUEST, 70, "支队向另一支队发起责任交接申请"),
+            new Entry("btn:task:transfer-respond", "page:tasks", Type.BUTTON, "回应支队交接",
+                    null, PermissionCodes.TASK_TRANSFER_RESPOND, 80, "目标支队回应交接申请"),
+            new Entry("btn:task:transfer-decide", "page:tasks", Type.BUTTON, "决定支队交接",
+                    null, PermissionCodes.TASK_TRANSFER_DECIDE, 90, "总队批准或拒绝支队交接并确定期限"));
 
     public List<Entry> entries() {
         return ENTRIES;

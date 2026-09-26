@@ -134,6 +134,14 @@
   font-size: var(--fs-12);
 }
 
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
 .foot {
   color: var(--muted);
   font-size: var(--fs-12);

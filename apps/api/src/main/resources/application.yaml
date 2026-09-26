@@ -70,6 +70,8 @@ springdoc:
 
 merine:
   security:
+    # 免密选择账号须同时启用 dev profile 和此开关；默认环境不注册该入口。
+    dev-login-enabled: false
     # 接口文档默认要求登录（安全默认值）：OpenAPI 全量文档与 Swagger UI 会暴露
     # 全部接口形状，默认公开等于给未认证访问者一份完整地图。
     # 本地需要匿名查看文档时，显式改成 true（登录后访问同样可用）。

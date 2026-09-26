@@ -5,9 +5,69 @@
   padding: 0 var(--sp-4) var(--sp-4);
 }
 
-.placeholder {
+.toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.toolbar :global(.ant-tabs) {
+  flex: 1;
+  min-width: 0;
+}
+.branch {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-4);
-  padding: var(--sp-6);
+  padding: var(--sp-4);
+}
+.table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+  overflow: hidden;
+}
+.taskCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.titleLink {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+}
+.titleLink:hover,
+.titleLink:focus-visible {
+  color: var(--accent);
+}
+.taskNo {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sectionTitle {
+  margin-top: var(--sp-5) !important;
+}
+.branch {
+  margin-bottom: var(--sp-3);
+}
+.transfer {
+  border-left: 3px solid var(--border);
+  padding: var(--sp-2);
+  margin: var(--sp-3) 0;
+}
+@media (max-width: 700px) {
+  .toolbar {
+    flex-direction: column-reverse;
+  }
+  .toolbar :global(.ant-tabs) {
+    width: 100%;
+  }
 }

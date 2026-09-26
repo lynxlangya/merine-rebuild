@@ -8,6 +8,7 @@ export const DICTIONARY_CODES = {
   status: 'common.status',
   menuType: 'system.menu.type',
   unitLevel: 'system.unit.level',
+  taskResultOutcome: 'task.result.outcome',
 } as const;
 
 export type DictTone = 'neutral' | 'warning';

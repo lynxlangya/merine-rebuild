@@ -43,6 +43,23 @@
           JOIN sys_unit un ON un.id = u.unit_id
          WHERE u.login_name = CONVERT(#{loginName} USING ascii) COLLATE ascii_bin
     </select>
+
+    <!-- 开发环境账号选择器：只返回可登录账号的展示字段，不读取密码哈希。 -->
+    <select id="listEnabledForDevLogin" resultType="com.merine.rebuild.system.user.account.DevLoginAccountOption">
+        SELECT u.login_name     AS loginName,
+               u.display_name   AS displayName,
+               un.unit_name     AS unitName,
+               un.unit_level    AS unitLevel,
+               parent.unit_name AS parentUnitName
+          FROM sys_user u
+          JOIN sys_unit un ON un.id = u.unit_id
+          LEFT JOIN sys_unit parent ON parent.id = un.parent_id
+         WHERE u.status = 'ENABLED'
+           AND un.status = 'ENABLED'
+         ORDER BY un.unit_level, un.unit_code,
+                  CASE WHEN u.login_name = 'demo.hq.admin' THEN 0 ELSE 1 END,
+                  u.login_name
+    </select>
     <!--
       为什么要 CONVERT：login_name 是 ascii_bin，而 JDBC 参数是 utf8mb4。
       直接用参数比较时，若参数含非 ASCII 字符，MySQL 会报

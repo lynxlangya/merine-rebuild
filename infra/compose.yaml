@@ -56,6 +56,8 @@ services:
   api:
     <<: *java
     environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MERINE_SECURITY_DEV_LOGIN_ENABLED: 'true'
       DB_URL: *db-url
       DB_APP_USER: merine_app
       DB_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}

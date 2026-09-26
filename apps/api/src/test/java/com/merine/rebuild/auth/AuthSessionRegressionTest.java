@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
@@ -23,6 +25,15 @@ import org.springframework.test.web.servlet.MvcResult;
  */
 @DisplayName("认证与会话回归")
 class AuthSessionRegressionTest extends AuthSessionRegressionSupport {
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @Test
+    void passwordlessLoginIsAbsentWithoutDevProfile() throws Exception {
+        assertThat(applicationContext.getBeansOfType(DevLoginController.class)).isEmpty();
+        assertUnauthenticatedJson(mockMvc.perform(get("/api/auth/dev/accounts")).andReturn());
+    }
 
     @Test
     void apiDocsAndTheirAssetsRemainProtectedByDefault() throws Exception {

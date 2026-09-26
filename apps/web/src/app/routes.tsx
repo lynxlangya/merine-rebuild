@@ -4,7 +4,7 @@ import { RequireAuth } from '../features/auth/RequireAuth';
 import { HomePage } from '../features/home/HomePage';
 import { AppShell } from './AppShell';
 import { NotFoundPage } from './NotFoundPage';
-import { appRoutes } from './routeRegistry';
+import { appRoutes, TaskHandlingPage } from './routeRegistry';
 
 /** 应用路由表由前端注册表拼装：菜单只决定可见性，页面本身仍由这里注册。 */
 export const router = createBrowserRouter([
@@ -20,6 +20,7 @@ export const router = createBrowserRouter([
             path: route.path.replace(/^\//, ''),
             element: route.element,
           })),
+          { path: 'collaboration/tasks/:taskId', element: <TaskHandlingPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

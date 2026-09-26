@@ -43,6 +43,17 @@ public final class PermissionCodes {
     public static final String DICT_CREATE = "system:dict:create";
     public static final String DICT_UPDATE = "system:dict:update";
 
+    public static final String TASK_READ = "task:handling:read";
+    public static final String TASK_CREATE = "task:handling:create";
+    public static final String TASK_ACCEPT = "task:handling:accept";
+    public static final String TASK_PROGRESS = "task:handling:progress";
+    public static final String TASK_DISPATCH = "task:handling:dispatch";
+    public static final String TASK_RETURN = "task:handling:return";
+    public static final String TASK_SUBMIT_RESULT = "task:handling:submit-result";
+    public static final String TASK_TRANSFER_REQUEST = "task:handling:transfer-request";
+    public static final String TASK_TRANSFER_RESPOND = "task:handling:transfer-respond";
+    public static final String TASK_TRANSFER_DECIDE = "task:handling:transfer-decide";
+
     /**
      * 管理底线：一个账号要么持有内置管理员角色，要么**同时**持有这两个权限，
      * 才算「还能把系统管理恢复回来」——改用户角色与改角色权限是恢复入口，
@@ -61,6 +72,9 @@ public final class PermissionCodes {
                 MENU_READ, MENU_CREATE, MENU_UPDATE, MENU_DELETE, MENU_RESTORE,
                 UNIT_READ, UNIT_CREATE, UNIT_UPDATE, UNIT_DELETE,
                 DIAGNOSTICS_READ, DIAGNOSTICS_WRITE,
-                DICT_READ, DICT_CREATE, DICT_UPDATE);
+                DICT_READ, DICT_CREATE, DICT_UPDATE,
+                TASK_READ, TASK_CREATE, TASK_ACCEPT, TASK_PROGRESS, TASK_DISPATCH,
+                TASK_RETURN, TASK_SUBMIT_RESULT, TASK_TRANSFER_REQUEST,
+                TASK_TRANSFER_RESPOND, TASK_TRANSFER_DECIDE);
     }
 }

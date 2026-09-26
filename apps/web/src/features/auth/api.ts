@@ -1,4 +1,9 @@
-import type { AuthUser, LoginRequest } from '@merine/api-contract';
+import type {
+  AuthUser,
+  DevLoginAccountOption,
+  DevLoginRequest,
+  LoginRequest,
+} from '@merine/api-contract';
 import { ApiError, request } from '../../shared/http.ts';
 
 export type { AuthUser };
@@ -16,6 +21,18 @@ export function fetchSession(signal?: AbortSignal) {
 
 export function login(input: LoginInput) {
   return request<AuthUser>('/api/auth/session', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+/** 仅开发构建使用；账号清单与免密入口都由后端 dev profile 提供。 */
+export function fetchDevLoginAccounts(signal?: AbortSignal) {
+  return request<DevLoginAccountOption[]>('/api/auth/dev/accounts', { signal });
+}
+
+export function loginForDevelopment(input: DevLoginRequest) {
+  return request<AuthUser>('/api/auth/dev/session', {
     method: 'POST',
     body: JSON.stringify(input),
   });

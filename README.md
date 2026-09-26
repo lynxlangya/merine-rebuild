@@ -40,7 +40,9 @@ SEED_ROLE_NAME='系统管理员' SEED_DISPLAY_NAME='陈知远' ./scripts/dev.sh 
 | OpenAPI（需登录）    | http://127.0.0.1:9002/api/openapi               |
 | MySQL 宿主端口       | `127.0.0.1:3307`                                |
 
-除登录所需的 `/api/auth/csrf`、`POST /api/auth/session` 与两个健康探针外，所有接口都要求已登录，**包括接口文档**（`merine.security.public-api-docs` 默认 `false`）。未登录访问受保护接口返回 JSON 格式的 401，不会重定向到页面。本地想匿名看文档，把该属性显式改成 `true`。
+开发编排同时启用 `dev` profile 与本地免密登录开关：登录页从本地数据库列出可用账号，选择后即可建立会话，无需输入密码。停用账号不会出现在下拉框；其他环境默认不注册此入口，交付构建仍使用账号密码登录。开发环境的账号列表与选择登录接口分别为 `GET /api/auth/dev/accounts`、`POST /api/auth/dev/session`，后者仍校验 CSRF。
+
+除登录所需的 `/api/auth/csrf`、`POST /api/auth/session`、开发环境限定的上述两个接口与两个健康探针外，所有接口都要求已登录，**包括接口文档**（`merine.security.public-api-docs` 默认 `false`）。未登录访问受保护接口返回 JSON 格式的 401，不会重定向到页面。本地想匿名看文档，把该属性显式改成 `true`。
 
 应用支持亮色 / 暗黑切换，偏好存在本地，首屏不闪主题；1440×900 与 1366×768 为基准桌面尺寸，窄屏自动折叠导航。
 
@@ -107,19 +109,18 @@ docker compose --project-name merine-rebuild-dev --env-file .env -f infra/compos
 ./scripts/dev.sh check
 ./scripts/dev.sh build
 ./scripts/dev.sh test-db
-# 接口文档与冒烟都要先登录；账号密码只经环境变量传入
+# 本地开发的契约导出使用 dev 账号选择入口，无需输入账号密码
+docker compose --env-file .env -f infra/compose.yaml exec -T web pnpm contract:generate
+# 冒烟仍验证常规密码登录；密码只经环境变量传入
 docker compose --env-file .env -f infra/compose.yaml exec -T \
-  -e API_LOGIN_NAME=admin -e API_PASSWORD='<seed 时设置的密码>' \
-  web pnpm contract:generate
-docker compose --env-file .env -f infra/compose.yaml exec -T \
-  -e API_LOGIN_NAME=admin -e API_PASSWORD='<seed 时设置的密码>' \
+  -e API_LOGIN_NAME=demo.hq.admin -e API_PASSWORD='<本地演示账号密码>' \
   web pnpm smoke
 ```
 
 - `check`：建好测试库并跑 TypeScript、Node 内置前端回归测试、格式检查与 Maven 验证（含认证、用户管理与单位管理回归测试）。
 - `build`：前端生产构建与后端 jar 打包（`project.build.outputTimestamp` 固定产物时间戳，同一份源码重复构建哈希一致）。交付镜像见下面的「交付形态演练」。
 - `test-db`：准备隔离的测试库 `merine_rebuild_test` 并应用同一套迁移；重复执行是幂等的，不动开发库。
-- `contract:generate`：从当前源码启动的本地后端导出 OpenAPI，更新 `packages/api-contract/openapi.json` 与 `src/schema.d.ts`。页面消费生成类型，生成文件不手改。接口文档默认需要登录；当前文档访问不额外要求系统管理角色。
+- `contract:generate`：从当前源码启动的本地后端导出 OpenAPI，更新 `packages/api-contract/openapi.json` 与 `src/schema.d.ts`。页面消费生成类型，生成文件不手改。本地开发通过 dev 入口建立会话；非 dev 环境需提供 `API_LOGIN_NAME` / `API_PASSWORD`。接口文档访问不额外要求系统管理角色。
 - `smoke`：经 Vite 的 `/api` 代理走一遍「CSRF → 登录（含错误密码与未登录）→ MySQL 读写 → 参数校验 → 退出后会话失效」；每次追加一条 `SMOKE-` 合成记录，不清理或重置已有数据。密码经环境变量传入，不写在脚本里。
 
 `smoke` 在容器内默认访问同容器的 Vite `5173`。`contract:generate` 通过容器服务名访问 API。初次下载依赖较慢时可查看对应服务日志；状态未知时先查看 `status`，不删卷重试。

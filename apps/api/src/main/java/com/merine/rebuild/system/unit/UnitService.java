@@ -2,6 +2,7 @@ package com.merine.rebuild.system.unit;
 
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.system.user.usage.UserUnitUsageLookup;
+import com.merine.rebuild.task.TaskUnitUsageLookup;
 import com.merine.rebuild.system.unit.dto.UnitRequests;
 import com.merine.rebuild.system.unit.dto.UnitTreeNode;
 import com.merine.rebuild.system.unit.dto.UnitView;
@@ -32,10 +33,12 @@ public class UnitService {
 
     private final UnitMapper mapper;
     private final UserUnitUsageLookup userUsage;
+    private final TaskUnitUsageLookup taskUsage;
 
-    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage) {
+    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage, TaskUnitUsageLookup taskUsage) {
         this.mapper = mapper;
         this.userUsage = userUsage;
+        this.taskUsage = taskUsage;
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +85,9 @@ public class UnitService {
         String areaCode = request.areaCode().strip();
 
         ParentChoice parent = resolveParent(rows, parentCode, current.id());
+        if (!Objects.equals(parent.id(), current.parentId()) && taskUsage.hasReferences(current.id())) {
+            throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_TASKS", "该单位已有任务记录，不能调整上级");
+        }
         if (parent.level() + maxRelativeDepth(rows, current.id()) > MAX_LEVEL) {
             throw levelLimit("调整上级后会产生第四级单位");
         }
@@ -115,6 +121,9 @@ public class UnitService {
         if (userCount > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_USERS",
                     "该单位还有用户，不能删除");
+        }
+        if (taskUsage.hasReferences(target.id())) {
+            throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_TASKS", "该单位已有任务记录，不能删除");
         }
 
         // 无外键兜底：并发安全来自上面的行锁与写用户侧的引用锁互斥，

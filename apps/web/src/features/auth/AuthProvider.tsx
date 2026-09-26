@@ -10,7 +10,14 @@ import {
   type ReactNode,
 } from 'react';
 import { ApiError, isAbortError, onUnauthorized } from '../../shared/http';
-import { fetchSession, login, logout, type AuthUser, type LoginInput } from './api';
+import {
+  fetchSession,
+  login,
+  loginForDevelopment,
+  logout,
+  type AuthUser,
+  type LoginInput,
+} from './api';
 
 export type AuthState =
   | { status: 'restoring' }
@@ -21,6 +28,7 @@ export type AuthState =
 interface AuthContextValue {
   state: AuthState;
   signIn: (input: LoginInput) => Promise<AuthUser>;
+  signInDev: (loginName: string, rememberMe: boolean) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   retryRestore: () => void;
 }
@@ -68,15 +76,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
-  const signIn = useCallback(
-    async (input: LoginInput) => {
-      const user = await login(input);
+  const acceptLogin = useCallback(
+    (user: AuthUser) => {
       queryClient.clear();
       statusRef.current = 'authenticated';
       setState({ status: 'authenticated', user });
       return user;
     },
     [queryClient],
+  );
+
+  const signIn = useCallback(
+    async (input: LoginInput) => acceptLogin(await login(input)),
+    [acceptLogin],
+  );
+
+  const signInDev = useCallback(
+    async (loginName: string, rememberMe: boolean) =>
+      acceptLogin(await loginForDevelopment({ loginName, rememberMe })),
+    [acceptLogin],
   );
 
   const signOut = useCallback(async () => {
@@ -88,8 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ state, signIn, signOut, retryRestore: () => setAttempt((n) => n + 1) }),
-    [state, signIn, signOut],
+    () => ({ state, signIn, signInDev, signOut, retryRestore: () => setAttempt((n) => n + 1) }),
+    [state, signIn, signInDev, signOut],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.task.persistence.TaskMapper">
+    <sql id="unitCols">u.id AS id, u.unit_code AS code, u.unit_name AS name,
+        u.parent_id AS parentId, u.unit_level AS level, u.status AS status</sql>
+    <sql id="orderCols">o.id AS id, o.task_no AS taskNo, o.issuer_unit_id AS issuerUnitId,
+        o.issuer_unit_name_snapshot AS issuerUnitNameSnapshot, o.issuer_user_id AS issuerUserId,
+        o.title AS title, o.instruction AS instruction, o.expected_result AS expectedResult,
+        o.initial_due_at AS initialDueAt, o.current_due_at AS currentDueAt,
+        o.status AS status, o.completed_at AS completedAt, o.version AS version,
+        o.source_result_id AS sourceResultId, o.created_at AS createdAt</sql>
+    <sql id="branchCols">b.id AS id, b.task_id AS taskId, b.parent_branch_id AS parentBranchId,
+        b.origin_from_unit_id AS originFromUnitId, b.origin_to_unit_id AS originToUnitId,
+        b.instruction_snapshot AS instructionSnapshot, b.expected_result_snapshot AS expectedResultSnapshot,
+        b.current_assignment_id AS currentAssignmentId, b.status AS status,
+        b.completed_at AS completedAt, b.version AS version, b.created_at AS createdAt</sql>
+    <sql id="assignmentCols">a.id AS id, a.branch_id AS branchId,
+        a.previous_assignment_id AS previousAssignmentId,
+        a.from_unit_id AS fromUnitId, a.from_unit_name_snapshot AS fromUnitNameSnapshot,
+        a.to_unit_id AS toUnitId, a.to_unit_name_snapshot AS toUnitNameSnapshot,
+        a.source_action AS sourceAction, a.due_at AS dueAt, a.status AS status,
+        a.accepted_by_user_id AS acceptedByUserId, a.accepted_at AS acceptedAt,
+        a.ended_by_user_id AS endedByUserId, a.ended_at AS endedAt,
+        a.end_reason AS endReason, a.version AS version, a.created_at AS createdAt</sql>
+    <sql id="transferCols">t.id AS id, t.branch_id AS branchId, t.from_assignment_id AS fromAssignmentId,
+        t.target_unit_id AS targetUnitId, t.reason AS reason, t.work_done AS workDone,
+        t.evidence_summary AS evidenceSummary, t.remaining_work AS remainingWork,
+        t.requested_by_user_id AS requestedByUserId, t.requested_at AS requestedAt,
+        t.status AS status, t.target_responded_by_user_id AS targetRespondedByUserId,
+        t.target_responded_at AS targetRespondedAt, t.target_response_reason AS targetResponseReason,
+        t.target_required_duration_minutes AS targetRequiredDurationMinutes,
+        t.approved_due_at AS approvedDueAt, t.issuer_decided_by_user_id AS issuerDecidedByUserId,
+        t.issuer_decided_at AS issuerDecidedAt, t.issuer_decision_reason AS issuerDecisionReason,
+        t.version AS version</sql>
+    <sql id="resultCols">r.id AS id, r.branch_id AS branchId, r.assignment_id AS assignmentId,
+        r.outcome_code AS outcomeCode, r.handling_detail AS handlingDetail,
+        r.conclusion AS conclusion, r.suggested_unit_id AS suggestedUnitId,
+        r.submitted_by_user_id AS submittedByUserId, r.submitted_at AS submittedAt</sql>
+
+    <select id="actorUnit" resultType="com.merine.rebuild.task.persistence.TaskMapper$UnitRow">
+        SELECT <include refid="unitCols"/> FROM sys_user su JOIN sys_unit u ON u.id = su.unit_id
+         WHERE su.id = #{userId} AND su.status = 'ENABLED'
+    </select>
+    <select id="unitByCode" resultType="com.merine.rebuild.task.persistence.TaskMapper$UnitRow">
+        SELECT <include refid="unitCols"/> FROM sys_unit u
+         WHERE u.unit_code = CONVERT(#{code} USING ascii) COLLATE ascii_bin
+    </select>
+    <select id="lockUnitById" resultType="com.merine.rebuild.task.persistence.TaskMapper$UnitRow">
+        SELECT <include refid="unitCols"/> FROM sys_unit u WHERE u.id = #{id} FOR SHARE
+    </select>
+    <select id="enabledUnits" resultType="com.merine.rebuild.task.persistence.TaskMapper$UnitRow">
+        SELECT <include refid="unitCols"/> FROM sys_unit u WHERE u.status = 'ENABLED'
+         ORDER BY u.unit_level, u.unit_code
+    </select>
+    <select id="allUnits" resultType="com.merine.rebuild.task.persistence.TaskMapper$UnitRow">
+        SELECT <include refid="unitCols"/> FROM sys_unit u ORDER BY u.id
+    </select>
+    <select id="order" resultType="com.merine.rebuild.task.persistence.TaskMapper$OrderRow">
+        SELECT <include refid="orderCols"/> FROM task_order o WHERE o.id = #{id}
+    </select>
+    <select id="lockOrder" resultType="com.merine.rebuild.task.persistence.TaskMapper$OrderRow">
+        SELECT <include refid="orderCols"/> FROM task_order o WHERE o.id = #{id} FOR UPDATE
+    </select>
+    <select id="branch" resultType="com.merine.rebuild.task.persistence.TaskMapper$BranchRow">
+        SELECT <include refid="branchCols"/> FROM task_branch b WHERE b.id = #{id}
+    </select>
+    <select id="lockBranch" resultType="com.merine.rebuild.task.persistence.TaskMapper$BranchRow">
+        SELECT <include refid="branchCols"/> FROM task_branch b WHERE b.id = #{id} FOR UPDATE
+    </select>
+    <select id="assignment" resultType="com.merine.rebuild.task.persistence.TaskMapper$AssignmentRow">
+        SELECT <include refid="assignmentCols"/> FROM task_assignment a WHERE a.id = #{id}
+    </select>
+    <select id="lockAssignment" resultType="com.merine.rebuild.task.persistence.TaskMapper$AssignmentRow">
+        SELECT <include refid="assignmentCols"/> FROM task_assignment a WHERE a.id = #{id} FOR UPDATE
+    </select>
+    <select id="transfer" resultType="com.merine.rebuild.task.persistence.TaskMapper$TransferRow">
+        SELECT <include refid="transferCols"/> FROM task_transfer_request t WHERE t.id = #{id}
+    </select>
+    <select id="lockTransfer" resultType="com.merine.rebuild.task.persistence.TaskMapper$TransferRow">
+        SELECT <include refid="transferCols"/> FROM task_transfer_request t WHERE t.id = #{id} FOR UPDATE
+    </select>
+    <select id="result" resultType="com.merine.rebuild.task.persistence.TaskMapper$ResultRow">
+        SELECT <include refid="resultCols"/> FROM task_result r WHERE r.branch_id = #{branchId}
+    </select>
+    <select id="resultById" resultType="com.merine.rebuild.task.persistence.TaskMapper$ResultRow">
+        SELECT <include refid="resultCols"/> FROM task_result r WHERE r.id = #{id}
+    </select>
+    <select id="branches" resultType="com.merine.rebuild.task.persistence.TaskMapper$BranchRow">
+        SELECT <include refid="branchCols"/> FROM task_branch b
+         WHERE b.task_id = #{taskId} ORDER BY b.id
+    </select>
+    <select id="assignments" resultType="com.merine.rebuild.task.persistence.TaskMapper$AssignmentRow">
+        SELECT <include refid="assignmentCols"/> FROM task_assignment a
+          JOIN task_branch b ON b.id = a.branch_id
+         WHERE b.task_id = #{taskId} ORDER BY a.id
+    </select>
+    <select id="transfers" resultType="com.merine.rebuild.task.persistence.TaskMapper$TransferRow">
+        SELECT <include refid="transferCols"/> FROM task_transfer_request t
+          JOIN task_branch b ON b.id = t.branch_id
+         WHERE b.task_id = #{taskId} ORDER BY t.id
+    </select>
+    <select id="transfersByBranch" resultType="com.merine.rebuild.task.persistence.TaskMapper$TransferRow">
+        SELECT <include refid="transferCols"/> FROM task_transfer_request t
+         WHERE t.branch_id = #{branchId} ORDER BY t.id
+    </select>
+    <select id="results" resultType="com.merine.rebuild.task.persistence.TaskMapper$ResultRow">
+        SELECT <include refid="resultCols"/> FROM task_result r
+          JOIN task_branch b ON b.id = r.branch_id
+         WHERE b.task_id = #{taskId} ORDER BY r.id
+    </select>
+    <select id="actions" resultType="com.merine.rebuild.task.persistence.TaskMapper$ActionRow">
+        SELECT h.id AS id, h.task_id AS taskId, h.branch_id AS branchId,
+               h.assignment_id AS assignmentId, h.transfer_request_id AS transferRequestId,
+               h.action_code AS actionCode, h.actor_unit_id AS actorUnitId,
+               h.actor_user_id AS actorUserId, h.target_unit_id AS targetUnitId,
+               h.old_due_at AS oldDueAt, h.new_due_at AS newDueAt,
+               h.note AS note, h.occurred_at AS occurredAt
+          FROM task_action h WHERE h.task_id = #{taskId}
+         ORDER BY h.occurred_at, h.id
+    </select>
+
+    <sql id="listFilter">
+        <choose>
+            <when test="tab == 'inbox'">
+                EXISTS (SELECT 1 FROM task_branch b JOIN task_assignment a ON a.id = b.current_assignment_id
+                         WHERE b.task_id = o.id AND a.to_unit_id = #{unitId} AND a.status = 'PENDING_ACCEPT')
+            </when>
+            <when test="tab == 'doing'">
+                EXISTS (SELECT 1 FROM task_branch b JOIN task_assignment a ON a.id = b.current_assignment_id
+                         WHERE b.task_id = o.id AND a.to_unit_id = #{unitId} AND a.status = 'IN_PROGRESS')
+            </when>
+            <when test="tab == 'issued'">o.issuer_unit_id = #{unitId}</when>
+            <when test="tab == 'transfers'">
+                EXISTS (SELECT 1 FROM task_branch b JOIN task_transfer_request t ON t.branch_id = b.id
+                         WHERE b.task_id = o.id AND t.target_unit_id = #{unitId} AND t.status = 'AWAITING_TARGET')
+            </when>
+            <when test="tab == 'decisions'">
+                o.issuer_unit_id = #{unitId} AND EXISTS
+                    (SELECT 1 FROM task_branch b JOIN task_transfer_request t ON t.branch_id = b.id
+                      WHERE b.task_id = o.id AND t.status = 'AWAITING_ISSUER')
+            </when>
+            <when test="tab == 'completed'">
+                o.status = 'COMPLETED' AND
+                (o.issuer_unit_id = #{unitId}
+                 OR EXISTS (SELECT 1 FROM task_branch b JOIN task_assignment a ON a.branch_id = b.id
+                             WHERE b.task_id = o.id AND a.to_unit_id = #{unitId}))
+            </when>
+            <otherwise>
+                (o.issuer_unit_id = #{unitId}
+                 OR EXISTS (SELECT 1 FROM task_branch b JOIN task_assignment a ON a.branch_id = b.id
+                             WHERE b.task_id = o.id AND a.to_unit_id = #{unitId})
+                 OR EXISTS (SELECT 1 FROM task_branch b JOIN task_transfer_request t ON t.branch_id = b.id
+                             WHERE b.task_id = o.id AND t.target_unit_id = #{unitId}
+                               AND t.status IN ('AWAITING_TARGET', 'AWAITING_ISSUER')))
+            </otherwise>
+        </choose>
+    </sql>
+    <select id="listCount" resultType="long">
+        SELECT COUNT(*) FROM task_order o WHERE <include refid="listFilter"/>
+    </select>
+    <select id="list" resultType="com.merine.rebuild.task.persistence.TaskMapper$ListRow">
+        SELECT o.id AS id, o.task_no AS taskNo, o.title AS title, o.status AS status,
+               o.initial_due_at AS initialDueAt, o.current_due_at AS currentDueAt,
+               o.issuer_unit_name_snapshot AS issuerUnitNameSnapshot,
+               o.created_at AS createdAt,
+               (SELECT COUNT(*) FROM task_branch b WHERE b.task_id = o.id AND b.status = 'OPEN'
+                   AND (o.issuer_unit_id = #{unitId} OR EXISTS
+                       (SELECT 1 FROM task_assignment own WHERE own.branch_id = b.id AND own.to_unit_id = #{unitId}))) AS openBranchCount,
+               (SELECT GROUP_CONCAT(DISTINCT a.to_unit_name_snapshot ORDER BY a.to_unit_name_snapshot SEPARATOR '、')
+                  FROM task_branch b JOIN task_assignment a ON a.id = b.current_assignment_id
+                 WHERE b.task_id = o.id AND b.status = 'OPEN'
+                   AND (o.issuer_unit_id = #{unitId} OR EXISTS
+                       (SELECT 1 FROM task_assignment own WHERE own.branch_id = b.id AND own.to_unit_id = #{unitId}))) AS currentResponsibleUnits,
+               (SELECT GROUP_CONCAT(DISTINCT a.status ORDER BY a.status SEPARATOR ',')
+                  FROM task_branch b JOIN task_assignment a ON a.id = b.current_assignment_id
+                 WHERE b.task_id = o.id AND a.to_unit_id = #{unitId} AND b.status = 'OPEN') AS myStatus,
+               (SELECT COUNT(*) FROM task_branch b JOIN task_transfer_request t ON t.branch_id = b.id
+                 WHERE b.task_id = o.id AND t.status IN ('AWAITING_TARGET', 'AWAITING_ISSUER')
+                   AND (t.target_unit_id = #{unitId} OR o.issuer_unit_id = #{unitId})) AS pendingTransferCount,
+               (SELECT MAX(h.occurred_at) FROM task_action h WHERE h.task_id = o.id
+                   AND (o.issuer_unit_id = #{unitId} OR EXISTS
+                       (SELECT 1 FROM task_assignment own WHERE own.branch_id = h.branch_id AND own.to_unit_id = #{unitId})
+                   OR EXISTS (SELECT 1 FROM task_transfer_request t WHERE t.id = h.transfer_request_id
+                       AND t.target_unit_id = #{unitId} AND t.status IN ('AWAITING_TARGET', 'AWAITING_ISSUER')))) AS lastActionAt,
+               (SELECT COUNT(*) FROM task_branch b JOIN task_assignment a ON a.id = b.current_assignment_id
+                 WHERE b.task_id = o.id AND b.status = 'OPEN' AND a.due_at &lt; UTC_TIMESTAMP(6)
+                   AND (o.issuer_unit_id = #{unitId} OR EXISTS
+                       (SELECT 1 FROM task_assignment own WHERE own.branch_id = b.id AND own.to_unit_id = #{unitId}))) AS overdueBranchCount
+          FROM task_order o WHERE <include refid="listFilter"/>
+         ORDER BY o.created_at DESC, o.id DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="openChildren" resultType="int">
+        SELECT COUNT(*) FROM task_branch WHERE parent_branch_id = #{branchId} AND status = 'OPEN'
+    </select>
+    <select id="openBranches" resultType="int">
+        SELECT COUNT(*) FROM task_branch WHERE task_id = #{taskId} AND status = 'OPEN'
+    </select>
+    <select id="unitActiveReferences" resultType="int">
+        SELECT (SELECT COUNT(*) FROM task_order WHERE issuer_unit_id = #{unitId})
+             + (SELECT COUNT(*) FROM task_branch WHERE origin_from_unit_id = #{unitId} OR origin_to_unit_id = #{unitId})
+             + (SELECT COUNT(*) FROM task_assignment WHERE from_unit_id = #{unitId} OR to_unit_id = #{unitId})
+             + (SELECT COUNT(*) FROM task_transfer_request WHERE target_unit_id = #{unitId})
+             + (SELECT COUNT(*) FROM task_result WHERE suggested_unit_id = #{unitId})
+             + (SELECT COUNT(*) FROM task_action WHERE actor_unit_id = #{unitId} OR target_unit_id = #{unitId})
+             + (SELECT COUNT(*) FROM task_command WHERE actor_unit_id = #{unitId})
+    </select>
+    <select id="previousDivision" resultType="int">
+        SELECT COUNT(*) FROM task_assignment WHERE branch_id = #{branchId} AND to_unit_id = #{unitId}
+    </select>
+    <select id="command" resultType="com.merine.rebuild.task.persistence.TaskMapper$CommandRow">
+        SELECT id AS id, actor_unit_id AS actorUnitId, action_code AS actionCode,
+               idempotency_key AS idempotencyKey, request_digest AS requestDigest,
+               task_id AS taskId, branch_id AS branchId, created_at AS createdAt
+          FROM task_command WHERE actor_unit_id = #{unitId} AND action_code = #{action}
+            AND idempotency_key = #{key}
+    </select>
+    <select id="commandLocked" resultType="com.merine.rebuild.task.persistence.TaskMapper$CommandRow">
+        SELECT id AS id, actor_unit_id AS actorUnitId, action_code AS actionCode,
+               idempotency_key AS idempotencyKey, request_digest AS requestDigest,
+               task_id AS taskId, branch_id AS branchId, created_at AS createdAt
+          FROM task_command WHERE actor_unit_id = #{unitId} AND action_code = #{action}
+            AND idempotency_key = #{key} FOR SHARE
+    </select>
+    <select id="lastId" resultType="long">SELECT LAST_INSERT_ID()</select>
+
+    <insert id="insertOrder">
+        INSERT INTO task_order (task_no, issuer_unit_id, issuer_unit_name_snapshot,
+            issuer_user_id, title, instruction, expected_result, initial_due_at,
+            current_due_at, source_result_id)
+        VALUES (#{taskNo}, #{issuerUnitId}, #{issuerUnitName}, #{issuerUserId},
+            #{title}, #{instruction}, #{expectedResult}, #{dueAt}, #{dueAt},
+            #{sourceResultId,jdbcType=BIGINT})
+    </insert>
+    <insert id="insertBranch">
+        INSERT INTO task_branch (task_id, parent_branch_id, origin_from_unit_id,
+            origin_to_unit_id, instruction_snapshot, expected_result_snapshot)
+        VALUES (#{taskId}, #{parentBranchId,jdbcType=BIGINT}, #{fromUnitId}, #{toUnitId},
+            #{instruction}, #{expectedResult})
+    </insert>
+    <insert id="insertAssignment">
+        INSERT INTO task_assignment (branch_id, previous_assignment_id, from_unit_id,
+            from_unit_name_snapshot, to_unit_id, to_unit_name_snapshot, source_action,
+            due_at, status, accepted_by_user_id, accepted_at)
+        VALUES (#{branchId}, #{previousId,jdbcType=BIGINT}, #{fromUnitId}, #{fromUnitName},
+            #{toUnitId}, #{toUnitName}, #{sourceAction}, #{dueAt}, #{status},
+            #{acceptedBy,jdbcType=BIGINT}, #{acceptedAt,jdbcType=TIMESTAMP})
+    </insert>
+    <update id="setCurrentAssignment">
+        UPDATE task_branch SET current_assignment_id = #{assignmentId}, version = version + 1
+         WHERE id = #{branchId}
+           AND <choose><when test="expectedId == null">current_assignment_id IS NULL</when>
+                       <otherwise>current_assignment_id = #{expectedId}</otherwise></choose>
+           AND status = 'OPEN'
+    </update>
+    <update id="acceptAssignment">
+        UPDATE task_assignment SET status = 'IN_PROGRESS', accepted_by_user_id = #{userId},
+            accepted_at = #{at}, version = version + 1
+         WHERE id = #{id} AND status = 'PENDING_ACCEPT' AND version = #{version}
+    </update>
+    <update id="endAssignment">
+        UPDATE task_assignment SET status = #{newStatus}, ended_by_user_id = #{userId},
+            ended_at = #{at}, end_reason = #{reason,jdbcType=VARCHAR}, version = version + 1
+         WHERE id = #{id} AND status = #{expectedStatus} AND version = #{version}
+    </update>
+    <update id="completeBranch">
+        UPDATE task_branch SET status = 'COMPLETED', completed_at = #{at}, version = version + 1
+         WHERE id = #{id} AND status = 'OPEN' AND version = #{version}
+    </update>
+    <update id="completeOrder">
+        UPDATE task_order SET status = 'COMPLETED', completed_at = #{at},
+            updated_at = #{at}, version = version + 1
+         WHERE id = #{id} AND status = 'OPEN'
+    </update>
+    <update id="extendOrder">
+        UPDATE task_order SET current_due_at = #{newDue}, updated_at = CURRENT_TIMESTAMP(6),
+            version = version + 1
+         WHERE id = #{id} AND status = 'OPEN' AND current_due_at = #{oldDue}
+    </update>
+    <insert id="insertTransfer">
+        INSERT INTO task_transfer_request (branch_id, from_assignment_id, target_unit_id,
+            reason, work_done, evidence_summary, remaining_work, requested_by_user_id,
+            requested_at, status)
+        VALUES (#{branchId}, #{assignmentId}, #{targetUnitId}, #{reason}, #{workDone},
+            #{evidence}, #{remaining}, #{userId}, #{at}, 'AWAITING_TARGET')
+    </insert>
+    <update id="respondTransfer">
+        UPDATE task_transfer_request SET status = #{status},
+            target_responded_by_user_id = #{userId}, target_responded_at = #{at},
+            target_response_reason = #{reason,jdbcType=VARCHAR},
+            target_required_duration_minutes = #{minutes,jdbcType=INTEGER}, version = version + 1
+         WHERE id = #{id} AND status = 'AWAITING_TARGET' AND version = #{version}
+    </update>
+    <update id="decideTransfer">
+        UPDATE task_transfer_request SET status = #{status},
+            issuer_decided_by_user_id = #{userId}, issuer_decided_at = #{at},
+            issuer_decision_reason = #{reason,jdbcType=VARCHAR},
+            approved_due_at = #{dueAt,jdbcType=TIMESTAMP}, version = version + 1
+         WHERE id = #{id} AND status = 'AWAITING_ISSUER' AND version = #{version}
+    </update>
+    <update id="withdrawTransfer">
+        UPDATE task_transfer_request SET status = 'WITHDRAWN', version = version + 1
+         WHERE id = #{id} AND version = #{version}
+           AND status IN ('AWAITING_TARGET', 'AWAITING_ISSUER')
+    </update>
+    <insert id="insertResult">
+        INSERT INTO task_result (branch_id, assignment_id, outcome_code,
+            handling_detail, conclusion, suggested_unit_id, submitted_by_user_id, submitted_at)
+        VALUES (#{branchId}, #{assignmentId}, #{outcome}, #{handling}, #{conclusion},
+            #{suggestedUnitId,jdbcType=BIGINT}, #{userId}, #{at})
+    </insert>
+    <insert id="insertAction">
+        INSERT INTO task_action (task_id, branch_id, assignment_id, transfer_request_id,
+            action_code, actor_unit_id, actor_user_id, target_unit_id,
+            old_due_at, new_due_at, note, occurred_at)
+        VALUES (#{taskId}, #{branchId,jdbcType=BIGINT}, #{assignmentId,jdbcType=BIGINT},
+            #{transferId,jdbcType=BIGINT}, #{action}, #{unitId}, #{userId},
+            #{targetUnitId,jdbcType=BIGINT}, #{oldDue,jdbcType=TIMESTAMP},
+            #{newDue,jdbcType=TIMESTAMP}, #{note,jdbcType=LONGVARCHAR}, #{at})
+    </insert>
+    <insert id="reserveCommand">
+        INSERT IGNORE INTO task_command (actor_unit_id, action_code, idempotency_key,
+            request_digest, task_id, branch_id, created_at)
+        VALUES (#{unitId}, #{action}, #{key}, #{digest}, NULL, NULL, #{at})
+    </insert>
+    <update id="finishCommand">
+        UPDATE task_command SET task_id = #{taskId}, branch_id = #{branchId,jdbcType=BIGINT}
+         WHERE actor_unit_id = #{unitId} AND action_code = #{action}
+           AND idempotency_key = #{key} AND task_id IS NULL
+    </update>
+</mapper>

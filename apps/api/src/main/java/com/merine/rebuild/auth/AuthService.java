@@ -88,6 +88,24 @@ public class AuthService {
                     "该账号已停用，请联系单位系统管理员");
         }
 
+        return establishSession(account, rememberMe, request, response);
+    }
+
+    /** 只由 dev profile 中的控制器调用；不接受密码，也不扩大普通登录入口。 */
+    public AuthenticatedAccount loginForDevelopment(String loginName, boolean rememberMe,
+                                                    HttpServletRequest request, HttpServletResponse response) {
+        UserAccount account = accounts.findByLoginName(loginName);
+        if (account == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DEV_ACCOUNT", "请选择可用的本地账号");
+        }
+        if (!account.enabled()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "ACCOUNT_DISABLED", "该账号已停用");
+        }
+        return establishSession(account, rememberMe, request, response);
+    }
+
+    private AuthenticatedAccount establishSession(UserAccount account, boolean rememberMe,
+                                                  HttpServletRequest request, HttpServletResponse response) {
         AuthenticatedAccount principal = AuthenticatedAccount.from(effectiveAccount(account));
 
         // 登录时间先登记再建会话：登记失败就当作登录失败，不留下时间戳为空的“已登录”

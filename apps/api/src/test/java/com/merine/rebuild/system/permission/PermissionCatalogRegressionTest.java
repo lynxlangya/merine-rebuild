@@ -72,5 +72,14 @@ class PermissionCatalogRegressionTest extends MockMvcRegressionSupport {
                         .filter(entry -> entry.type() == MenuBootstrap.Type.DIRECTORY)
                         .map(MenuBootstrap.Entry::name)
                         .toList());
+
+        String taskPageCode = jdbcTemplate.queryForObject("""
+                SELECT p.permission_code
+                  FROM sys_menu m
+                  JOIN sys_permission p ON p.id = m.permission_id
+                 WHERE m.route_key = 'collaboration.tasks'
+                """, String.class);
+        assertThat(taskPageCode).as("任务页面导航与 API 应使用同一查看权限")
+                .isEqualTo(PermissionCodes.TASK_READ);
     }
 }

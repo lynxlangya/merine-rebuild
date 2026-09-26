@@ -107,6 +107,184 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 按当前单位权限与参与范围查询任务 */
+        get: operations["list"];
+        put?: never;
+        /** 创建任务并向多个直属下级下发 */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests/{transferId}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["withdraw"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests/{transferId}/respond": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["respond"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests/{transferId}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["result"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/reassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reassign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["progress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["dispatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/system/users": {
         parameters: {
             query?: never;
@@ -115,10 +293,10 @@ export interface paths {
             cookie?: never;
         };
         /** 分页查询用户 */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         /** 新建用户 */
-        post: operations["create"];
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -184,10 +362,10 @@ export interface paths {
             cookie?: never;
         };
         /** 查询全部单位选项 */
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
         /** 新增单位 */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -202,10 +380,10 @@ export interface paths {
             cookie?: never;
         };
         /** 分页查询角色 */
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         /** 新建角色 */
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -257,7 +435,7 @@ export interface paths {
         get: operations["tree"];
         put?: never;
         /** 新增菜单节点（目录/页面/页签/按钮） */
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -289,10 +467,10 @@ export interface paths {
             cookie?: never;
         };
         /** 查询字典类型列表 */
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
         /** 新建字典类型 */
-        post: operations["create_4"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -326,7 +504,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** 写入一条本地合成联调记录 */
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -347,6 +525,57 @@ export interface paths {
         post: operations["login"];
         /** 退出并作废当前会话 */
         delete: operations["logout"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/dev/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 本地开发环境选择账号建立会话 */
+        post: operations["login_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询任务详情和可见分支 */
+        get: operations["detail_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/target-units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前动作可选的直属下级或同级支队 */
+        get: operations["targets"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -496,7 +725,7 @@ export interface paths {
             cookie?: never;
         };
         /** 批量读取字典；不传 codes 时返回全部字典（含停用项） */
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -514,6 +743,23 @@ export interface paths {
         };
         /** 查询本地工程与数据库联调状态 */
         get: operations["status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/dev/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 列出本地开发环境可登录的账号 */
+        get: operations["accounts"];
         put?: never;
         post?: never;
         delete?: never;
@@ -811,6 +1057,159 @@ export interface components {
             /** @description 字段级校验错误；无字段错误时为 null */
             fieldErrors?: components["schemas"]["FieldError"][];
         };
+        Create: {
+            title: string;
+            instruction: string;
+            expectedResult: string;
+            /** Format: date-time */
+            dueAt: string;
+            targetUnitCodes: string[];
+            sourceResultId?: string;
+        };
+        Action: {
+            code?: string;
+            branchId?: string;
+            actorUnitName?: string;
+            targetUnitName?: string;
+            note?: string;
+            /** Format: date-time */
+            oldDueAt?: string;
+            /** Format: date-time */
+            newDueAt?: string;
+            /** Format: date-time */
+            occurredAt?: string;
+        };
+        ApiResponseTaskDetail: {
+            code: string;
+            message: string;
+            data: components["schemas"]["TaskDetail"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        Assignment: {
+            id?: string;
+            branchId?: string;
+            fromUnitName?: string;
+            toUnitName?: string;
+            sourceAction?: string;
+            status?: string;
+            /** Format: date-time */
+            dueAt?: string;
+            /** Format: date-time */
+            acceptedAt?: string;
+            /** Format: date-time */
+            endedAt?: string;
+            endReason?: string;
+        };
+        Branch: {
+            id?: string;
+            parentBranchId?: string;
+            instruction?: string;
+            expectedResult?: string;
+            status?: string;
+            currentAssignmentId?: string;
+            currentMine?: boolean;
+            canDispatchDownward?: boolean;
+            canTransferPeer?: boolean;
+            /** Format: date-time */
+            completedAt?: string;
+            assignments?: components["schemas"]["Assignment"][];
+            result?: components["schemas"]["Result"];
+            transfers?: components["schemas"]["Transfer"][];
+        };
+        Result: {
+            id?: string;
+            branchId?: string;
+            outcomeCode?: string;
+            handlingDetail?: string;
+            conclusion?: string;
+            suggestedUnitCode?: string;
+            suggestedUnitName?: string;
+            /** Format: date-time */
+            submittedAt?: string;
+        };
+        TaskDetail: {
+            id?: string;
+            taskNo?: string;
+            title?: string;
+            instruction?: string;
+            expectedResult?: string;
+            issuerUnitName?: string;
+            issuerMine?: boolean;
+            status?: string;
+            /** Format: date-time */
+            initialDueAt?: string;
+            /** Format: date-time */
+            currentDueAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
+            sourceResultId?: string;
+            branches?: components["schemas"]["Branch"][];
+            actions?: components["schemas"]["Action"][];
+        };
+        Transfer: {
+            id?: string;
+            branchId?: string;
+            targetUnitCode?: string;
+            targetUnitName?: string;
+            status?: string;
+            reason?: string;
+            workDone?: string;
+            evidenceSummary?: string;
+            remainingWork?: string;
+            /** Format: date-time */
+            requestedAt?: string;
+            /** Format: int32 */
+            requiredDurationMinutes?: number;
+            /** Format: date-time */
+            targetRespondedAt?: string;
+            /** Format: date-time */
+            approvedDueAt?: string;
+            /** Format: date-time */
+            issuerDecidedAt?: string;
+            targetResponseReason?: string;
+            issuerDecisionReason?: string;
+            targetMine?: boolean;
+        };
+        TransferRequest: {
+            targetUnitCode: string;
+            reason: string;
+            workDone: string;
+            evidenceSummary: string;
+            remainingWork: string;
+        };
+        TransferResponse: {
+            accept?: boolean;
+            reason?: string;
+            /** Format: int32 */
+            requiredDurationMinutes?: number;
+        };
+        TransferDecision: {
+            approve?: boolean;
+            reason?: string;
+            /** Format: date-time */
+            dueAt?: string;
+        };
+        ReturnTask: {
+            reason: string;
+        };
+        SubmitResult: {
+            outcomeCode: string;
+            handlingDetail: string;
+            conclusion: string;
+            suggestedUnitCode?: string;
+        };
+        Dispatch: {
+            instruction: string;
+            expectedResult: string;
+            /** Format: date-time */
+            dueAt: string;
+            targetUnitCodes: string[];
+        };
+        Progress: {
+            note: string;
+        };
         CreateUser: {
             loginName: string;
             displayName: string;
@@ -1001,6 +1400,65 @@ export interface components {
              * @description 授权版本；角色、角色权限或单位变化时递增，旧会话据此失效
              */
             authorizationVersion: number;
+        };
+        DevLoginRequest: {
+            loginName: string;
+            rememberMe?: boolean;
+        };
+        ApiResponsePageResultTaskListItem: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultTaskListItem"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultTaskListItem: {
+            items: components["schemas"]["TaskListItem"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        TaskListItem: {
+            id?: string;
+            taskNo?: string;
+            title?: string;
+            status?: string;
+            /** Format: date-time */
+            initialDueAt?: string;
+            /** Format: date-time */
+            currentDueAt?: string;
+            issuerUnitName?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: int64 */
+            openBranchCount?: number;
+            currentResponsibleUnits?: string;
+            myStatus?: string;
+            /** Format: int64 */
+            pendingTransferCount?: number;
+            /** Format: date-time */
+            lastActionAt?: string;
+            /** Format: int64 */
+            overdueBranchCount?: number;
+        };
+        ApiResponseListUnitOption: {
+            code: string;
+            message: string;
+            data: components["schemas"]["UnitOption"][];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        UnitOption: {
+            code?: string;
+            name?: string;
+            /** Format: int32 */
+            level?: number;
+            parentCode?: string;
         };
         ApiResponsePageResultUserSummary: {
             code: string;
@@ -1273,6 +1731,26 @@ export interface components {
             /** Format: int64 */
             totalProbes: number;
             recentProbes: components["schemas"]["ProbeRecord"][];
+        };
+        ApiResponseListDevLoginAccountOption: {
+            code: string;
+            message: string;
+            data: components["schemas"]["DevLoginAccountOption"][];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        DevLoginAccountOption: {
+            loginName: string;
+            displayName: string;
+            unitName: string;
+            /**
+             * Format: int32
+             * @description 1 总队，2 支队，3 大队
+             */
+            unitLevel: number;
+            /** @description 直属上级单位名称；总队为 null */
+            parentUnitName?: string | null;
         };
         CsrfToken: {
             parameterName?: string;
@@ -1592,6 +2070,341 @@ export interface operations {
     list: {
         parameters: {
             query?: {
+                tab?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultTaskListItem"];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Create"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    transfer: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    withdraw: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+                transferId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    respond: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+                transferId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferResponse"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    decide: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+                transferId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferDecision"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    returnTask: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnTask"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    result: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitResult"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    reassign: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Dispatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    progress: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Progress"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    dispatch: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Dispatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    accept: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: {
                 keyword?: string;
                 unitCode?: string;
                 roleCode?: string;
@@ -1616,7 +2429,7 @@ export interface operations {
             };
         };
     };
-    create: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1714,7 +2527,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    list_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1734,7 +2547,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1758,7 +2571,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: {
                 keyword?: string;
@@ -1783,7 +2596,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1875,7 +2688,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1919,7 +2732,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -1939,7 +2752,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -1989,7 +2802,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -2073,6 +2886,76 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    login_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAuthUserResponse"];
+                };
+            };
+        };
+    };
+    detail_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    targets: {
+        parameters: {
+            query: {
+                action: string;
+                taskId?: string;
+                branchId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListUnitOption"];
                 };
             };
         };
@@ -2244,7 +3127,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query?: {
                 codes?: string;
@@ -2282,6 +3165,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBootstrapStatus"];
+                };
+            };
+        };
+    };
+    accounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDevLoginAccountOption"];
                 };
             };
         };

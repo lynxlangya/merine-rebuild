@@ -35,6 +35,16 @@ export const PERMISSIONS = {
 
   diagnosticsRead: 'system:diagnostics:read',
   diagnosticsWrite: 'system:diagnostics:write',
+  taskRead: 'task:handling:read',
+  taskCreate: 'task:handling:create',
+  taskAccept: 'task:handling:accept',
+  taskProgress: 'task:handling:progress',
+  taskDispatch: 'task:handling:dispatch',
+  taskReturn: 'task:handling:return',
+  taskSubmitResult: 'task:handling:submit-result',
+  taskTransferRequest: 'task:handling:transfer-request',
+  taskTransferRespond: 'task:handling:transfer-respond',
+  taskTransferDecide: 'task:handling:transfer-decide',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

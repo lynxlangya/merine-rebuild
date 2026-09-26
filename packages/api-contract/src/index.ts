@@ -7,6 +7,8 @@ export type CreateProbe = components['schemas']['CreateProbe'];
 /** 认证：接口声明的契约以此为准，前端不再手写平行模型。 */
 export type AuthUser = components['schemas']['AuthUserResponse'];
 export type LoginRequest = components['schemas']['LoginRequest'];
+export type DevLoginRequest = components['schemas']['DevLoginRequest'];
+export type DevLoginAccountOption = components['schemas']['DevLoginAccountOption'];
 export type FieldError = components['schemas']['FieldError'];
 
 /** 用户管理。 */
@@ -55,3 +57,17 @@ export type CreateDictionary = components['schemas']['CreateDictionary'];
 export type UpdateDictionary = components['schemas']['UpdateDictionary'];
 export type CreateDictionaryItem = components['schemas']['CreateDictionaryItem'];
 export type UpdateDictionaryItem = components['schemas']['UpdateDictionaryItem'];
+
+/** 任务处置。 */
+export type TaskDetail = components['schemas']['TaskDetail'];
+export type TaskBranch = components['schemas']['Branch'];
+export type TaskTransfer = components['schemas']['Transfer'];
+export type TaskListItem = components['schemas']['TaskListItem'];
+export type PageResultTaskListItem = components['schemas']['PageResultTaskListItem'];
+export type TaskUnitOption = components['schemas']['UnitOption'];
+export type CreateTask = components['schemas']['Create'];
+export type DispatchTask = components['schemas']['Dispatch'];
+export type SubmitTaskResult = components['schemas']['SubmitResult'];
+export type RequestTaskTransfer = components['schemas']['TransferRequest'];
+export type RespondTaskTransfer = components['schemas']['TransferResponse'];
+export type DecideTaskTransfer = components['schemas']['TransferDecision'];

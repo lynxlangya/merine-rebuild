@@ -275,7 +275,7 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
         jdbcTemplate.update("DELETE FROM sys_unit WHERE unit_code = ?", UNIT_CODE);
     }
 
-    /** 9 条关联各自查一遍悬空引用：外键没了，这是唯一能发现旁路写入的检查。 */
+    /** 逐条检查悬空引用；任务表也没有物理外键，旁路写入必须能被巡检发现。 */
     private static Map<String, String> danglingChecks() {
         Map<String, String> checks = new LinkedHashMap<>();
         checks.put("sys_user.unit_id → sys_unit", """
@@ -322,6 +322,67 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
                 SELECT COUNT(*) FROM sys_dict_item i
                  LEFT JOIN sys_dict_type t ON t.id = i.dict_type_id
                 WHERE t.id IS NULL
+                """);
+        String[][] taskReferences = {
+                {"task_order", "issuer_unit_id", "sys_unit"},
+                {"task_order", "issuer_user_id", "sys_user"},
+                {"task_order", "source_result_id", "task_result"},
+                {"task_branch", "task_id", "task_order"},
+                {"task_branch", "parent_branch_id", "task_branch"},
+                {"task_branch", "origin_from_unit_id", "sys_unit"},
+                {"task_branch", "origin_to_unit_id", "sys_unit"},
+                {"task_branch", "current_assignment_id", "task_assignment"},
+                {"task_assignment", "branch_id", "task_branch"},
+                {"task_assignment", "previous_assignment_id", "task_assignment"},
+                {"task_assignment", "from_unit_id", "sys_unit"},
+                {"task_assignment", "to_unit_id", "sys_unit"},
+                {"task_assignment", "accepted_by_user_id", "sys_user"},
+                {"task_assignment", "ended_by_user_id", "sys_user"},
+                {"task_transfer_request", "branch_id", "task_branch"},
+                {"task_transfer_request", "from_assignment_id", "task_assignment"},
+                {"task_transfer_request", "target_unit_id", "sys_unit"},
+                {"task_transfer_request", "requested_by_user_id", "sys_user"},
+                {"task_transfer_request", "target_responded_by_user_id", "sys_user"},
+                {"task_transfer_request", "issuer_decided_by_user_id", "sys_user"},
+                {"task_result", "branch_id", "task_branch"},
+                {"task_result", "assignment_id", "task_assignment"},
+                {"task_result", "suggested_unit_id", "sys_unit"},
+                {"task_result", "submitted_by_user_id", "sys_user"},
+                {"task_action", "task_id", "task_order"},
+                {"task_action", "branch_id", "task_branch"},
+                {"task_action", "assignment_id", "task_assignment"},
+                {"task_action", "transfer_request_id", "task_transfer_request"},
+                {"task_action", "actor_unit_id", "sys_unit"},
+                {"task_action", "actor_user_id", "sys_user"},
+                {"task_action", "target_unit_id", "sys_unit"},
+                {"task_command", "actor_unit_id", "sys_unit"},
+                {"task_command", "task_id", "task_order"},
+                {"task_command", "branch_id", "task_branch"}
+        };
+        for (String[] relation : taskReferences) {
+            String table = relation[0];
+            String column = relation[1];
+            String target = relation[2];
+            checks.put(table + "." + column + " → " + target,
+                    "SELECT COUNT(*) FROM " + table + " c LEFT JOIN " + target + " p ON p.id = c." + column
+                            + " WHERE c." + column + " IS NOT NULL AND p.id IS NULL");
+        }
+        checks.put("task_command.task_id must be filled before commit",
+                "SELECT COUNT(*) FROM task_command WHERE task_id IS NULL");
+        checks.put("task_branch.current_assignment_id belongs to branch", """
+                SELECT COUNT(*) FROM task_branch b
+                 JOIN task_assignment a ON a.id = b.current_assignment_id
+                WHERE a.branch_id <> b.id
+                """);
+        checks.put("task_result.assignment_id belongs to branch", """
+                SELECT COUNT(*) FROM task_result r
+                 JOIN task_assignment a ON a.id = r.assignment_id
+                WHERE a.branch_id <> r.branch_id
+                """);
+        checks.put("task_transfer_request.from_assignment_id belongs to branch", """
+                SELECT COUNT(*) FROM task_transfer_request r
+                 JOIN task_assignment a ON a.id = r.from_assignment_id
+                WHERE a.branch_id <> r.branch_id
                 """);
         return checks;
     }

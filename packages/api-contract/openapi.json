@@ -19,6 +19,10 @@
       "description": "读取字典与字典项（登录即可）"
     },
     {
+      "name": "任务处置",
+      "description": "直属下发、承办结果与支队交接"
+    },
+    {
       "name": "角色管理",
       "description": "角色查询、新增、编辑、启停、删除与成员查看"
     },
@@ -494,13 +498,668 @@
         }
       }
     },
+    "/api/tasks": {
+      "get": {
+        "tags": [
+          "任务处置"
+        ],
+        "summary": "按当前单位权限与参与范围查询任务",
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "tab",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "all"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResultTaskListItem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "summary": "创建任务并向多个直属下级下发",
+        "operationId": "create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Create"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "transfer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests/{transferId}/withdraw": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "withdraw",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transferId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests/{transferId}/respond": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "respond",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transferId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferResponse"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/transfer-requests/{transferId}/decide": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "decide",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transferId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/return": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "returnTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnTask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/results": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "result",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitResult"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/reassign": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "reassign",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Dispatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/progress": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "progress",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Progress"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/dispatch": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "dispatch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Dispatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/accept": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "accept",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/system/users": {
       "get": {
         "tags": [
           "用户管理"
         ],
         "summary": "分页查询用户",
-        "operationId": "list",
+        "operationId": "list_1",
         "parameters": [
           {
             "name": "keyword",
@@ -573,7 +1232,7 @@
           "用户管理"
         ],
         "summary": "新建用户",
-        "operationId": "create",
+        "operationId": "create_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -708,7 +1367,7 @@
           "单位管理"
         ],
         "summary": "查询全部单位选项",
-        "operationId": "list_1",
+        "operationId": "list_2",
         "responses": {
           "200": {
             "description": "OK",
@@ -727,7 +1386,7 @@
           "单位管理"
         ],
         "summary": "新增单位",
-        "operationId": "create_1",
+        "operationId": "create_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -758,7 +1417,7 @@
           "角色管理"
         ],
         "summary": "分页查询角色",
-        "operationId": "list_2",
+        "operationId": "list_3",
         "parameters": [
           {
             "name": "keyword",
@@ -815,7 +1474,7 @@
           "角色管理"
         ],
         "summary": "新建角色",
-        "operationId": "create_2",
+        "operationId": "create_3",
         "requestBody": {
           "content": {
             "application/json": {
@@ -927,7 +1586,7 @@
           "菜单管理"
         ],
         "summary": "新增菜单节点（目录/页面/页签/按钮）",
-        "operationId": "create_3",
+        "operationId": "create_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -979,7 +1638,7 @@
           "字典管理"
         ],
         "summary": "查询字典类型列表",
-        "operationId": "list_3",
+        "operationId": "list_4",
         "responses": {
           "200": {
             "description": "OK",
@@ -998,7 +1657,7 @@
           "字典管理"
         ],
         "summary": "新建字典类型",
-        "operationId": "create_4",
+        "operationId": "create_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1070,7 +1729,7 @@
           "bootstrap-controller"
         ],
         "summary": "写入一条本地合成联调记录",
-        "operationId": "create_5",
+        "operationId": "create_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1157,6 +1816,115 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/dev/session": {
+      "post": {
+        "tags": [
+          "dev-login-controller"
+        ],
+        "summary": "本地开发环境选择账号建立会话",
+        "operationId": "login_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAuthUserResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}": {
+      "get": {
+        "tags": [
+          "任务处置"
+        ],
+        "summary": "查询任务详情和可见分支",
+        "operationId": "detail_3",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/target-units": {
+      "get": {
+        "tags": [
+          "任务处置"
+        ],
+        "summary": "查询当前动作可选的直属下级或同级支队",
+        "operationId": "targets",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListUnitOption"
                 }
               }
             }
@@ -1378,7 +2146,7 @@
           "字典"
         ],
         "summary": "批量读取字典；不传 codes 时返回全部字典（含停用项）",
-        "operationId": "list_4",
+        "operationId": "list_5",
         "parameters": [
           {
             "name": "codes",
@@ -1417,6 +2185,27 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseBootstrapStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/dev/accounts": {
+      "get": {
+        "tags": [
+          "dev-login-controller"
+        ],
+        "summary": "列出本地开发环境可登录的账号",
+        "operationId": "accounts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListDevLoginAccountOption"
                 }
               }
             }
@@ -2252,6 +3041,504 @@
           "requestId"
         ]
       },
+      "Create": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 0
+          },
+          "instruction": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          },
+          "expectedResult": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "targetUnitCodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "sourceResultId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dueAt",
+          "expectedResult",
+          "instruction",
+          "targetUnitCodes",
+          "title"
+        ]
+      },
+      "Action": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "actorUnitName": {
+            "type": "string"
+          },
+          "targetUnitName": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "oldDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "newDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseTaskDetail": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TaskDetail"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "Assignment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "fromUnitName": {
+            "type": "string"
+          },
+          "toUnitName": {
+            "type": "string"
+          },
+          "sourceAction": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endReason": {
+            "type": "string"
+          }
+        }
+      },
+      "Branch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentBranchId": {
+            "type": "string"
+          },
+          "instruction": {
+            "type": "string"
+          },
+          "expectedResult": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "currentAssignmentId": {
+            "type": "string"
+          },
+          "currentMine": {
+            "type": "boolean"
+          },
+          "canDispatchDownward": {
+            "type": "boolean"
+          },
+          "canTransferPeer": {
+            "type": "boolean"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Assignment"
+            }
+          },
+          "result": {
+            "$ref": "#/components/schemas/Result"
+          },
+          "transfers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transfer"
+            }
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "outcomeCode": {
+            "type": "string"
+          },
+          "handlingDetail": {
+            "type": "string"
+          },
+          "conclusion": {
+            "type": "string"
+          },
+          "suggestedUnitCode": {
+            "type": "string"
+          },
+          "suggestedUnitName": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TaskDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "taskNo": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "instruction": {
+            "type": "string"
+          },
+          "expectedResult": {
+            "type": "string"
+          },
+          "issuerUnitName": {
+            "type": "string"
+          },
+          "issuerMine": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "initialDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currentDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sourceResultId": {
+            "type": "string"
+          },
+          "branches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Branch"
+            }
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            }
+          }
+        }
+      },
+      "Transfer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "targetUnitCode": {
+            "type": "string"
+          },
+          "targetUnitName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "workDone": {
+            "type": "string"
+          },
+          "evidenceSummary": {
+            "type": "string"
+          },
+          "remainingWork": {
+            "type": "string"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "requiredDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetRespondedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvedDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "issuerDecidedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "targetResponseReason": {
+            "type": "string"
+          },
+          "issuerDecisionReason": {
+            "type": "string"
+          },
+          "targetMine": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TransferRequest": {
+        "type": "object",
+        "properties": {
+          "targetUnitCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "workDone": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          },
+          "evidenceSummary": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          },
+          "remainingWork": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "evidenceSummary",
+          "reason",
+          "remainingWork",
+          "targetUnitCode",
+          "workDone"
+        ]
+      },
+      "TransferResponse": {
+        "type": "object",
+        "properties": {
+          "accept": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "requiredDurationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TransferDecision": {
+        "type": "object",
+        "properties": {
+          "approve": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReturnTask": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "SubmitResult": {
+        "type": "object",
+        "properties": {
+          "outcomeCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "handlingDetail": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          },
+          "conclusion": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          },
+          "suggestedUnitCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "conclusion",
+          "handlingDetail",
+          "outcomeCode"
+        ]
+      },
+      "Dispatch": {
+        "type": "object",
+        "properties": {
+          "instruction": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          },
+          "expectedResult": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "targetUnitCodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 20,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "dueAt",
+          "expectedResult",
+          "instruction",
+          "targetUnitCodes"
+        ]
+      },
+      "Progress": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "note"
+        ]
+      },
       "CreateUser": {
         "type": "object",
         "properties": {
@@ -2886,6 +4173,186 @@
           "roleNames",
           "unitName"
         ]
+      },
+      "DevLoginRequest": {
+        "type": "object",
+        "properties": {
+          "loginName": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 0
+          },
+          "rememberMe": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "loginName"
+        ]
+      },
+      "ApiResponsePageResultTaskListItem": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultTaskListItem"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "PageResultTaskListItem": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskListItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ]
+      },
+      "TaskListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "taskNo": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "initialDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currentDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "issuerUnitName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "openBranchCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentResponsibleUnits": {
+            "type": "string"
+          },
+          "myStatus": {
+            "type": "string"
+          },
+          "pendingTransferCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastActionAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "overdueBranchCount": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApiResponseListUnitOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitOption"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "UnitOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentCode": {
+            "type": "string"
+          }
+        }
       },
       "ApiResponsePageResultUserSummary": {
         "type": "object",
@@ -3754,6 +5221,71 @@
           "recentProbes",
           "serverTime",
           "totalProbes"
+        ]
+      },
+      "ApiResponseListDevLoginAccountOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DevLoginAccountOption"
+            }
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "data",
+          "message",
+          "requestId"
+        ]
+      },
+      "DevLoginAccountOption": {
+        "type": "object",
+        "properties": {
+          "loginName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "unitName": {
+            "type": "string"
+          },
+          "unitLevel": {
+            "type": "integer",
+            "format": "int32",
+            "description": "1 总队，2 支队，3 大队"
+          },
+          "parentUnitName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "直属上级单位名称；总队为 null"
+          }
+        },
+        "required": [
+          "displayName",
+          "loginName",
+          "unitLevel",
+          "unitName"
         ]
       },
       "CsrfToken": {

@@ -1,8 +1,10 @@
 package com.merine.rebuild.system.user.account.persistence;
 
+import com.merine.rebuild.system.user.account.DevLoginAccountOption;
 import com.merine.rebuild.system.user.account.UserAccountLookup;
 import com.merine.rebuild.system.user.account.UserAccountState;
 import java.time.Instant;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
@@ -16,6 +18,8 @@ import org.apache.ibatis.annotations.Update;
 public interface UserAccountMapper {
 
     UserAccountRow findByLoginName(@Param("loginName") String loginName);
+
+    List<DevLoginAccountOption> listEnabledForDevLogin();
 
     UserAccountState findStateById(@Param("userId") long userId);
 
