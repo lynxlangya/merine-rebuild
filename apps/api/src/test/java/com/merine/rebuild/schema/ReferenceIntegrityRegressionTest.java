@@ -326,6 +326,7 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
         String[][] taskReferences = {
                 {"task_order", "issuer_unit_id", "sys_unit"},
                 {"task_order", "issuer_user_id", "sys_user"},
+                {"task_order", "closed_by_user_id", "sys_user"},
                 {"task_order", "source_result_id", "task_result"},
                 {"task_branch", "task_id", "task_order"},
                 {"task_branch", "parent_branch_id", "task_branch"},

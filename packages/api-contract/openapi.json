@@ -589,6 +589,54 @@
         }
       }
     },
+    "/api/tasks/{id}/close": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "close",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Close"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tasks/{id}/branches/{branchId}/transfer-requests": {
       "post": {
         "tags": [
@@ -920,6 +968,62 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SubmitResult"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/branches/{branchId}/recall": {
+      "post": {
+        "tags": [
+          "任务处置"
+        ],
+        "operationId": "recall",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Recall"
               }
             }
           },
@@ -3113,6 +3217,32 @@
           "occurredAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "actorUserName": {
+            "type": "string"
+          },
+          "reasonCode": {
+            "type": "string"
+          }
+        }
+      },
+      "AllowedAction": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "reasonCode": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "transferId": {
+            "type": "string"
           }
         }
       },
@@ -3181,6 +3311,9 @@
           },
           "endReason": {
             "type": "string"
+          },
+          "endReasonCode": {
+            "type": "string"
           }
         }
       },
@@ -3232,6 +3365,12 @@
             "items": {
               "$ref": "#/components/schemas/Transfer"
             }
+          },
+          "allowedActions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllowedAction"
+            }
           }
         }
       },
@@ -3262,6 +3401,9 @@
           "submittedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "submittedByName": {
+            "type": "string"
           }
         }
       },
@@ -3317,6 +3459,25 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Action"
+            }
+          },
+          "issuerUserName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "conclusion": {
+            "type": "string"
+          },
+          "closedByName": {
+            "type": "string"
+          },
+          "allowedActions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllowedAction"
             }
           }
         }
@@ -3379,8 +3540,24 @@
           },
           "targetMine": {
             "type": "boolean"
+          },
+          "fromUnitName": {
+            "type": "string"
           }
         }
+      },
+      "Close": {
+        "type": "object",
+        "properties": {
+          "conclusion": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "conclusion"
+        ]
       },
       "TransferRequest": {
         "type": "object",
@@ -3455,6 +3632,10 @@
       "ReturnTask": {
         "type": "object",
         "properties": {
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1
+          },
           "reason": {
             "type": "string",
             "maxLength": 1000,
@@ -3462,7 +3643,8 @@
           }
         },
         "required": [
-          "reason"
+          "reason",
+          "reasonCode"
         ]
       },
       "SubmitResult": {
@@ -3490,6 +3672,19 @@
           "conclusion",
           "handlingDetail",
           "outcomeCode"
+        ]
+      },
+      "Recall": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "Dispatch": {

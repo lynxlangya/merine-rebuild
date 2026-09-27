@@ -125,6 +125,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks/{id}/branches/{branchId}/transfer-requests": {
         parameters: {
             query?: never;
@@ -215,6 +231,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["result"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{id}/branches/{branchId}/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recall"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1078,6 +1110,15 @@ export interface components {
             newDueAt?: string;
             /** Format: date-time */
             occurredAt?: string;
+            actorUserName?: string;
+            reasonCode?: string;
+        };
+        AllowedAction: {
+            code?: string;
+            enabled?: boolean;
+            reasonCode?: string;
+            reason?: string;
+            transferId?: string;
         };
         ApiResponseTaskDetail: {
             code: string;
@@ -1101,6 +1142,7 @@ export interface components {
             /** Format: date-time */
             endedAt?: string;
             endReason?: string;
+            endReasonCode?: string;
         };
         Branch: {
             id?: string;
@@ -1117,6 +1159,7 @@ export interface components {
             assignments?: components["schemas"]["Assignment"][];
             result?: components["schemas"]["Result"];
             transfers?: components["schemas"]["Transfer"][];
+            allowedActions?: components["schemas"]["AllowedAction"][];
         };
         Result: {
             id?: string;
@@ -1128,6 +1171,7 @@ export interface components {
             suggestedUnitName?: string;
             /** Format: date-time */
             submittedAt?: string;
+            submittedByName?: string;
         };
         TaskDetail: {
             id?: string;
@@ -1147,6 +1191,12 @@ export interface components {
             sourceResultId?: string;
             branches?: components["schemas"]["Branch"][];
             actions?: components["schemas"]["Action"][];
+            issuerUserName?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            conclusion?: string;
+            closedByName?: string;
+            allowedActions?: components["schemas"]["AllowedAction"][];
         };
         Transfer: {
             id?: string;
@@ -1171,6 +1221,10 @@ export interface components {
             targetResponseReason?: string;
             issuerDecisionReason?: string;
             targetMine?: boolean;
+            fromUnitName?: string;
+        };
+        Close: {
+            conclusion: string;
         };
         TransferRequest: {
             targetUnitCode: string;
@@ -1192,6 +1246,7 @@ export interface components {
             dueAt?: string;
         };
         ReturnTask: {
+            reasonCode: string;
             reason: string;
         };
         SubmitResult: {
@@ -1199,6 +1254,9 @@ export interface components {
             handlingDetail: string;
             conclusion: string;
             suggestedUnitCode?: string;
+        };
+        Recall: {
+            reason: string;
         };
         Dispatch: {
             instruction: string;
@@ -2117,6 +2175,34 @@ export interface operations {
             };
         };
     };
+    close: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Close"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
     transfer: {
         parameters: {
             query?: never;
@@ -2276,6 +2362,35 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SubmitResult"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTaskDetail"];
+                };
+            };
+        };
+    };
+    recall: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Recall"];
             };
         };
         responses: {

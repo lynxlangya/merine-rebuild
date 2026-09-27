@@ -1,0 +1,32 @@
+/* 前景与底色取 DESIGN 3.3 的语义色；一般提示与中性沿用正文色。 */
+.tag {
+  margin: 0;
+  border-color: var(--tag-border);
+  border-radius: var(--r-2);
+  color: var(--fg);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-ui);
+}
+
+.neutral {
+  background: var(--tag-neutral-bg);
+}
+
+.accent {
+  background: var(--tag-accent-bg);
+}
+
+.success {
+  background: var(--tag-success-bg);
+  color: var(--success);
+}
+
+.warning {
+  background: var(--tag-warning-bg);
+  color: var(--warning);
+}
+
+.danger {
+  background: var(--tag-danger-bg);
+  color: var(--danger);
+}

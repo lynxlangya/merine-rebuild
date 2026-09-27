@@ -26,7 +26,9 @@ public final class TaskRequests {
             @NotEmpty @Size(max = 20) List<@NotBlank String> targetUnitCodes) { }
 
     public record Progress(@NotBlank @Size(max = 4000) String note) { }
-    public record ReturnTask(@NotBlank @Size(max = 1000) String reason) { }
+    public record ReturnTask(@NotBlank String reasonCode, @NotBlank @Size(max = 1000) String reason) { }
+    public record Recall(@NotBlank @Size(max = 1000) String reason) { }
+    public record Close(@NotBlank @Size(max = 4000) String conclusion) { }
 
     public record SubmitResult(
             @NotBlank String outcomeCode,

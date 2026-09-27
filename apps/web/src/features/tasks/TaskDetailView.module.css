@@ -10,437 +10,295 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   padding: 0 var(--sp-4);
 }
 
-.overview,
-.section,
-.history {
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-4);
 }
 
-.overview {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-3);
-  padding: var(--sp-4);
-}
-
-.overview > div {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
-.overview span,
-.sectionHint,
-.todo p,
-.source {
-  color: var(--muted);
-}
-
-.overview strong {
-  font-weight: 500;
-}
-
-.completionNote {
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  grid-column: 1 / -1;
+.card h2 {
   margin: 0;
-  padding-top: var(--sp-3);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
 }
 
-.section {
-  padding: var(--sp-4);
-}
-
-.section h2 {
-  font-size: var(--fs-16);
-  margin: 0 0 var(--sp-3);
-}
-
-.sectionHint {
-  margin: calc(-1 * var(--sp-2)) 0 var(--sp-3);
-}
-
-.todoList,
-.branchList {
+.sectionHead {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.todo {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-3);
-  background: var(--surface-2);
-  border-radius: var(--r-3);
+  gap: var(--sp-2) var(--sp-3);
 }
 
-.todo p {
-  margin: var(--sp-1) 0 0;
-}
-
-.requirements {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.requirements > div {
-  display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: var(--sp-3);
-}
-
-.requirements span {
-  color: var(--muted);
-}
-
-.requirements p {
-  margin: 0;
-  white-space: pre-wrap;
-}
-
-.source {
-  padding-left: 104px;
-}
-
-.branch {
-  border: 1px solid var(--border);
-  border-radius: var(--r-3);
+/* 分支表贴边：表头横贯卡片，只给标题区留白。 */
+.tableCard {
+  gap: 0;
+  padding: 0;
   overflow: hidden;
 }
 
-.branch[open] {
-  border-color: var(--accent-soft-border);
-}
-
-.branchSummary {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  cursor: pointer;
+.tableCard > .sectionHead {
   padding: var(--sp-3) var(--sp-4);
-  list-style: none;
 }
 
-.branchSummary::-webkit-details-marker {
-  display: none;
-}
-
-.branchSummary:hover {
-  background: var(--surface-hover);
-}
-
-.branch[open] > .branchSummary {
-  background: var(--surface-2);
-}
-
-.branchSummary:focus-visible,
-.detailFold > summary:focus-visible,
-.history summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-.branchHeading,
-.branchRoute,
-.branchTags,
-.branchFoot,
-.resultHeading,
-.resultFoot,
-.assignmentMeta,
-.transferTimes {
+.summary {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--sp-2);
+  font-size: var(--fs-13);
 }
 
-.branchHeading,
-.branchFoot,
-.resultFoot {
-  justify-content: space-between;
-}
-
-.branchRoute strong {
-  font-size: var(--fs-14);
-  font-weight: var(--fw-strong);
-}
-
-.branchRouteLabel,
-.branchRouteChange,
-.branchFoot,
-.assignmentMeta,
-.transferTimes {
+.hint {
+  margin-left: auto;
   color: var(--muted);
-}
-
-.branchRouteLabel {
   font-size: var(--fs-12);
 }
 
-.branchTags :global(.ant-tag),
-.resultHeading :global(.ant-tag),
-.assignmentList :global(.ant-tag) {
-  margin-inline-end: 0;
+.toggle {
+  margin-left: auto;
+  padding-inline: 0;
 }
 
-.branchTakeaway,
-.detailRow,
-.requirementRows > div {
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: var(--sp-2);
-}
-
-.branchTakeawayLabel,
-.detailRow > span,
-.requirementRows > div > span {
+.muted {
   color: var(--muted);
 }
 
-.branchTakeawayText {
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ls-mono);
+}
+
+.late {
+  color: var(--warning);
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+.todos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 待办直接排在卡片里，不再套一层底色框；多条之间用分隔线，和办理记录一致。 */
+.todos li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-4);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--border);
+}
+
+.todos li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.todos li:last-child {
+  padding-bottom: 0;
+}
+
+.todoText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--fs-13);
+  line-height: var(--lh-ui);
+}
+
+.todoText strong {
+  font-weight: var(--fw-strong);
+}
+
+.todoActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.todoLink {
+  padding-inline: var(--sp-1);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: var(--sp-3);
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  min-width: 0;
+  margin: 0;
+}
+
+/* Typography 段落自带 1em 下边距；这里是表格化的字段，去掉并保留原文换行。 */
+.facts :global(.ant-typography) {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.due {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-thead) > tr > th {
+  height: 40px;
+  padding: 0 var(--sp-3);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-ui);
+  letter-spacing: var(--ls-mono);
+}
+
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-tbody) > tr {
+  cursor: pointer;
+}
+
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-tbody) > tr > td {
+  padding: 6px var(--sp-3);
+  vertical-align: middle;
+}
+
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-tbody) > tr:last-child > td {
+  border-bottom: 0;
+}
+
+/* 抽屉对应的行保持选中底色；要压过 antd 的悬停底色，选择器需要同等以上的优先级。 */
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-tbody) > tr.selectedRow > td,
+.tableWrap :global(.ant-table-wrapper) :global(.ant-table-tbody) > tr.selectedRow:hover > td {
+  background: var(--surface-selected);
+}
+
+.unit {
+  display: flow-root;
+  line-height: var(--lh-ui);
+}
+
+.unitButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--fw-ui);
+  text-align: left;
+}
+
+.unitButton:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.route {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.summaryText {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-height: var(--lh-ui);
+  overflow-wrap: anywhere;
 }
 
-.branch[open] .branchTakeaway {
-  display: none;
-}
-
-.branchFoot {
+.dueCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   font-size: var(--fs-12);
-  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-ui);
 }
 
-.expandClosed,
-.expandOpen {
-  color: var(--accent);
-  white-space: nowrap;
-  font-size: var(--fs-13);
-}
-
-.expandOpen,
-.branch[open] .expandClosed {
-  display: none;
-}
-
-.branch[open] .expandOpen {
-  display: inline;
-}
-
-.branchBody {
-  border-top: 1px solid var(--border);
+.historyPanel {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
 }
 
-.branchBody p {
-  line-height: var(--lh-body);
+/* 设置了 display 的类会盖过 hidden 属性，收起时要显式隐藏。 */
+.historyPanel[hidden] {
+  display: none;
+}
+
+.historyFilter {
+  width: 280px;
+}
+
+.headingMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.headingMeta > span,
+.mono {
+  white-space: nowrap;
+}
+
+.disabledReason {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.conclusion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-13);
+}
+
+.conclusion .conclusionText {
+  flex: 1;
+  min-width: 240px;
   margin: 0;
   white-space: pre-wrap;
-}
-
-.branchBody h3,
-.branchBody h4 {
-  margin: 0;
-  font-size: var(--fs-14);
-}
-
-.result,
-.openResult,
-.activeRequirements {
-  border: 1px solid var(--border);
-  border-radius: var(--r-3);
-  padding: var(--sp-3);
-}
-
-.result {
-  background: var(--surface-2);
-}
-
-.resultHeading {
-  justify-content: flex-start;
-  margin-bottom: var(--sp-3);
-}
-
-.detailRow + .detailRow,
-.requirementRows > div + div {
-  margin-top: var(--sp-2);
-}
-
-.resultHeading + .detailRow p {
-  font-size: var(--fs-14);
-  font-weight: var(--fw-ui);
-}
-
-.resultFoot {
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: var(--fs-12);
-  font-variant-numeric: tabular-nums;
-  margin-top: var(--sp-3);
-  padding-top: var(--sp-2);
-}
-
-.resultFoot :global(.ant-btn) {
-  padding-inline: 0;
-}
-
-.openResult p {
-  margin-top: var(--sp-2);
-}
-
-.detailFold {
-  border: 1px solid var(--border);
-  border-radius: var(--r-3);
-}
-
-.detailFold > summary {
-  color: var(--accent);
-  cursor: pointer;
-  padding: var(--sp-2) var(--sp-3);
-}
-
-.detailFold > summary:hover {
-  background: var(--surface-hover);
-}
-
-.detailFold[open] > summary {
-  border-bottom: 1px solid var(--border);
-}
-
-.detailFold > .requirementRows,
-.activeRequirements > .requirementRows,
-.processSection {
-  padding: var(--sp-3);
-}
-
-.activeRequirements > .requirementRows {
-  padding-inline: 0;
-  padding-bottom: 0;
-}
-
-.processSection + .processSection {
-  border-top: 1px solid var(--border);
-}
-
-.processSection h4 {
-  margin-bottom: var(--sp-3);
-}
-
-.processSection > p,
-.transferTimes {
-  margin-top: var(--sp-2);
-}
-
-.assignmentList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.assignmentList li {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: var(--sp-2);
-}
-
-.assignmentList li + li {
-  margin-top: var(--sp-3);
-}
-
-.assignmentStep {
-  background: var(--accent-soft);
-  border-radius: var(--r-pill);
-  color: var(--accent);
-  font-size: var(--fs-12);
-  line-height: 24px;
-  text-align: center;
-}
-
-.assignmentMeta {
-  font-size: var(--fs-12);
-  font-variant-numeric: tabular-nums;
-  margin-top: var(--sp-1);
-}
-
-.assignmentList p {
-  color: var(--muted);
-  margin-top: var(--sp-1);
-}
-
-.children {
-  border-left: 2px solid var(--border);
-  margin: var(--sp-2) 0 0 var(--sp-4);
-  padding-left: var(--sp-3);
-}
-
-.children > .branchGroup + .branchGroup {
-  margin-top: var(--sp-2);
-}
-
-.history {
-  padding: var(--sp-3) var(--sp-4);
-}
-
-.history summary {
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.history ol {
-  border-top: 1px solid var(--border);
-  list-style: none;
-  margin: var(--sp-3) 0 0;
-  padding: var(--sp-3) 0 0;
-}
-
-.history li {
-  display: grid;
-  grid-template-columns: 164px minmax(0, 1fr);
-  gap: var(--sp-2);
-  padding: var(--sp-2) 0;
-}
-
-.history li + li {
-  border-top: 1px solid var(--border);
-}
-
-.history time {
-  color: var(--muted);
-  font-family: var(--font-mono);
-}
-
-.history li p {
-  grid-column: 2;
-  margin: 0;
-  white-space: pre-wrap;
-}
-
-@media (max-width: 1100px) {
-  .overview {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .branchTakeaway,
-  .detailRow,
-  .requirementRows > div {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
+  overflow-wrap: anywhere;
 }

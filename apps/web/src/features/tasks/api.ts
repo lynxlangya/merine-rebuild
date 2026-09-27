@@ -1,5 +1,6 @@
 import type {
   CreateTask,
+  CloseTask,
   DispatchTask,
   PageResultTaskListItem,
   TaskDetail,
@@ -28,6 +29,13 @@ export function fetchTaskTargets(action: string, taskId?: string, branchId?: str
 }
 export function createTask(input: CreateTask, key: string) {
   return request<TaskDetail>('/api/tasks', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': key },
+    body: JSON.stringify(input),
+  });
+}
+export function closeTask(id: string, input: CloseTask, key: string) {
+  return request<TaskDetail>(`/api/tasks/${encodeURIComponent(id)}/close`, {
     method: 'POST',
     headers: { 'Idempotency-Key': key },
     body: JSON.stringify(input),

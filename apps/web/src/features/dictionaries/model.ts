@@ -9,6 +9,11 @@ export const DICTIONARY_CODES = {
   menuType: 'system.menu.type',
   unitLevel: 'system.unit.level',
   taskResultOutcome: 'task.result.outcome',
+  taskOrderStatus: 'task.order.status',
+  taskBranchStatus: 'task.branch.status',
+  taskAssignmentStatus: 'task.assignment.status',
+  taskTransferStatus: 'task.transfer.status',
+  taskReturnReason: 'task.return.reason',
 } as const;
 
 export type DictTone = 'neutral' | 'warning';

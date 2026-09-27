@@ -1,0 +1,40 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-13);
+  line-height: var(--lh-ui);
+}
+
+.list li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* 左列记录时间；句子里的时间另由 TaskTime 渲染，不受这里影响。 */
+.at {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ls-mono);
+  line-height: calc(var(--fs-13) * var(--lh-ui));
+  white-space: nowrap;
+}
+
+.note {
+  margin: var(--sp-1) 0 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

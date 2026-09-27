@@ -9,12 +9,13 @@ import {
   Empty,
   Form,
   Input,
+  InputNumber,
   Modal,
   Select,
+  Space,
   Spin,
   Table,
   Tabs,
-  Tag,
   Typography,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
@@ -25,9 +26,12 @@ import { ApiError } from '../../shared/http';
 import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { useAuth } from '../auth/public';
 import { DICTIONARY_CODES, dictLabel, toDictOptions, useDictionary } from '../dictionaries/public';
-import { createTask, fetchTask, fetchTasks, fetchTaskTargets, taskAction } from './api';
+import { closeTask, createTask, fetchTask, fetchTasks, fetchTaskTargets, taskAction } from './api';
+import { TaskTag } from './components/TaskTag';
+import { TaskTime } from './components/TaskTime';
+import { formatDuration, taskStatusTag, type TaskLabels } from './model';
 import { TaskDetailView } from './TaskDetailView';
-import { formatTaskTime, taskWallTimeToUtc, type TaskWallTime } from './taskTime';
+import { taskWallTimeToUtc, type TaskWallTime } from './taskTime';
 import styles from './TaskHandlingPage.module.css';
 
 const tabs = [
@@ -37,37 +41,29 @@ const tabs = [
   ['issued', '我单位发起'],
   ['transfers', '待回应交接'],
   ['decisions', '待审批交接'],
+  ['closing', '待办结'],
   ['completed', '已办结'],
 ];
-const statuses: Record<string, string> = {
-  OPEN: '办理中',
-  COMPLETED: '已办结',
-  PENDING_ACCEPT: '待承接',
-  IN_PROGRESS: '办理中',
-  RETURNED: '已退回',
-  REASSIGNED: '已重派',
-  TRANSFERRED: '已交接',
-  AWAITING_TARGET: '待目标确认',
-  AWAITING_ISSUER: '待总队审批',
-  APPROVED: '已批准',
-  TARGET_DECLINED: '目标拒绝',
-  ISSUER_REJECTED: '总队拒绝',
-  WITHDRAWN: '已撤回',
-};
+/** 交接所需时长按小时或天填写；取值是每单位的分钟数，提交时换算成接口要的分钟。 */
+const durationUnits = [
+  { value: 60, label: '小时' },
+  { value: 1440, label: '天' },
+];
 const labels: Record<string, string> = {
   create: '新建任务',
   accept: '承接任务',
   progress: '记录进展',
   return: '承接前退回',
-  dispatch: '继续下发',
+  dispatch: '下发下级',
   reassign: '退回后重新派发',
-  results: '提交正式结果',
+  results: '提交处置结果',
   'transfer-requests': '申请支队交接',
-  respond: '回应交接',
+  respond: '确认或拒绝承接',
   decide: '审批交接',
-  withdraw: '撤回交接',
+  withdraw: '撤回交接申请',
+  close: '办结任务',
+  recall: '撤回分支',
 };
-const at = formatTaskTime;
 type Dialog = {
   action: string;
   branch?: TaskBranch;
@@ -85,6 +81,18 @@ export function TaskHandlingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { state } = useAuth();
   const outcomeDictionary = useDictionary(DICTIONARY_CODES.taskResultOutcome);
+  const orderDictionary = useDictionary(DICTIONARY_CODES.taskOrderStatus);
+  const branchDictionary = useDictionary(DICTIONARY_CODES.taskBranchStatus);
+  const assignmentDictionary = useDictionary(DICTIONARY_CODES.taskAssignmentStatus);
+  const transferDictionary = useDictionary(DICTIONARY_CODES.taskTransferStatus);
+  const returnDictionary = useDictionary(DICTIONARY_CODES.taskReturnReason);
+  const taskLabels: TaskLabels = {
+    order: (code) => (code ? dictLabel(orderDictionary.data, code) : '—'),
+    branch: (code) => (code ? dictLabel(branchDictionary.data, code) : '—'),
+    assignment: (code) => (code ? dictLabel(assignmentDictionary.data, code) : '—'),
+    transfer: (code) => (code ? dictLabel(transferDictionary.data, code) : '—'),
+    returnReason: (code) => (code ? dictLabel(returnDictionary.data, code) : '—'),
+  };
   const me = state.status === 'authenticated' ? state.user : null;
   const can = (code: string) => me?.permissionCodes.includes(code) ?? false;
   const requestedTab = searchParams.get('tab');
@@ -118,7 +126,9 @@ export function TaskHandlingPage() {
           ? 'reassign'
           : dialog?.action === 'transfer-requests'
             ? 'transfer'
-            : undefined;
+            : dialog?.action === 'results'
+              ? 'suggest'
+              : undefined;
   const targets = useQuery({
     queryKey: ['task-targets', targetAction, selectedId, dialog?.branch?.id],
     queryFn: () => fetchTaskTargets(targetAction!, selectedId, dialog?.branch?.id),
@@ -164,7 +174,10 @@ export function TaskHandlingPage() {
           },
           dialog.key,
         );
-      else {
+      else if (a === 'close') {
+        if (!selectedId) return;
+        saved = await closeTask(selectedId, { conclusion: text('conclusion') }, dialog.key);
+      } else {
         if (!selectedId || !dialog.branch?.id) return;
         let body: Record<string, unknown> | undefined;
         if (a === 'dispatch' || a === 'reassign')
@@ -175,7 +188,8 @@ export function TaskHandlingPage() {
             targetUnitCodes,
           };
         if (a === 'progress') body = { note: text('note') };
-        if (a === 'return') body = { reason: text('reason') };
+        if (a === 'return') body = { reasonCode: text('reasonCode'), reason: text('reason') };
+        if (a === 'recall') body = { reason: text('reason') };
         if (a === 'results')
           body = {
             outcomeCode: text('outcomeCode'),
@@ -196,7 +210,9 @@ export function TaskHandlingPage() {
             accept: values.accept === true,
             reason: text('reason'),
             requiredDurationMinutes:
-              values.accept === true ? Number(values.requiredDurationMinutes) : undefined,
+              values.accept === true
+                ? Number(values.requiredDurationValue) * Number(values.requiredDurationUnit)
+                : undefined,
           };
         if (a === 'decide')
           body = {
@@ -231,7 +247,7 @@ export function TaskHandlingPage() {
     {
       title: '任务',
       dataIndex: 'title',
-      width: 290,
+      width: 312,
       render: (_value, item) => (
         <div className={styles.taskCell}>
           <button
@@ -250,25 +266,25 @@ export function TaskHandlingPage() {
     {
       title: '状态',
       dataIndex: 'status',
-      width: 100,
-      render: (value: string) => (
-        <Tag color={value === 'COMPLETED' ? 'green' : 'blue'}>{statuses[value] ?? value}</Tag>
+      width: 88,
+      render: (value: string | undefined) => (
+        <TaskTag {...taskStatusTag(value, taskLabels.order)} />
       ),
     },
-    { title: '发起单位', dataIndex: 'issuerUnitName', width: 170 },
+    { title: '发起单位', dataIndex: 'issuerUnitName', width: 160 },
     {
       title: '当前责任',
       dataIndex: 'currentResponsibleUnits',
       width: 175,
       render: (_value, item) => (
         <div className={styles.taskCell}>
-          <span>{item.currentResponsibleUnits ?? '已交付'}</span>
+          <span>{item.currentResponsibleUnits ?? '—'}</span>
           {item.myStatus && (
             <Typography.Text type="secondary">
               我单位：
               {item.myStatus
                 .split(',')
-                .map((status) => statuses[status] ?? status)
+                .map((status) => taskLabels.assignment(status))
                 .join('、')}
             </Typography.Text>
           )}
@@ -281,8 +297,12 @@ export function TaskHandlingPage() {
       width: 185,
       render: (_value, item) => (
         <div className={styles.taskCell}>
-          <span>当前 {at(item.currentDueAt)}</span>
-          <Typography.Text type="secondary">原定 {at(item.initialDueAt)}</Typography.Text>
+          <span>
+            当前 <TaskTime value={item.currentDueAt} />
+          </span>
+          <Typography.Text type="secondary">
+            原定 <TaskTime value={item.initialDueAt} />
+          </Typography.Text>
         </div>
       ),
     },
@@ -290,25 +310,29 @@ export function TaskHandlingPage() {
       title: '分支情况',
       dataIndex: 'openBranchCount',
       width: 145,
-      render: (_value, item) => (
-        <div className={styles.taskCell}>
-          <span>待结果 {item.openBranchCount ?? 0}</span>
-          {!!item.pendingTransferCount && (
-            <Typography.Text type="secondary">
-              待处理交接 {item.pendingTransferCount}
-            </Typography.Text>
-          )}
-          {!!item.overdueBranchCount && (
-            <Typography.Text type="danger">逾期分支 {item.overdueBranchCount}</Typography.Text>
-          )}
-        </div>
-      ),
+      // 只列还需要关注的数量；都为 0 时显示 `—`，不再出现“待结果 0”。
+      render: (_value, item) =>
+        item.openBranchCount || item.pendingTransferCount || item.overdueBranchCount ? (
+          <div className={styles.taskCell}>
+            {!!item.openBranchCount && <span>待答复 {item.openBranchCount}</span>}
+            {!!item.pendingTransferCount && (
+              <Typography.Text type="secondary">
+                待处理交接 {item.pendingTransferCount}
+              </Typography.Text>
+            )}
+            {!!item.overdueBranchCount && (
+              <Typography.Text type="danger">逾期分支 {item.overdueBranchCount}</Typography.Text>
+            )}
+          </div>
+        ) : (
+          <Typography.Text type="secondary">—</Typography.Text>
+        ),
     },
     {
       title: '最近动作',
       dataIndex: 'lastActionAt',
       width: 170,
-      render: (value: string | undefined) => <span className={styles.taskNo}>{at(value)}</span>,
+      render: (value: string | undefined) => <TaskTime value={value} />,
     },
     {
       title: '操作',
@@ -327,7 +351,7 @@ export function TaskHandlingPage() {
     <div>
       {selectedId ? (
         !hasPermission(me?.permissionCodes, PERMISSIONS.taskRead) ? (
-          <Alert type="warning" message="当前账号没有任务查看权限" />
+          <Alert type="warning" title="当前账号没有任务查看权限" />
         ) : detail.isLoading ? (
           <div className={styles.page}>
             <Spin />
@@ -339,16 +363,17 @@ export function TaskHandlingPage() {
             </Button>
             <Alert
               type="error"
-              message={detail.error instanceof ApiError ? detail.error.message : '详情加载失败'}
+              title={detail.error instanceof ApiError ? detail.error.message : '详情加载失败'}
               action={<Button onClick={() => detail.refetch()}>重试</Button>}
             />
           </div>
         ) : current ? (
           <TaskDetailView
+            key={current.id}
             task={current}
-            can={can}
             canCreateFollowup={can(PERMISSIONS.taskCreate) && (createTargets.data?.length ?? 0) > 0}
-            outcomeLabel={(code) => dictLabel(outcomeDictionary.data, code ?? '')}
+            outcomeLabel={(code) => (code ? dictLabel(outcomeDictionary.data, code) : '—')}
+            labels={taskLabels}
             onBack={() => navigate(listUrl)}
             onAction={open}
           />
@@ -370,13 +395,13 @@ export function TaskHandlingPage() {
               )}
             </div>
             {!hasPermission(me?.permissionCodes, PERMISSIONS.taskRead) ? (
-              <Alert type="warning" message="当前账号没有任务查看权限" />
+              <Alert type="warning" title="当前账号没有任务查看权限" />
             ) : list.isLoading ? (
               <Spin />
             ) : list.isError ? (
               <Alert
                 type="error"
-                message="任务加载失败"
+                title="任务加载失败"
                 action={<Button onClick={() => list.refetch()}>重试</Button>}
               />
             ) : (
@@ -413,6 +438,13 @@ export function TaskHandlingPage() {
         okText="确认提交"
       >
         <Form form={form} layout="vertical" onFinish={submit}>
+          {targetAction && targets.isError ? (
+            <Alert
+              type="error"
+              title="单位选项加载失败"
+              action={<Button onClick={() => targets.refetch()}>重试</Button>}
+            />
+          ) : null}
           {dialog?.action === 'create' && (
             <>
               <Form.Item name="title" label="任务标题" rules={[{ required: true, max: 160 }]}>
@@ -458,7 +490,12 @@ export function TaskHandlingPage() {
                 />
               </Form.Item>
               <Form.Item name="dueAt" label="明确截止时间" rules={[{ required: true }]}>
-                <DatePicker showTime placeholder="选择截止日期和时间" style={{ width: '100%' }} />
+                <DatePicker
+                  showTime={{ format: 'HH:mm' }}
+                  format="YYYY-MM-DD HH:mm"
+                  placeholder="选择截止日期和时间"
+                  style={{ width: '100%' }}
+                />
               </Form.Item>
             </>
           )}
@@ -467,10 +504,40 @@ export function TaskHandlingPage() {
               <Input.TextArea rows={4} />
             </Form.Item>
           )}
-          {dialog?.action === 'return' && (
-            <Form.Item name="reason" label="退回原因" rules={[{ required: true, max: 1000 }]}>
-              <Input.TextArea rows={3} />
+          {dialog?.action === 'close' && (
+            <Form.Item
+              name="conclusion"
+              label="总体结论"
+              rules={[{ required: true, whitespace: true, max: 4000 }]}
+            >
+              <Input.TextArea rows={5} maxLength={4000} showCount />
             </Form.Item>
+          )}
+          {dialog?.action === 'recall' && (
+            <Form.Item
+              name="reason"
+              label="撤回原因"
+              rules={[{ required: true, whitespace: true, max: 1000 }]}
+            >
+              <Input.TextArea rows={3} maxLength={1000} showCount />
+            </Form.Item>
+          )}
+          {dialog?.action === 'return' && (
+            <>
+              <Form.Item name="reasonCode" label="退回原因" rules={[{ required: true }]}>
+                <Select
+                  options={toDictOptions(returnDictionary.data)}
+                  loading={returnDictionary.isLoading}
+                />
+              </Form.Item>
+              <Form.Item
+                name="reason"
+                label="具体说明"
+                rules={[{ required: true, whitespace: true, max: 1000 }]}
+              >
+                <Input.TextArea rows={3} maxLength={1000} showCount />
+              </Form.Item>
+            </>
           )}
           {dialog?.action === 'results' && (
             <>
@@ -494,12 +561,37 @@ export function TaskHandlingPage() {
               >
                 <Input.TextArea rows={3} />
               </Form.Item>
-              <Form.Item name="suggestedUnitCode" label="建议后续单位编码（可选）">
-                <Input />
+              <Form.Item
+                noStyle
+                shouldUpdate={(before, after) => before.outcomeCode !== after.outcomeCode}
+              >
+                {({ getFieldValue }) => (
+                  <Form.Item
+                    name="suggestedUnitCode"
+                    label="建议后续单位"
+                    rules={[
+                      {
+                        required: getFieldValue('outcomeCode') === 'OUT_OF_JURISDICTION',
+                        message: '转出辖区须指明建议后续单位',
+                      },
+                    ]}
+                  >
+                    <Select
+                      showSearch={{ optionFilterProp: 'label' }}
+                      allowClear
+                      placeholder="搜索并选择建议单位"
+                      loading={targets.isLoading}
+                      options={(targets.data ?? []).map((unit) => ({
+                        value: unit.code,
+                        label: unit.name,
+                      }))}
+                    />
+                  </Form.Item>
+                )}
               </Form.Item>
               <Alert
                 type="info"
-                message="跨辖区事项由发出单位决定后续任务；结果不会把剩余时限转给其他大队。"
+                title="跨辖区事项由发出单位决定后续任务；结果不会把剩余时限转给其他大队。"
               />
             </>
           )}
@@ -523,7 +615,7 @@ export function TaskHandlingPage() {
                   </Form.Item>
                 ),
               )}
-              <Alert type="info" message="批准前本单位继续负责，申请不会暂停原期限。" />
+              <Alert type="info" title="批准前本单位继续负责，申请不会暂停原期限。" />
             </>
           )}
           {dialog?.action === 'respond' && (
@@ -539,21 +631,39 @@ export function TaskHandlingPage() {
               <Form.Item noStyle shouldUpdate>
                 {({ getFieldValue }) =>
                   getFieldValue('accept') === true ? (
-                    <Form.Item
-                      name="requiredDurationMinutes"
-                      label="批准后至少需要的办理分钟数"
-                      rules={[{ required: true }]}
-                    >
-                      <Input type="number" min={1} />
+                    <Form.Item label="批准后至少需要的办理时长" required>
+                      <Space.Compact>
+                        <Form.Item
+                          name="requiredDurationValue"
+                          noStyle
+                          rules={[{ required: true, message: '请填写所需办理时长' }]}
+                        >
+                          <InputNumber
+                            min={1}
+                            max={9999}
+                            precision={0}
+                            placeholder="时长"
+                            aria-label="所需办理时长"
+                            style={{ width: 160 }}
+                          />
+                        </Form.Item>
+                        <Form.Item name="requiredDurationUnit" noStyle initialValue={60}>
+                          <Select
+                            aria-label="时长单位"
+                            style={{ width: 88 }}
+                            options={durationUnits}
+                          />
+                        </Form.Item>
+                      </Space.Compact>
                     </Form.Item>
-                  ) : (
+                  ) : getFieldValue('accept') === false ? (
                     <Form.Item name="reason" label="拒绝理由" rules={[{ required: true }]}>
                       <Input.TextArea />
                     </Form.Item>
-                  )
+                  ) : null
                 }
               </Form.Item>
-              <Alert type="info" message="同意后责任仍在原支队；总队批准时才转移。" />
+              <Alert type="info" title="同意后责任仍在原支队；总队批准时才转移。" />
             </>
           )}
           {dialog?.action === 'decide' && (
@@ -570,7 +680,12 @@ export function TaskHandlingPage() {
                 {({ getFieldValue }) =>
                   getFieldValue('approve') === true ? (
                     <Form.Item name="dueAt" label="目标支队新截止时间" rules={[{ required: true }]}>
-                      <DatePicker showTime style={{ width: '100%' }} />
+                      <DatePicker
+                        showTime={{ format: 'HH:mm' }}
+                        format="YYYY-MM-DD HH:mm"
+                        placeholder="选择新的截止日期和时间"
+                        style={{ width: '100%' }}
+                      />
                     </Form.Item>
                   ) : null
                 }
@@ -580,12 +695,18 @@ export function TaskHandlingPage() {
               </Form.Item>
               <Alert
                 type="info"
-                message={`目标要求批准后至少 ${dialog.transfer?.requiredDurationMinutes ?? '—'} 分钟；整单当前期限 ${at(current?.currentDueAt)}。`}
+                title={
+                  <>
+                    接收支队要求批准后至少{' '}
+                    {formatDuration(dialog.transfer?.requiredDurationMinutes)}；整单当前期限{' '}
+                    <TaskTime value={current?.currentDueAt} />。
+                  </>
+                }
               />
             </>
           )}
           {['accept', 'withdraw'].includes(dialog?.action ?? '') && (
-            <Alert type="info" message="此操作会写入任务历史。" />
+            <Alert type="info" title="此操作会写入任务历史。" />
           )}
         </Form>
       </Modal>

@@ -1,0 +1,6 @@
+.time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ls-mono);
+  white-space: nowrap;
+}

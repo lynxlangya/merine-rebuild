@@ -61,6 +61,20 @@ public class TaskController {
         return ApiResponse.success(service.create(auth, key, input), request);
     }
 
+    @PostMapping("/{id}/close")
+    public ApiResponse<TaskViews.TaskDetail> close(Authentication auth, @PathVariable String id,
+            @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody TaskRequests.Close input,
+            HttpServletRequest request) {
+        return ApiResponse.success(service.close(auth, TaskService.parseId(id), key, input), request);
+    }
+
+    @PostMapping("/{id}/branches/{branchId}/recall")
+    public ApiResponse<TaskViews.TaskDetail> recall(Authentication auth, @PathVariable String id,
+            @PathVariable String branchId, @RequestHeader("Idempotency-Key") String key,
+            @Valid @RequestBody TaskRequests.Recall input, HttpServletRequest request) {
+        return ApiResponse.success(service.recall(auth, TaskService.parseId(id), TaskService.parseId(branchId), key, input), request);
+    }
+
     @PostMapping("/{id}/branches/{branchId}/accept")
     public ApiResponse<TaskViews.TaskDetail> accept(Authentication auth, @PathVariable String id,
             @PathVariable String branchId, @RequestHeader("Idempotency-Key") String key,

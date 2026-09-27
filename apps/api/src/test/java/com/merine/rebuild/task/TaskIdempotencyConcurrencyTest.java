@@ -8,6 +8,10 @@ import com.merine.rebuild.task.dto.TaskRequests;
 import java.sql.Connection;
 import java.time.Instant;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -33,6 +37,7 @@ class TaskIdempotencyConcurrencyTest {
     @Autowired TaskService service;
     @Autowired JdbcTemplate sql;
     @Autowired DataSource dataSource;
+    @Autowired PlatformTransactionManager transactions;
 
     private long userId;
     private String login;
@@ -85,11 +90,44 @@ class TaskIdempotencyConcurrencyTest {
             Future<String> first = pool.submit(call);
             Future<String> second = pool.submit(call);
             start.countDown();
-            assertThat(first.get()).isEqualTo(second.get());
+            assertThat(first.get(15, TimeUnit.SECONDS)).isEqualTo(second.get(15, TimeUnit.SECONDS));
         }
         assertThat(sql.queryForObject("SELECT COUNT(*) FROM task_order WHERE issuer_user_id = ?", Integer.class, userId))
                 .isEqualTo(1);
         assertThat(sql.queryForObject("SELECT COUNT(*) FROM task_command WHERE actor_unit_id = (SELECT unit_id FROM sys_user WHERE id = ?) AND idempotency_key = ? AND task_id IS NOT NULL", Integer.class, userId, key))
                 .isEqualTo(1);
     }
+    @Test
+    void distinctConcurrentIntentsGetUniqueNumbersWithoutDeadlock() throws Exception {
+        TaskRequests.Create input = new TaskRequests.Create("不同意图并发编号", "核查", "答复",
+                Instant.now().plusSeconds(86400), List.of(targetCode), null);
+        CountDownLatch start = new CountDownLatch(1);
+        List<String> numbers = new ArrayList<>();
+        try (ExecutorService pool = Executors.newFixedThreadPool(4)) {
+            List<Future<String>> calls = new ArrayList<>();
+            for (int i = 0; i < 4; i++) calls.add(pool.submit(() -> {
+                start.await();
+                return service.create(auth, UUID.randomUUID().toString(), input).taskNo();
+            }));
+            start.countDown();
+            for (Future<String> call : calls) numbers.add(call.get(15, TimeUnit.SECONDS));
+        }
+        assertThat(numbers).hasSize(4).doesNotHaveDuplicates();
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM task_order WHERE issuer_user_id = ?", Integer.class, userId)).isEqualTo(4);
+    }
+
+    @Test
+    void rolledBackCreateDoesNotConsumeNumberOrLeaveAnOrder() {
+        TaskRequests.Create input = new TaskRequests.Create("回滚发号", "核查", "答复",
+                Instant.now().plusSeconds(86400), List.of(targetCode), null);
+        TransactionTemplate transaction = new TransactionTemplate(transactions);
+        String rolledBack = transaction.execute(status -> {
+            String number = service.create(auth, UUID.randomUUID().toString(), input).taskNo();
+            status.setRollbackOnly();
+            return number;
+        });
+        assertThat(sql.queryForObject("SELECT COUNT(*) FROM task_order WHERE issuer_user_id = ?", Integer.class, userId)).isZero();
+        assertThat(service.create(auth, UUID.randomUUID().toString(), input).taskNo()).isEqualTo(rolledBack);
+    }
+
 }

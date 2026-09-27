@@ -21,6 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +32,8 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -39,9 +44,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TaskService {
     private static final Set<String> OUTCOMES = Set.of(
-            "FULFILLED", "PARTIAL", "OUT_OF_JURISDICTION", "UNABLE_TO_VERIFY");
+            "FULFILLED", "NOT_FOUND", "PARTIAL", "OUT_OF_JURISDICTION", "UNABLE_TO_VERIFY");
     private static final Set<String> TABS = Set.of(
-            "all", "inbox", "doing", "issued", "transfers", "decisions", "completed");
+            "all", "inbox", "doing", "issued", "transfers", "decisions", "closing", "completed");
+
+    private static final Set<String> RETURN_REASONS = Set.of("WRONG_TARGET", "NOT_OUR_DUTY", "UNCLEAR_REQUIREMENT");
+    // 可读编号按业务所在的上海自然日，与前端 taskTime 的显示日期保持一致。
+    private static final ZoneId TASK_ZONE = ZoneId.of("Asia/Shanghai");
 
     private final TaskMapper mapper;
     private final PermissionGuard guard;
@@ -53,7 +62,10 @@ public class TaskService {
         this.dictionaries = dictionaries;
     }
 
-    private record Actor(long userId, UnitRow unit) { }
+    private record Actor(long userId, UnitRow unit, Set<String> permissions) {
+        Actor withUnit(UnitRow value) { return new Actor(userId, value, permissions); }
+        boolean can(String permission) { return permissions.contains(permission); }
+    }
     private record Context(OrderRow order, BranchRow branch, AssignmentRow assignment) { }
 
     private Context locked(Actor actor, long taskId, long branchId) {
@@ -75,12 +87,12 @@ public class TaskService {
     private void requireNoTransfer(long branchId) {
         if (mapper.transfersByBranch(branchId).stream().anyMatch(t ->
                 "AWAITING_TARGET".equals(t.status()) || "AWAITING_ISSUER".equals(t.status()))) {
-            throw conflict("TRANSFER_PENDING", "请先完成或撤回交接申请");
+            throw transferPending();
         }
     }
 
     private static void requireNoChildren(TaskMapper mapper, long branchId) {
-        if (mapper.openChildren(branchId) != 0) throw conflict("CHILD_BRANCH_OPEN", "下级分支尚未全部办结");
+        if (mapper.openChildren(branchId) != 0) throw childOpen();
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -128,7 +140,7 @@ public class TaskService {
         guard.require(auth, PermissionCodes.TASK_RETURN, "没有退回权限");
         Actor actor = actor(auth);
         String reason = input.reason().strip();
-        String body = digest(taskId, branchId, reason);
+        String body = digest(taskId, branchId, input.reasonCode(), reason);
         TaskViews.TaskDetail prior = replay(actor, "RETURN", key, body);
         if (prior != null) return prior;
         BranchRow before = mapper.branch(branchId);
@@ -138,13 +150,19 @@ public class TaskService {
         lockUnits(actor.unit().id(), List.of(previous.fromUnitId()));
         prior = reserve(actor, "RETURN", key, body);
         if (prior != null) return prior;
+        if (!RETURN_REASONS.contains(input.reasonCode())) throw bad("INVALID_RETURN_REASON", "退回原因不合法");
+        var reasonDictionary = dictionaries.find(List.of("task.return.reason")).getFirst();
+        if (!"ENABLED".equals(reasonDictionary.status()) || reasonDictionary.items().stream()
+                .noneMatch(item -> input.reasonCode().equals(item.value()) && "ENABLED".equals(item.status()))) {
+            throw bad("RETURN_REASON_DISABLED", "该退回原因已停用，请刷新后重选");
+        }
         Context c = locked(actor, taskId, branchId);
         requireCurrent(actor, c, "PENDING_ACCEPT");
         UnitRow sender = mapper.lockUnitById(c.assignment().fromUnitId());
         if (sender == null || !"ENABLED".equals(sender.status())) throw conflict("UNIT_CHANGED", "发送单位已变化");
         Instant now = Instant.now();
         changed(mapper.endAssignment(c.assignment().id(), c.assignment().version(), "PENDING_ACCEPT",
-                "RETURNED", actor.userId(), now, reason));
+                "RETURNED", actor.userId(), now, reason, input.reasonCode()));
         mapper.insertAssignment(branchId, c.assignment().id(), actor.unit().id(), actor.unit().name(),
                 sender.id(), sender.name(), "RETURN", c.assignment().dueAt(), "IN_PROGRESS", null, now);
         long newId = mapper.lastId();
@@ -170,7 +188,7 @@ public class TaskService {
         if (prior != null) return prior;
         List<UnitRow> candidates = resolveTargets(codes);
         Map<Long, UnitRow> lockedUnits = lockUnits(actor.unit().id(), candidates.stream().map(UnitRow::id).toList());
-        actor = new Actor(actor.userId(), lockedUnits.get(actor.unit().id()));
+        actor = actor.withUnit(lockedUnits.get(actor.unit().id()));
         List<UnitRow> targets = candidates.stream().map(target -> lockedUnits.get(target.id())).toList();
         prior = reserve(actor, code, key, body);
         if (prior != null) return prior;
@@ -178,16 +196,21 @@ public class TaskService {
         for (UnitRow target : targets) requireDirect(actor.unit(), target);
         Context c = locked(actor, taskId, branchId);
         requireCurrent(actor, c, "IN_PROGRESS");
+        if (!reassign && "RETURN".equals(c.assignment().sourceAction())) throw returnPending();
         requireNoTransfer(branchId);
         Instant now = Instant.now();
+        if (!c.assignment().dueAt().isAfter(now)) throw duePassed();
         requireFuture(input.dueAt(), now);
         if (input.dueAt().isAfter(c.assignment().dueAt())) throw bad("DUE_EXCEEDS_PARENT", "下级期限不能晚于当前承办期限");
         if (reassign) {
             if (targets.size() != 1 || !"RETURN".equals(c.assignment().sourceAction())) {
                 throw bad("INVALID_REASSIGN", "只有退回接回的分支可重新派给一个直属下级");
             }
+            if (returnedUnits(mapper.assignments(taskId), branchId).contains(targets.getFirst().id())) {
+                throw bad("REASSIGN_TO_RETURNER", "该单位已退回过此分支，请改派其他单位");
+            }
             changed(mapper.endAssignment(c.assignment().id(), c.assignment().version(), "IN_PROGRESS",
-                    "REASSIGNED", actor.userId(), now, "重新派发"));
+                    "REASSIGNED", actor.userId(), now, "重新派发", null));
             UnitRow target = targets.get(0);
             mapper.insertAssignment(branchId, c.assignment().id(), actor.unit().id(), actor.unit().name(),
                     target.id(), target.name(), "REASSIGN", input.dueAt(), "PENDING_ACCEPT", null, null);
@@ -225,10 +248,17 @@ public class TaskService {
                 .noneMatch(item -> input.outcomeCode().equals(item.value()) && "ENABLED".equals(item.status()))) {
             throw bad("OUTCOME_DISABLED", "该结果类型已停用，请刷新后重选");
         }
+        if ("OUT_OF_JURISDICTION".equals(input.outcomeCode()) && suggestedCode == null) {
+            throw bad("SUGGESTED_UNIT_REQUIRED", "转出辖区须指明建议后续单位");
+        }
+        if (suggested != null && suggested.id() == actor.unit().id()) {
+            throw bad("INVALID_TARGET_UNIT", "建议单位不能是本单位");
+        }
         if (suggestedCode != null
                 && (suggested == null || !"ENABLED".equals(suggested.status()))) throw bad("INVALID_TARGET_UNIT", "建议单位不存在或不可用");
         Context c = locked(actor, taskId, branchId);
         requireCurrent(actor, c, "IN_PROGRESS");
+        if ("RETURN".equals(c.assignment().sourceAction())) throw returnPending();
         requireNoTransfer(branchId);
         requireNoChildren(mapper, branchId);
         Instant now = Instant.now();
@@ -236,12 +266,62 @@ public class TaskService {
                 handlingDetail, conclusion,
                 suggested == null ? null : suggested.id(), actor.userId(), now);
         changed(mapper.endAssignment(c.assignment().id(), c.assignment().version(), "IN_PROGRESS",
-                "COMPLETED", actor.userId(), now, null));
+                "COMPLETED", actor.userId(), now, null, null));
         changed(mapper.completeBranch(branchId, c.branch().version(), now));
         action(taskId, branchId, c.assignment().id(), null, "RESULT", actor, null, null, null,
                 input.outcomeCode(), now);
-        if (mapper.openBranches(taskId) == 0) changed(mapper.completeOrder(taskId, now));
+        if (mapper.openBranches(taskId) == 0) changed(mapper.awaitClose(taskId, now));
         recordCommand(actor, "RESULT", key, body, taskId, branchId, now);
+        return detailFor(actor, taskId);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public TaskViews.TaskDetail close(Authentication auth, long taskId, String key, TaskRequests.Close input) {
+        guard.require(auth, PermissionCodes.TASK_CREATE, "没有办结任务权限");
+        Actor actor = actor(auth);
+        String conclusion = input.conclusion().strip();
+        String body = digest(taskId, conclusion);
+        TaskViews.TaskDetail prior = replay(actor, "CLOSE", key, body);
+        if (prior != null) return prior;
+        lockUnits(actor.unit().id(), List.of());
+        prior = reserve(actor, "CLOSE", key, body);
+        if (prior != null) return prior;
+        OrderRow order = mapper.lockOrder(taskId);
+        if (order == null) throw notFound();
+        if (order.issuerUnitId() != actor.unit().id()) throw forbidden();
+        if ("OPEN".equals(order.status())) throw branchesOpen();
+        if (!"AWAITING_CLOSE".equals(order.status())) throw conflict("TASK_CLOSED", "任务或分支已经办结");
+        Instant now = Instant.now();
+        changed(mapper.completeOrder(taskId, now, conclusion, actor.userId()));
+        action(taskId, null, null, null, "CLOSE", actor, null, null, null, null, now);
+        recordCommand(actor, "CLOSE", key, body, taskId, null, now);
+        return detailFor(actor, taskId);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public TaskViews.TaskDetail recall(Authentication auth, long taskId, long branchId,
+                                       String key, TaskRequests.Recall input) {
+        guard.require(auth, PermissionCodes.TASK_DISPATCH, "没有撤回分支权限");
+        Actor actor = actor(auth);
+        String reason = input.reason().strip();
+        String body = digest(taskId, branchId, reason);
+        TaskViews.TaskDetail prior = replay(actor, "RECALL", key, body);
+        if (prior != null) return prior;
+        lockUnits(actor.unit().id(), List.of());
+        prior = reserve(actor, "RECALL", key, body);
+        if (prior != null) return prior;
+        Context c = locked(actor, taskId, branchId);
+        requireCurrent(actor, c, "IN_PROGRESS");
+        if (!"RETURN".equals(c.assignment().sourceAction())) throw conflict("NOT_RETURNED", "只有被退回的分支可以撤回");
+        requireNoTransfer(branchId);
+        requireNoChildren(mapper, branchId);
+        Instant now = Instant.now();
+        changed(mapper.endAssignment(c.assignment().id(), c.assignment().version(), "IN_PROGRESS",
+                "RECALLED", actor.userId(), now, reason, null));
+        changed(mapper.recallBranch(branchId, c.branch().version()));
+        action(taskId, branchId, c.assignment().id(), null, "RECALL", actor, null, null, null, reason, now);
+        if (mapper.openBranches(taskId) == 0) changed(mapper.awaitClose(taskId, now));
+        recordCommand(actor, "RECALL", key, body, taskId, branchId, now);
         return detailFor(actor, taskId);
     }
 
@@ -261,7 +341,7 @@ public class TaskService {
         UnitRow target = mapper.unitByCode(targetCode);
         if (target == null) throw bad("INVALID_TARGET_UNIT", "目标支队不存在");
         Map<Long, UnitRow> lockedUnits = lockUnits(actor.unit().id(), List.of(target.id()));
-        actor = new Actor(actor.userId(), lockedUnits.get(actor.unit().id()));
+        actor = actor.withUnit(lockedUnits.get(actor.unit().id()));
         target = lockedUnits.get(target.id());
         prior = reserve(actor, "TRANSFER_REQUEST", key, body);
         if (prior != null) return prior;
@@ -371,7 +451,7 @@ public class TaskService {
                 throw conflict("UNIT_CHANGED", "目标支队已变化");
             }
             changed(mapper.endAssignment(c.assignment().id(), c.assignment().version(), "IN_PROGRESS",
-                    "TRANSFERRED", actor.userId(), now, transfer.reason()));
+                    "TRANSFERRED", actor.userId(), now, transfer.reason(), null));
             mapper.insertAssignment(branchId, c.assignment().id(), c.assignment().toUnitId(),
                     c.assignment().toUnitNameSnapshot(), target.id(), target.name(),
                     "PEER_TRANSFER", input.dueAt(), "IN_PROGRESS", transfer.targetRespondedByUserId(), now);
@@ -448,36 +528,46 @@ public class TaskService {
     @Transactional(readOnly = true)
     public List<TaskViews.UnitOption> targets(Authentication auth, String action, Long taskId,
                                                Long branchId) {
-        String permission = "transfer".equals(action) ? PermissionCodes.TASK_TRANSFER_REQUEST
+        String permission = "suggest".equals(action) ? PermissionCodes.TASK_SUBMIT_RESULT
+                : "transfer".equals(action) ? PermissionCodes.TASK_TRANSFER_REQUEST
                 : "dispatch".equals(action) || "reassign".equals(action) ? PermissionCodes.TASK_DISPATCH
                 : PermissionCodes.TASK_CREATE;
         guard.require(auth, permission, "没有选择目标单位的权限");
         Actor actor = actor(auth);
-        if (!Set.of("create", "dispatch", "transfer", "reassign").contains(action)) {
+        if (!Set.of("create", "dispatch", "transfer", "reassign", "suggest").contains(action)) {
             throw bad("INVALID_TASK_ACTION", "目标单位查询动作不合法");
         }
-        if ("dispatch".equals(action) || "reassign".equals(action)) {
-            if (taskId == null || branchId == null) {
-                throw bad("INVALID_TASK_BRANCH", "缺少当前任务或分支");
-            }
+        Set<Long> formerHolders = Set.of();
+        Set<Long> returners = Set.of();
+        if (!"create".equals(action)) {
+            if (taskId == null || branchId == null) throw bad("INVALID_TASK_BRANCH", "缺少当前任务或分支");
             Context context = visibleContext(actor, taskId, branchId);
-            if (context.assignment().toUnitId() != actor.unit().id()) {
-                throw forbidden();
-            }
+            if (context.assignment() == null || context.assignment().toUnitId() != actor.unit().id()) throw forbidden();
+            List<AssignmentRow> assignments = mapper.assignments(taskId);
+            formerHolders = assignments.stream().filter(a -> a.branchId() == branchId)
+                    .map(AssignmentRow::toUnitId).collect(Collectors.toSet());
+            if ("reassign".equals(action)) returners = returnedUnits(assignments, branchId);
         }
         Map<Long, UnitRow> all = new HashMap<>();
         mapper.allUnits().forEach(unit -> all.put(unit.id(), unit));
-        return mapper.enabledUnits().stream()
-                .filter(unit -> "transfer".equals(action)
-                        ? actor.unit().level() == 2 && unit.level() == 2
-                          && unit.id() != actor.unit().id()
-                          && unit.parentId() != null
-                          && unit.parentId().equals(actor.unit().parentId())
-                        : unit.parentId() != null && unit.parentId() == actor.unit().id()
-                          && unit.level() == actor.unit().level() + 1)
-                .map(unit -> new TaskViews.UnitOption(unit.code(), unit.name(), unit.level(),
-                        unit.parentId() == null ? null : all.get(unit.parentId()).code()))
-                .toList();
+        List<UnitRow> candidates = "suggest".equals(action)
+                ? mapper.enabledUnits().stream().filter(unit -> unit.id() != actor.unit().id()).toList()
+                : "transfer".equals(action) ? transferCandidates(actor.unit(), mapper.enabledUnits(), formerHolders)
+                : dispatchCandidates(actor.unit(), mapper.enabledUnits(), returners);
+        return candidates.stream().map(unit -> new TaskViews.UnitOption(unit.code(), unit.name(), unit.level(),
+                unit.parentId() == null ? null : all.get(unit.parentId()).code())).toList();
+    }
+
+    private static List<UnitRow> transferCandidates(UnitRow actorUnit, List<UnitRow> enabledUnits,
+                                                     Set<Long> formerHolders) {
+        return enabledUnits.stream().filter(unit -> actorUnit.level() == 2 && unit.level() == 2
+                && unit.id() != actorUnit.id() && unit.parentId() != null
+                && unit.parentId().equals(actorUnit.parentId()) && !formerHolders.contains(unit.id())).toList();
+    }
+
+    private static List<UnitRow> dispatchCandidates(UnitRow actorUnit, List<UnitRow> enabledUnits, Set<Long> excluded) {
+        return enabledUnits.stream().filter(unit -> unit.parentId() != null && unit.parentId() == actorUnit.id()
+                && unit.level() == actorUnit.level() + 1 && !excluded.contains(unit.id())).toList();
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -499,7 +589,7 @@ public class TaskService {
         requireFuture(input.dueAt(), now);
         List<UnitRow> candidates = resolveTargets(codes);
         Map<Long, UnitRow> lockedUnits = lockUnits(actor.unit().id(), candidates.stream().map(UnitRow::id).toList());
-        actor = new Actor(actor.userId(), lockedUnits.get(actor.unit().id()));
+        actor = actor.withUnit(lockedUnits.get(actor.unit().id()));
         List<UnitRow> targets = candidates.stream().map(target -> lockedUnits.get(target.id())).toList();
         replay = reserve(actor, "CREATE", key, digest);
         if (replay != null) return replay;
@@ -511,16 +601,20 @@ public class TaskService {
             if (source == null || !canSeeBranch(actor, source.branchId())) throw notFound();
         }
 
-        String taskNo = "TASK-" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
+        LocalDate day = Instant.now().atZone(TASK_ZONE).toLocalDate();
+        mapper.allocateTaskNumber(day);
+        long sequence = mapper.lastId(); // insertOrder 会覆盖 LAST_INSERT_ID，须立即读取。
+        String taskNo = "RW-" + day.format(DateTimeFormatter.BASIC_ISO_DATE)
+                + "-" + String.format(Locale.ROOT, "%04d", sequence);
         mapper.insertOrder(taskNo, actor.unit().id(), actor.unit().name(), actor.userId(),
                 title, instruction, expectedResult, input.dueAt(), sourceId);
         long taskId = mapper.lastId();
+        action(taskId, null, null, null, "CREATE", actor, null, null, input.dueAt(),
+                "创建并下发给 " + targets.size() + " 个直属单位", now);
         for (UnitRow target : targets) {
             createBranch(taskId, null, actor, target, instruction,
                     expectedResult, input.dueAt(), now);
         }
-        action(taskId, null, null, null, "CREATE", actor, null, null, input.dueAt(),
-                "创建并下发给 " + targets.size() + " 个直属单位", now);
         recordCommand(actor, "CREATE", key, digest, taskId, null, now);
         return detailFor(actor, taskId);
     }
@@ -531,6 +625,10 @@ public class TaskService {
         List<BranchRow> allBranches = mapper.branches(taskId);
         List<AssignmentRow> allAssignments = mapper.assignments(taskId);
         List<TransferRow> allTransfers = mapper.transfers(taskId);
+        Map<Long, AssignmentRow> assignmentsById = new HashMap<>();
+        allAssignments.forEach(a -> assignmentsById.put(a.id(), a));
+        Map<Long, String> names = new HashMap<>();
+        mapper.userNames(taskId).forEach(user -> names.put(user.id(), user.displayName()));
         boolean issuer = order.issuerUnitId() == actor.unit().id();
         Set<Long> owned = new HashSet<>();
         Set<Long> pending = new HashSet<>();
@@ -551,6 +649,8 @@ public class TaskService {
         else visible.addAll(currentBranchScope(actor.unit().id(), allBranches, allAssignments));
         Map<Long, UnitRow> units = new HashMap<>();
         mapper.allUnits().forEach(unit -> units.put(unit.id(), unit));
+        List<UnitRow> enabledUnits = units.values().stream().filter(u -> "ENABLED".equals(u.status())).toList();
+        Instant now = Instant.now();
         Map<Long, ResultRow> results = new HashMap<>();
         mapper.results(taskId).forEach(result -> results.put(result.branchId(), result));
         List<TaskViews.Branch> branches = allBranches.stream()
@@ -563,7 +663,7 @@ public class TaskService {
                             .map(a -> new TaskViews.Assignment(id(a.id()), id(a.branchId()),
                                     a.fromUnitNameSnapshot(), a.toUnitNameSnapshot(),
                                     a.sourceAction(), a.status(), a.dueAt(), a.acceptedAt(),
-                                    a.endedAt(), a.endReason()))
+                                    a.endedAt(), a.endReason(), a.endReasonCode()))
                             .toList();
                     ResultRow row = limited ? null : results.get(branch.id());
                     TaskViews.Result result = row == null ? null : new TaskViews.Result(
@@ -572,7 +672,8 @@ public class TaskService {
                             row.suggestedUnitId() == null ? null
                                     : units.get(row.suggestedUnitId()).code(),
                             row.suggestedUnitId() == null ? null
-                                    : units.get(row.suggestedUnitId()).name(), row.submittedAt());
+                                    : units.get(row.suggestedUnitId()).name(), row.submittedAt(),
+                            names.get(row.submittedByUserId()));
                     List<TaskViews.Transfer> transfers = allTransfers.stream()
                             .filter(t -> t.branchId() == branch.id()
                                     && (!limited || t.targetUnitId() == actor.unit().id()))
@@ -583,7 +684,8 @@ public class TaskService {
                                     t.requestedAt(), t.targetRequiredDurationMinutes(),
                                     t.targetRespondedAt(), t.approvedDueAt(), t.issuerDecidedAt(),
                                     t.targetResponseReason(), t.issuerDecisionReason(),
-                                    t.targetUnitId() == actor.unit().id()))
+                                    t.targetUnitId() == actor.unit().id(),
+                                    assignmentsById.get(t.fromAssignmentId()).toUnitNameSnapshot()))
                             .toList();
                     return new TaskViews.Branch(id(branch.id()), id(branch.parentBranchId()),
                             branch.instructionSnapshot(), branch.expectedResultSnapshot(),
@@ -592,29 +694,135 @@ public class TaskService {
                                     && a.id() == branch.currentAssignmentId()
                                     && a.toUnitId() == actor.unit().id()),
                             actor.unit().level() < 3,
-                            actor.unit().level() == 2 && actor.unit().parentId() != null
-                                    && order.issuerUnitId() == actor.unit().parentId()
-                                    && branch.parentBranchId() == null
-                                    && branch.originFromUnitId() == order.issuerUnitId(),
-                            branch.completedAt(), assignments, result, transfers);
+                            canTransferPeer(actor.unit(), order, branch),
+                            branch.completedAt(), assignments, result, transfers,
+                            allowedActions(actor, order, branch, assignmentsById.get(branch.currentAssignmentId()),
+                                    allBranches, allAssignments, allTransfers, units, enabledUnits, now));
                 }).toList();
+        Map<Long, TransferRow> transfersById = new HashMap<>();
+        allTransfers.forEach(t -> transfersById.put(t.id(), t));
         List<TaskViews.Action> actions = mapper.actions(taskId).stream()
-                .filter(a -> issuer || (a.branchId() != null && visible.contains(a.branchId())
-                        && !pending.contains(a.branchId())))
-                .map(a -> toAction(a, units)).toList();
+                .filter(a -> issuer || Set.of("CREATE", "EXTEND_DUE", "CLOSE").contains(a.actionCode())
+                        || (a.branchId() != null && visible.contains(a.branchId()) && !pending.contains(a.branchId())))
+                .map(a -> {
+                    boolean showNote = issuer;
+                    if (!issuer && "EXTEND_DUE".equals(a.actionCode())) {
+                        TransferRow transfer = transfersById.get(a.transferRequestId());
+                        showNote = transfer != null && visible.contains(transfer.branchId())
+                                && (!pending.contains(transfer.branchId()) || owned.contains(transfer.branchId()));
+                    } else if (!"CREATE".equals(a.actionCode())) showNote = true;
+                    return toAction(a, units, names, assignmentsById, showNote);
+                }).toList();
         return new TaskViews.TaskDetail(id(order.id()), order.taskNo(), order.title(),
                 order.instruction(), order.expectedResult(), order.issuerUnitNameSnapshot(), issuer,
                 order.status(), order.initialDueAt(), order.currentDueAt(), order.completedAt(),
-                id(order.sourceResultId()), branches, actions);
+                id(order.sourceResultId()), branches, actions, names.get(order.issuerUserId()), order.createdAt(),
+                order.conclusion(), names.get(order.closedByUserId()),
+                issuer && actor.can(PermissionCodes.TASK_CREATE) && !"COMPLETED".equals(order.status())
+                        ? List.of("AWAITING_CLOSE".equals(order.status()) ? available("close", null) : blocked("close", branchesOpen()))
+                        : List.of());
     }
 
-    private static TaskViews.Action toAction(ActionRow row, Map<Long, UnitRow> units) {
+    private static TaskViews.Action toAction(ActionRow row, Map<Long, UnitRow> units,
+                                             Map<Long, String> names, Map<Long, AssignmentRow> assignments, boolean showNote) {
         UnitRow actor = units.get(row.actorUnitId());
         UnitRow target = row.targetUnitId() == null ? null : units.get(row.targetUnitId());
+        AssignmentRow returned = "RETURN".equals(row.actionCode()) ? assignments.get(row.assignmentId()) : null;
+        AssignmentRow previous = returned == null ? null : assignments.get(returned.previousAssignmentId());
         return new TaskViews.Action(row.actionCode(), id(row.branchId()),
                 actor == null ? "历史单位" : actor.name(), target == null ? null : target.name(),
-                row.note(), row.oldDueAt(), row.newDueAt(), row.occurredAt());
+                showNote ? row.note() : null, row.oldDueAt(), row.newDueAt(), row.occurredAt(),
+                names.get(row.actorUserId()), previous == null ? null : previous.endReasonCode());
     }
+
+    private static boolean canTransferPeer(UnitRow unit, OrderRow order, BranchRow branch) {
+        return unit.level() == 2 && unit.parentId() != null && order.issuerUnitId() == unit.parentId()
+                && branch.parentBranchId() == null && branch.originFromUnitId() == order.issuerUnitId();
+    }
+
+    private static List<TaskViews.AllowedAction> allowedActions(
+            Actor actor, OrderRow order, BranchRow branch, AssignmentRow current,
+            List<BranchRow> branches, List<AssignmentRow> assignments, List<TransferRow> transfers,
+            Map<Long, UnitRow> units, List<UnitRow> enabledUnits, Instant now) {
+        if (!"OPEN".equals(order.status()) || !"OPEN".equals(branch.status()) || current == null) return List.of();
+        List<TaskViews.AllowedAction> actions = new ArrayList<>();
+        TransferRow pending = transfers.stream().filter(t -> t.branchId() == branch.id()
+                && Set.of("AWAITING_TARGET", "AWAITING_ISSUER").contains(t.status())).findFirst().orElse(null);
+        boolean childOpen = branches.stream().anyMatch(b -> b.parentBranchId() != null
+                && b.parentBranchId() == branch.id() && "OPEN".equals(b.status()));
+        if (current.toUnitId() == actor.unit().id()) {
+            if ("PENDING_ACCEPT".equals(current.status())) {
+                if (actor.can(PermissionCodes.TASK_ACCEPT)) actions.add(available("accept", null));
+                if (actor.can(PermissionCodes.TASK_RETURN)) {
+                    UnitRow sender = units.get(current.fromUnitId());
+                    actions.add(sender == null || !"ENABLED".equals(sender.status())
+                            ? blocked("return", unitChanged()) : available("return", null));
+                }
+            } else if ("IN_PROGRESS".equals(current.status())) {
+                boolean returned = "RETURN".equals(current.sourceAction());
+                if (actor.can(PermissionCodes.TASK_PROGRESS)) actions.add(available("progress", null));
+                if (actor.can(PermissionCodes.TASK_DISPATCH) && actor.unit().level() < 3) {
+                    String code = "RETURN".equals(current.sourceAction()) ? "reassign" : "dispatch";
+                    ApiException reason = pending != null ? transferPending()
+                            : !current.dueAt().isAfter(now) ? duePassed()
+                            : dispatchCandidates(actor.unit(), enabledUnits, returned ? returnedUnits(assignments, branch.id()) : Set.of()).isEmpty() ? noDispatchTarget() : null;
+                    actions.add(reason == null ? available(code, null) : blocked(code, reason));
+                }
+                if (!returned && actor.can(PermissionCodes.TASK_SUBMIT_RESULT)) {
+                    ApiException reason = pending != null ? transferPending() : childOpen ? childOpen() : null;
+                    actions.add(reason == null ? available("results", null) : blocked("results", reason));
+                }
+                if (returned && actor.can(PermissionCodes.TASK_DISPATCH)) {
+                    ApiException reason = pending != null ? transferPending() : childOpen ? childOpen() : null;
+                    actions.add(reason == null ? available("recall", null) : blocked("recall", reason));
+                }
+                if (!returned && actor.can(PermissionCodes.TASK_TRANSFER_REQUEST)) {
+                    if (pending != null) actions.add(available("withdraw", id(pending.id())));
+                    else if (canTransferPeer(actor.unit(), order, branch)) {
+                        Set<Long> formerHolders = assignments.stream().filter(a -> a.branchId() == branch.id())
+                                .map(AssignmentRow::toUnitId).collect(Collectors.toSet());
+                        ApiException reason = childOpen ? childOpen()
+                                : transferCandidates(actor.unit(), enabledUnits, formerHolders).isEmpty() ? noTransferTarget() : null;
+                        actions.add(reason == null ? available("transfer-requests", null) : blocked("transfer-requests", reason));
+                    }
+                }
+            }
+        }
+        if (pending != null && current.id() == pending.fromAssignmentId()) {
+            if (actor.can(PermissionCodes.TASK_TRANSFER_RESPOND) && pending.targetUnitId() == actor.unit().id()
+                    && "AWAITING_TARGET".equals(pending.status())) actions.add(available("respond", id(pending.id())));
+            if (actor.can(PermissionCodes.TASK_TRANSFER_DECIDE) && order.issuerUnitId() == actor.unit().id()
+                    && actor.unit().level() == 1 && "AWAITING_ISSUER".equals(pending.status())
+                    && "IN_PROGRESS".equals(current.status())) {
+                UnitRow target = units.get(pending.targetUnitId());
+                TaskViews.AllowedAction action = target == null || !"ENABLED".equals(target.status())
+                        ? blocked("decide", unitChanged()) : available("decide", null);
+                actions.add(new TaskViews.AllowedAction(action.code(), action.enabled(), action.reasonCode(),
+                        action.reason(), id(pending.id())));
+            }
+        }
+        return actions;
+    }
+
+    private static Set<Long> returnedUnits(List<AssignmentRow> assignments, long branchId) {
+        return assignments.stream().filter(a -> a.branchId() == branchId && "RETURNED".equals(a.status()))
+                .map(AssignmentRow::toUnitId).collect(Collectors.toSet());
+    }
+
+    private static ApiException branchesOpen() { return conflict("BRANCHES_OPEN", "尚有分支未办结，全部答复或撤回后才能办结"); }
+    private static ApiException returnPending() { return conflict("RETURN_PENDING", "分支已被退回，请重新派发或撤回"); }
+    private static TaskViews.AllowedAction available(String code, String transferId) {
+        return new TaskViews.AllowedAction(code, true, null, null, transferId);
+    }
+    private static TaskViews.AllowedAction blocked(String code, ApiException e) {
+        return new TaskViews.AllowedAction(code, false, e.code(), e.getMessage(), null);
+    }
+    private static ApiException transferPending() { return conflict("TRANSFER_PENDING", "请先完成或撤回交接申请"); }
+    private static ApiException childOpen() { return conflict("CHILD_BRANCH_OPEN", "下级分支尚未全部办结"); }
+    private static ApiException unitChanged() { return conflict("UNIT_CHANGED", "相关单位已经变化，请刷新后重试"); }
+    private static ApiException duePassed() { return conflict("DUE_PASSED", "当前承办期限已过，不能再向下派发"); }
+    private static ApiException noTransferTarget() { return conflict("NO_TRANSFER_TARGET", "没有可交接的支队"); }
+    private static ApiException noDispatchTarget() { return conflict("NO_DISPATCH_TARGET", "没有可派发的直属下级"); }
 
     private boolean canSeeBranch(Actor actor, long branchId) {
         BranchRow branch = mapper.branch(branchId);
@@ -668,7 +876,8 @@ public class TaskService {
         }
         UnitRow unit = mapper.actorUnit(account.userId());
         if (unit == null || !"ENABLED".equals(unit.status())) throw forbidden();
-        return new Actor(account.userId(), unit);
+        return new Actor(account.userId(), unit, auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
     }
 
     private List<UnitRow> resolveTargets(List<String> codes) {
@@ -690,7 +899,7 @@ public class TaskService {
         ids.stream().sorted().forEach(id -> {
             UnitRow current = mapper.lockUnitById(id);
             if (current == null || !"ENABLED".equals(current.status())) {
-                throw conflict("UNIT_CHANGED", "相关单位已经变化，请刷新后重试");
+                throw unitChanged();
             }
             locked.put(id, current);
         });

@@ -94,6 +94,8 @@
 
 当前系统管理的 [DictTag](apps/web/src/features/dictionaries/components/DictTag.tsx) 采用**中性标签为主、`DISABLED` 使用警示底色**，两种都用 `--fg` 文字；不是所有“启用”都显示绿色。状态、菜单类型、单位层级的标签来自字典，业务判断仍按取值，停用项仍能解析历史标签。不要另写一份中文与颜色映射。
 
+任务处置的流程状态与结果标签从字典读取，色调按稳定取值决定，改名或停用不改变色调。整单 `OPEN` 用 accent、`AWAITING_CLOSE` 用 warning、`COMPLETED` 用 neutral；分支及承办段 `RECALLED` 用 neutral。正式结果 `FULFILLED` 用 success、`NOT_FOUND` 用 neutral、`PARTIAL` 和 `UNABLE_TO_VERIFY` 用 warning、`OUT_OF_JURISDICTION` 用 accent；流程办结不等于业务目标达成。交接待回应与待审批用 warning，批准用 success，拒绝或撤回用 neutral。禁用操作仍保留按钮，在其下方用次要文字写明“按钮名：原因”。
+
 图谱实体另有 `--entity-person`、`--entity-vessel`、`--entity-place`、`--entity-event` 及各自 `-soft` 背景，供未来实体识别使用；它们不表示风险等级，也不是系统管理标签的色轮。
 
 ## 4. 排版、间距与尺寸

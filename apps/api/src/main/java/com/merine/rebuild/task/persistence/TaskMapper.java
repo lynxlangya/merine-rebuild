@@ -1,6 +1,7 @@
 package com.merine.rebuild.task.persistence;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -8,11 +9,14 @@ import org.apache.ibatis.annotations.Param;
 /** task 表的唯一 SQL 写入入口；跨模块仅只读用户与单位的当前身份事实。 */
 @Mapper
 public interface TaskMapper {
+    record UserNameRow(long id, String displayName) { }
+    List<UserNameRow> userNames(@Param("taskId") long taskId);
+
     record UnitRow(long id, String code, String name, Long parentId, int level, String status) { }
     record OrderRow(long id, String taskNo, long issuerUnitId, String issuerUnitNameSnapshot,
                     long issuerUserId, String title, String instruction, String expectedResult,
                     Instant initialDueAt, Instant currentDueAt, String status,
-                    Instant completedAt, int version, Long sourceResultId, Instant createdAt) { }
+                    Instant completedAt, int version, Long sourceResultId, Instant createdAt, String conclusion, Long closedByUserId) { }
     record BranchRow(long id, long taskId, Long parentBranchId, long originFromUnitId,
                      long originToUnitId, String instructionSnapshot, String expectedResultSnapshot,
                      Long currentAssignmentId, String status, Instant completedAt, int version,
@@ -21,7 +25,7 @@ public interface TaskMapper {
                          String fromUnitNameSnapshot, long toUnitId, String toUnitNameSnapshot,
                          String sourceAction, Instant dueAt, String status,
                          Long acceptedByUserId, Instant acceptedAt, Long endedByUserId,
-                         Instant endedAt, String endReason, int version, Instant createdAt) { }
+                         Instant endedAt, String endReason, int version, Instant createdAt, String endReasonCode) { }
     record TransferRow(long id, long branchId, long fromAssignmentId, long targetUnitId,
                        String reason, String workDone, String evidenceSummary, String remainingWork,
                        long requestedByUserId, Instant requestedAt, String status,
@@ -106,10 +110,14 @@ public interface TaskMapper {
                       @Param("expectedStatus") String expectedStatus,
                       @Param("newStatus") String newStatus,
                       @Param("userId") long userId, @Param("at") Instant at,
-                      @Param("reason") String reason);
+                      @Param("reason") String reason, @Param("reasonCode") String reasonCode);
     int completeBranch(@Param("id") long id, @Param("version") int version,
                        @Param("at") Instant at);
-    int completeOrder(@Param("id") long id, @Param("at") Instant at);
+    int recallBranch(@Param("id") long id, @Param("version") int version);
+    int awaitClose(@Param("id") long id, @Param("at") Instant at);
+    int completeOrder(@Param("id") long id, @Param("at") Instant at,
+                      @Param("conclusion") String conclusion, @Param("userId") long userId);
+    int allocateTaskNumber(@Param("day") LocalDate day);
     int extendOrder(@Param("id") long id, @Param("oldDue") Instant oldDue,
                     @Param("newDue") Instant newDue);
     int insertTransfer(@Param("branchId") long branchId,

@@ -9,7 +9,8 @@
         o.title AS title, o.instruction AS instruction, o.expected_result AS expectedResult,
         o.initial_due_at AS initialDueAt, o.current_due_at AS currentDueAt,
         o.status AS status, o.completed_at AS completedAt, o.version AS version,
-        o.source_result_id AS sourceResultId, o.created_at AS createdAt</sql>
+        o.source_result_id AS sourceResultId, o.created_at AS createdAt,
+        o.conclusion AS conclusion, o.closed_by_user_id AS closedByUserId</sql>
     <sql id="branchCols">b.id AS id, b.task_id AS taskId, b.parent_branch_id AS parentBranchId,
         b.origin_from_unit_id AS originFromUnitId, b.origin_to_unit_id AS originToUnitId,
         b.instruction_snapshot AS instructionSnapshot, b.expected_result_snapshot AS expectedResultSnapshot,
@@ -22,7 +23,8 @@
         a.source_action AS sourceAction, a.due_at AS dueAt, a.status AS status,
         a.accepted_by_user_id AS acceptedByUserId, a.accepted_at AS acceptedAt,
         a.ended_by_user_id AS endedByUserId, a.ended_at AS endedAt,
-        a.end_reason AS endReason, a.version AS version, a.created_at AS createdAt</sql>
+        a.end_reason AS endReason, a.version AS version, a.created_at AS createdAt,
+        a.end_reason_code AS endReasonCode</sql>
     <sql id="transferCols">t.id AS id, t.branch_id AS branchId, t.from_assignment_id AS fromAssignmentId,
         t.target_unit_id AS targetUnitId, t.reason AS reason, t.work_done AS workDone,
         t.evidence_summary AS evidenceSummary, t.remaining_work AS remainingWork,
@@ -38,6 +40,14 @@
         r.conclusion AS conclusion, r.suggested_unit_id AS suggestedUnitId,
         r.submitted_by_user_id AS submittedByUserId, r.submitted_at AS submittedAt</sql>
 
+    <select id="userNames" resultType="com.merine.rebuild.task.persistence.TaskMapper$UserNameRow">
+        SELECT su.id AS id, su.display_name AS displayName FROM sys_user su
+         WHERE su.id IN (SELECT issuer_user_id FROM task_order WHERE id = #{taskId}
+                         UNION SELECT closed_by_user_id FROM task_order WHERE id = #{taskId}
+                         UNION SELECT actor_user_id FROM task_action WHERE task_id = #{taskId}
+                         UNION SELECT r.submitted_by_user_id FROM task_result r
+                                 JOIN task_branch b ON b.id = r.branch_id WHERE b.task_id = #{taskId})
+    </select>
     <select id="actorUnit" resultType="com.merine.rebuild.task.persistence.TaskMapper$UnitRow">
         SELECT <include refid="unitCols"/> FROM sys_user su JOIN sys_unit u ON u.id = su.unit_id
          WHERE su.id = #{userId} AND su.status = 'ENABLED'
@@ -140,6 +150,7 @@
                     (SELECT 1 FROM task_branch b JOIN task_transfer_request t ON t.branch_id = b.id
                       WHERE b.task_id = o.id AND t.status = 'AWAITING_ISSUER')
             </when>
+            <when test="tab == 'closing'">o.issuer_unit_id = #{unitId} AND o.status = 'AWAITING_CLOSE'</when>
             <when test="tab == 'completed'">
                 o.status = 'COMPLETED' AND
                 (o.issuer_unit_id = #{unitId}
@@ -224,6 +235,10 @@
     </select>
     <select id="lastId" resultType="long">SELECT LAST_INSERT_ID()</select>
 
+    <insert id="allocateTaskNumber">
+        INSERT INTO task_no_counter (counter_date, last_seq) VALUES (#{day}, LAST_INSERT_ID(1))
+        ON DUPLICATE KEY UPDATE last_seq = LAST_INSERT_ID(last_seq + 1)
+    </insert>
     <insert id="insertOrder">
         INSERT INTO task_order (task_no, issuer_unit_id, issuer_unit_name_snapshot,
             issuer_user_id, title, instruction, expected_result, initial_due_at,
@@ -260,17 +275,26 @@
     </update>
     <update id="endAssignment">
         UPDATE task_assignment SET status = #{newStatus}, ended_by_user_id = #{userId},
-            ended_at = #{at}, end_reason = #{reason,jdbcType=VARCHAR}, version = version + 1
+            ended_at = #{at}, end_reason = #{reason,jdbcType=VARCHAR},
+            end_reason_code = #{reasonCode,jdbcType=VARCHAR}, version = version + 1
          WHERE id = #{id} AND status = #{expectedStatus} AND version = #{version}
     </update>
     <update id="completeBranch">
         UPDATE task_branch SET status = 'COMPLETED', completed_at = #{at}, version = version + 1
          WHERE id = #{id} AND status = 'OPEN' AND version = #{version}
     </update>
+    <update id="recallBranch">
+        UPDATE task_branch SET status = 'RECALLED', version = version + 1
+         WHERE id = #{id} AND status = 'OPEN' AND version = #{version}
+    </update>
+    <update id="awaitClose">
+        UPDATE task_order SET status = 'AWAITING_CLOSE', updated_at = #{at}, version = version + 1
+         WHERE id = #{id} AND status = 'OPEN'
+    </update>
     <update id="completeOrder">
         UPDATE task_order SET status = 'COMPLETED', completed_at = #{at},
-            updated_at = #{at}, version = version + 1
-         WHERE id = #{id} AND status = 'OPEN'
+            conclusion = #{conclusion}, closed_by_user_id = #{userId}, updated_at = #{at}, version = version + 1
+         WHERE id = #{id} AND status = 'AWAITING_CLOSE'
     </update>
     <update id="extendOrder">
         UPDATE task_order SET current_due_at = #{newDue}, updated_at = CURRENT_TIMESTAMP(6),

@@ -71,3 +71,9 @@ export type SubmitTaskResult = components['schemas']['SubmitResult'];
 export type RequestTaskTransfer = components['schemas']['TransferRequest'];
 export type RespondTaskTransfer = components['schemas']['TransferResponse'];
 export type DecideTaskTransfer = components['schemas']['TransferDecision'];
+
+export type TaskAllowedAction = components['schemas']['AllowedAction'];
+
+export type CloseTask = components['schemas']['Close'];
+export type RecallTask = components['schemas']['Recall'];
+export type ReturnTask = components['schemas']['ReturnTask'];

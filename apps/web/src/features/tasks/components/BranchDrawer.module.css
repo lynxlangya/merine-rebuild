@@ -1,0 +1,148 @@
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-read);
+  line-height: var(--lh-ui);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+.commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-4);
+}
+
+/* 各段之间用分隔线，不再套卡片：抽屉里最多两层层级。 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--border);
+}
+
+.section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.section:last-child {
+  padding-bottom: 0;
+}
+
+.section h3 {
+  margin: 0;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-ui);
+}
+
+.text {
+  margin: 0;
+  line-height: var(--lh-body);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: var(--sp-3);
+  line-height: var(--lh-body);
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.late {
+  color: var(--warning);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.transfer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+}
+
+.transferHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: var(--fw-ui);
+}
+
+.segments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.segments li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  line-height: var(--lh-body);
+}
+
+.note {
+  margin: 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.followup {
+  align-self: flex-start;
+  padding-inline: 0;
+}

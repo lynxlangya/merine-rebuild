@@ -15,12 +15,6 @@
   flex: 1;
   min-width: 0;
 }
-.branch {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-4);
-  padding: var(--sp-4);
-}
 .table {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -51,17 +45,6 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-.sectionTitle {
-  margin-top: var(--sp-5) !important;
-}
-.branch {
-  margin-bottom: var(--sp-3);
-}
-.transfer {
-  border-left: 3px solid var(--border);
-  padding: var(--sp-2);
-  margin: var(--sp-3) 0;
 }
 @media (max-width: 700px) {
   .toolbar {
