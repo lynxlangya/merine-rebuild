@@ -77,3 +77,16 @@ export type TaskAllowedAction = components['schemas']['AllowedAction'];
 export type CloseTask = components['schemas']['Close'];
 export type RecallTask = components['schemas']['Recall'];
 export type ReturnTask = components['schemas']['ReturnTask'];
+
+/** 信息流转：独立情报共享契约。 */
+export type IntelligenceDetail = components['schemas']['IntelligenceDetail'];
+export type IntelligenceAction = components['schemas']['IntelligenceAction'];
+export type IntelligenceReceipt = components['schemas']['IntelligenceReceipt'];
+export type IntelligenceUnitOption = components['schemas']['IntelligenceUnitOption'];
+export type IntelligenceListItem = components['schemas']['IntelligenceListItem'];
+export type PageResultIntelligenceListItem =
+  components['schemas']['PageResultIntelligenceListItem'];
+export type IntelligenceDraftRequest = components['schemas']['IntelligenceDraftRequest'];
+export type IntelligenceSendRequest = components['schemas']['IntelligenceSendRequest'];
+export type IntelligenceFeedbackRequest = components['schemas']['IntelligenceFeedbackRequest'];
+export type IntelligenceSupplementRequest = components['schemas']['IntelligenceSupplementRequest'];

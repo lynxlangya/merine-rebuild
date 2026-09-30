@@ -107,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intelligence-topics/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查看情报及当前单位可见的流转历史 */
+        get: operations["detail_3"];
+        put: operations["update_5"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tasks": {
         parameters: {
             query?: never;
@@ -526,6 +543,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intelligence-topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询本单位收到或发出的情报，不扩大数据范围 */
+        get: operations["list_5"];
+        put?: never;
+        post: operations["create_6"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intelligence-topics/{id}/supplements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["supplement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intelligence-topics/{id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intelligence-topics/{id}/receipts/{receiptId}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intelligence-topics/{id}/receipts/{receiptId}/forward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["forward"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intelligence-topics/{id}/receipts/{receiptId}/feedbacks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["feedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bootstrap/probes": {
         parameters: {
             query?: never;
@@ -536,7 +650,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** 写入一条本地合成联调记录 */
-        post: operations["create_6"];
+        post: operations["create_7"];
         delete?: never;
         options?: never;
         head?: never;
@@ -587,7 +701,7 @@ export interface paths {
             cookie?: never;
         };
         /** 查询任务详情和可见分支 */
-        get: operations["detail_3"];
+        get: operations["detail_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -749,6 +863,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intelligence-topics/unit-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["options_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dictionaries": {
         parameters: {
             query?: never;
@@ -757,7 +887,7 @@ export interface paths {
             cookie?: never;
         };
         /** 批量读取字典；不传 codes 时返回全部字典（含停用项） */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1089,6 +1219,85 @@ export interface components {
             /** @description 字段级校验错误；无字段错误时为 null */
             fieldErrors?: components["schemas"]["FieldError"][];
         };
+        IntelligenceDraftRequest: {
+            title: string;
+            body: string;
+            scopeUnitCodes: string[];
+            targetUnitCodes: string[];
+            note?: string;
+            /** Format: int32 */
+            version: number;
+        };
+        ApiResponseIntelligenceDetail: {
+            code: string;
+            message: string;
+            data: components["schemas"]["IntelligenceDetail"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        IntelligenceAction: {
+            code: string;
+            enabled: boolean;
+            reasonCode: string | null;
+            reason: string | null;
+        };
+        IntelligenceDetail: {
+            id: string;
+            topicNo: string;
+            title: string;
+            body: string;
+            status: string;
+            sourceUnitName: string;
+            sourceUserName: string;
+            sourceMine: boolean;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            publishedAt: string | null;
+            scopeUnitCodes: string[];
+            draftTargetUnitCodes: string[];
+            draftNote: string | null;
+            receipts: components["schemas"]["IntelligenceReceipt"][];
+            supplements: components["schemas"]["IntelligenceSupplement"][];
+            allowedActions: components["schemas"]["IntelligenceAction"][];
+        };
+        IntelligenceFeedback: {
+            id: string;
+            body: string;
+            unitName: string;
+            userName: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        IntelligenceReceipt: {
+            id: string;
+            sendId: string;
+            parentReceiptId: string | null;
+            fromUnitName: string;
+            toUnitName: string;
+            senderName: string;
+            note: string;
+            /** Format: date-time */
+            sentAt: string;
+            mine: boolean;
+            signedByName: string | null;
+            /** Format: date-time */
+            signedAt: string | null;
+            feedbacks: components["schemas"]["IntelligenceFeedback"][];
+            allowedActions: components["schemas"]["IntelligenceAction"][];
+        };
+        IntelligenceSupplement: {
+            id: string;
+            kind: string;
+            body: string;
+            unitName: string;
+            userName: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
         Create: {
             title: string;
             instruction: string;
@@ -1410,6 +1619,17 @@ export interface components {
              * @description 同类型内排序，越小越靠前；缺省为 0
              */
             sortOrder?: number;
+        };
+        IntelligenceSupplementRequest: {
+            kind: string;
+            body: string;
+        };
+        IntelligenceSendRequest: {
+            targetUnitCodes: string[];
+            note?: string;
+        };
+        IntelligenceFeedbackRequest: {
+            body: string;
         };
         CreateProbe: {
             note: string;
@@ -1764,6 +1984,55 @@ export interface components {
             /** @description 节点说明；未填写为 null */
             description?: string | null;
             children: components["schemas"]["NavigationNode"][];
+        };
+        ApiResponsePageResultIntelligenceListItem: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultIntelligenceListItem"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        IntelligenceListItem: {
+            id: string;
+            topicNo: string;
+            title: string;
+            status: string;
+            sourceUnitName: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            publishedAt: string | null;
+            /** Format: int64 */
+            pendingReceiptCount: number;
+            /** Format: int64 */
+            myReceiptCount: number;
+        };
+        PageResultIntelligenceListItem: {
+            items: components["schemas"]["IntelligenceListItem"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        ApiResponseListIntelligenceUnitOption: {
+            code: string;
+            message: string;
+            data: components["schemas"]["IntelligenceUnitOption"][];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        IntelligenceUnitOption: {
+            code: string;
+            name: string;
+            parentCode: string | null;
+            /** Format: int32 */
+            level: number;
+            enabled: boolean;
+            targetEligible: boolean;
         };
         ApiResponseListDictionaryView: {
             code: string;
@@ -2121,6 +2390,56 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDictionaryItemView"];
+                };
+            };
+        };
+    };
+    detail_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
+                };
+            };
+        };
+    };
+    update_5: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntelligenceDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
                 };
             };
         };
@@ -2917,7 +3236,198 @@ export interface operations {
             };
         };
     };
+    list_5: {
+        parameters: {
+            query?: {
+                view?: string;
+                status?: string;
+                keyword?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultIntelligenceListItem"];
+                };
+            };
+        };
+    };
     create_6: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntelligenceDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
+                };
+            };
+        };
+    };
+    supplement: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntelligenceSupplementRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
+                };
+            };
+        };
+    };
+    send: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntelligenceSendRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
+                };
+            };
+        };
+    };
+    sign: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                receiptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
+                };
+            };
+        };
+    };
+    forward: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                receiptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntelligenceSendRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
+                };
+            };
+        };
+    };
+    feedback: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+                receiptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntelligenceFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIntelligenceDetail"];
+                };
+            };
+        };
+    };
+    create_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -3029,7 +3539,7 @@ export interface operations {
             };
         };
     };
-    detail_3: {
+    detail_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -3242,7 +3752,31 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    options_1: {
+        parameters: {
+            query: {
+                action: string;
+                topicId?: string;
+                receiptId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListIntelligenceUnitOption"];
+                };
+            };
+        };
+    };
+    list_6: {
         parameters: {
             query?: {
                 codes?: string;

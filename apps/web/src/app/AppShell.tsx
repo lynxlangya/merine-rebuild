@@ -182,7 +182,9 @@ export function AppShell() {
     const base = findBreadcrumb(myMenus.data ?? [], location.pathname, resolveRoute);
     return base && /^\/collaboration\/tasks\/[^/]+$/.test(location.pathname)
       ? [...base, '任务详情']
-      : base;
+      : base && /^\/collaboration\/flows\/[^/]+$/.test(location.pathname)
+        ? [...base, '情报详情']
+        : base;
   }, [myMenus.data, location.pathname, resolveRoute]);
 
   const handleSignOut = async () => {

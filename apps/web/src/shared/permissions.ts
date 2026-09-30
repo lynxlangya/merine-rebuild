@@ -45,6 +45,14 @@ export const PERMISSIONS = {
   taskTransferRequest: 'task:handling:transfer-request',
   taskTransferRespond: 'task:handling:transfer-respond',
   taskTransferDecide: 'task:handling:transfer-decide',
+  intelRead: 'intelligence:topic:read',
+  intelCreate: 'intelligence:topic:create',
+  intelUpdate: 'intelligence:topic:update',
+  intelSend: 'intelligence:topic:send',
+  intelSign: 'intelligence:topic:sign',
+  intelFeedback: 'intelligence:topic:feedback',
+  intelForward: 'intelligence:topic:forward',
+  intelSupplement: 'intelligence:topic:supplement',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

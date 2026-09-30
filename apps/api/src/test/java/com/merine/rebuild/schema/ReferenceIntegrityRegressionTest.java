@@ -385,6 +385,43 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
                  JOIN task_assignment a ON a.id = r.from_assignment_id
                 WHERE a.branch_id <> r.branch_id
                 """);
+        String[][] intelReferences = {
+                {"intel_topic", "source_unit_id", "sys_unit"},
+                {"intel_topic", "source_user_id", "sys_user"},
+                {"intel_scope_unit", "topic_id", "intel_topic"},
+                {"intel_scope_unit", "unit_id", "sys_unit"},
+                {"intel_draft_target", "topic_id", "intel_topic"},
+                {"intel_draft_target", "unit_id", "sys_unit"},
+                {"intel_send", "topic_id", "intel_topic"},
+                {"intel_send", "parent_receipt_id", "intel_receipt"},
+                {"intel_send", "from_unit_id", "sys_unit"},
+                {"intel_send", "sender_user_id", "sys_user"},
+                {"intel_receipt", "send_id", "intel_send"},
+                {"intel_receipt", "to_unit_id", "sys_unit"},
+                {"intel_receipt", "signed_by_user_id", "sys_user"},
+                {"intel_read", "receipt_id", "intel_receipt"},
+                {"intel_read", "user_id", "sys_user"},
+                {"intel_read", "unit_id", "sys_unit"},
+                {"intel_feedback", "receipt_id", "intel_receipt"},
+                {"intel_feedback", "user_id", "sys_user"},
+                {"intel_feedback", "unit_id", "sys_unit"},
+                {"intel_supplement", "topic_id", "intel_topic"},
+                {"intel_supplement", "user_id", "sys_user"},
+                {"intel_supplement", "unit_id", "sys_unit"},
+                {"intel_command", "actor_unit_id", "sys_unit"},
+                {"intel_command", "topic_id", "intel_topic"}
+        };
+        for (String[] r : intelReferences) {
+            checks.put(r[0] + "." + r[1] + " -> " + r[2], "SELECT COUNT(*) FROM " + r[0]
+                    + " c LEFT JOIN " + r[2] + " p ON p.id = c." + r[1]
+                    + " WHERE c." + r[1] + " IS NOT NULL AND p.id IS NULL");
+        }
+        checks.put("intel_command committed result", "SELECT COUNT(*) FROM intel_command WHERE topic_id IS NULL");
+        checks.put("intel_send parent same topic and sender", "SELECT COUNT(*) FROM intel_send s JOIN intel_receipt r ON r.id=s.parent_receipt_id JOIN intel_send p ON p.id=r.send_id WHERE s.topic_id<>p.topic_id OR s.from_unit_id<>r.to_unit_id OR r.signed_at IS NULL OR s.id<=p.id");
+        checks.put("intel_receipt within frozen scope", "SELECT COUNT(*) FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id LEFT JOIN intel_scope_unit c ON c.topic_id=s.topic_id AND c.unit_id=r.to_unit_id WHERE c.unit_id IS NULL");
+        checks.put("intel_read belongs to recipient unit", "SELECT COUNT(*) FROM intel_read d JOIN intel_receipt r ON r.id=d.receipt_id WHERE d.unit_id<>r.to_unit_id");
+        checks.put("intel_feedback signed recipient", "SELECT COUNT(*) FROM intel_feedback f JOIN intel_receipt r ON r.id=f.receipt_id WHERE f.unit_id<>r.to_unit_id OR r.signed_at IS NULL");
+        checks.put("intel_supplement source unit", "SELECT COUNT(*) FROM intel_supplement s JOIN intel_topic t ON t.id=s.topic_id WHERE s.unit_id<>t.source_unit_id OR t.status<>'PUBLISHED'");
         return checks;
     }
 }

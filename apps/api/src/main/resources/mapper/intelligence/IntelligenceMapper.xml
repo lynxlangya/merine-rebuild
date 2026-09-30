@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.intelligence.persistence.IntelligenceMapper">
+    <sql id="unitCols">id, unit_code AS code, unit_name AS name, parent_id AS parentId, unit_level AS level, status</sql>
+    <sql id="topicCols">id, topic_no AS topicNo, source_unit_id AS sourceUnitId, source_user_id AS sourceUserId,
+        source_unit_name AS sourceUnitName, source_user_name AS sourceUserName, title, body, status, version,
+        draft_note AS draftNote, created_at AS createdAt, published_at AS publishedAt</sql>
+    <select id="actor" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ActorRow">
+        SELECT id AS userId, unit_id AS unitId, display_name AS userName, authorization_version AS authorizationVersion
+        FROM sys_user WHERE id=#{userId} AND status='ENABLED'
+    </select>
+    <select id="units" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$UnitRow">SELECT <include refid="unitCols"/> FROM sys_unit ORDER BY id</select>
+    <select id="lockUnits" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$UnitRow">SELECT <include refid="unitCols"/> FROM sys_unit ORDER BY id FOR UPDATE</select>
+    <select id="topic" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$TopicRow">SELECT <include refid="topicCols"/> FROM intel_topic WHERE id=#{id}</select>
+    <select id="lockTopic" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$TopicRow">SELECT <include refid="topicCols"/> FROM intel_topic WHERE id=#{id} FOR UPDATE</select>
+    <select id="received" resultType="int">SELECT COUNT(*) FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=#{topicId} AND r.to_unit_id=#{unitId}</select>
+    <sql id="myReceipts">SELECT r.id, r.signed_at FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=t.id AND r.to_unit_id=#{unitId}</sql>
+    <sql id="listWhere">
+        WHERE
+        <choose><when test="view == 'sent'">t.source_unit_id=#{unitId}</when>
+            <otherwise>EXISTS (<include refid="myReceipts"/>)</otherwise></choose>
+        <if test="status == 'DRAFT' or status == 'PUBLISHED'">AND t.status=#{status}</if>
+        <if test="status == 'pending'">AND EXISTS (<include refid="myReceipts"/> AND r.signed_at IS NULL)</if>
+        <if test="status == 'signed'">AND NOT EXISTS (<include refid="myReceipts"/> AND r.signed_at IS NULL)</if>
+        <if test="keyword != null">AND (t.title LIKE #{keyword} ESCAPE '!' OR t.topic_no LIKE #{keyword} ESCAPE '!')</if>
+    </sql>
+    <select id="count" resultType="long">SELECT COUNT(*) FROM intel_topic t <include refid="listWhere"/></select>
+    <select id="list" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ListRow">
+        SELECT t.id, t.topic_no AS topicNo, t.title, t.status, t.source_unit_name AS sourceUnitName,
+            t.created_at AS createdAt, t.published_at AS publishedAt,
+            (SELECT COUNT(*) FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=t.id AND r.to_unit_id=#{unitId} AND r.signed_at IS NULL) AS pendingReceiptCount,
+            (SELECT COUNT(*) FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=t.id AND r.to_unit_id=#{unitId}) AS myReceiptCount
+        FROM intel_topic t <include refid="listWhere"/> ORDER BY t.id DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+    <select id="scope" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ScopeRow">SELECT s.unit_id AS unitId,u.unit_code AS unitCode FROM intel_scope_unit s JOIN sys_unit u ON u.id=s.unit_id WHERE s.topic_id=#{topicId} ORDER BY s.unit_id</select>
+    <select id="draftTargets" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ScopeRow">SELECT s.unit_id AS unitId,u.unit_code AS unitCode FROM intel_draft_target s JOIN sys_unit u ON u.id=s.unit_id WHERE s.topic_id=#{topicId} ORDER BY s.unit_id</select>
+    <select id="receipts" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ReceiptRow">
+        SELECT r.id,r.send_id AS sendId,s.topic_id AS topicId,s.parent_receipt_id AS parentReceiptId,
+            s.from_unit_id AS fromUnitId,s.from_unit_name AS fromUnitName,s.sender_name AS senderName,s.note,s.sent_at AS sentAt,
+            r.to_unit_id AS toUnitId,r.to_unit_name AS toUnitName,r.signed_by_name AS signedByName,r.signed_at AS signedAt
+        FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=#{topicId} ORDER BY r.id
+    </select>
+    <select id="feedbacks" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$FeedbackRow">SELECT f.id,f.receipt_id AS receiptId,f.body,f.unit_name AS unitName,f.user_name AS userName,f.created_at AS createdAt FROM intel_feedback f JOIN intel_receipt r ON r.id=f.receipt_id JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=#{topicId} ORDER BY f.id</select>
+    <select id="supplements" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$SupplementRow">SELECT id,kind,body,unit_name AS unitName,user_name AS userName,created_at AS createdAt FROM intel_supplement WHERE topic_id=#{topicId} ORDER BY id</select>
+    <select id="lastId" resultType="long">SELECT LAST_INSERT_ID()</select>
+    <insert id="insertTopic">INSERT INTO intel_topic (topic_no,source_unit_id,source_user_id,source_unit_name,source_user_name,title,body,status,draft_note,created_at) VALUES (#{number},#{unit.id},#{actor.userId},#{unit.name},#{actor.userName},#{title},#{body},'DRAFT',#{note},#{now})</insert>
+    <update id="updateDraft">UPDATE intel_topic SET title=#{title},body=#{body},draft_note=#{note},version=version+1 WHERE id=#{id} AND status='DRAFT' AND version=#{version}</update>
+    <delete id="clearScope">DELETE FROM intel_scope_unit WHERE topic_id=#{id}</delete>
+    <delete id="clearTargets">DELETE FROM intel_draft_target WHERE topic_id=#{id}</delete>
+    <insert id="insertScope">INSERT INTO intel_scope_unit (topic_id,unit_id,unit_name) VALUES (#{id},#{unit.id},#{unit.name})</insert>
+    <insert id="insertDraftTarget">INSERT INTO intel_draft_target (topic_id,unit_id,unit_name) VALUES (#{id},#{unit.id},#{unit.name})</insert>
+    <update id="freezeScopeNames">UPDATE intel_scope_unit s JOIN sys_unit u ON u.id=s.unit_id SET s.unit_name=u.unit_name WHERE s.topic_id=#{id}</update>
+    <update id="publish">UPDATE intel_topic SET status='PUBLISHED',published_at=#{now},version=version+1 WHERE id=#{id} AND status='DRAFT'</update>
+    <insert id="insertSend">INSERT INTO intel_send (topic_id,parent_receipt_id,from_unit_id,sender_user_id,from_unit_name,sender_name,note,sent_at) VALUES (#{id},#{parent},#{unit.id},#{actor.userId},#{unit.name},#{actor.userName},#{note},#{now})</insert>
+    <insert id="insertReceipt">INSERT INTO intel_receipt (send_id,to_unit_id,to_unit_name) VALUES (#{sendId},#{unit.id},#{unit.name})</insert>
+    <update id="sign">UPDATE intel_receipt SET signed_by_user_id=#{actor.userId},signed_by_name=#{actor.userName},signed_at=#{now} WHERE id=#{id} AND signed_at IS NULL</update>
+    <insert id="insertFeedback">INSERT INTO intel_feedback (receipt_id,unit_id,user_id,unit_name,user_name,body,created_at) VALUES (#{id},#{unit.id},#{actor.userId},#{unit.name},#{actor.userName},#{body},#{now})</insert>
+    <insert id="insertSupplement">INSERT INTO intel_supplement (topic_id,kind,unit_id,user_id,unit_name,user_name,body,created_at) VALUES (#{id},#{kind},#{unit.id},#{actor.userId},#{unit.name},#{actor.userName},#{body},#{now})</insert>
+    <insert id="reserveNumber">INSERT INTO intel_number_counter (business_date,last_number) VALUES (#{day},0) ON DUPLICATE KEY UPDATE business_date=business_date</insert>
+    <select id="nextNumber" resultType="int">SELECT last_number+1 FROM intel_number_counter WHERE business_date=#{day} FOR UPDATE</select>
+    <update id="incrementNumber">UPDATE intel_number_counter SET last_number=last_number+1 WHERE business_date=#{day}</update>
+    <insert id="reserveCommand">INSERT IGNORE INTO intel_command (actor_unit_id,action_code,idempotency_key,request_digest,created_at) VALUES (#{unitId},#{action},#{key},#{digest},#{now})</insert>
+    <select id="command" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$CommandRow">SELECT request_digest AS requestDigest,topic_id AS topicId FROM intel_command WHERE actor_unit_id=#{unitId} AND action_code=#{action} AND idempotency_key=#{key} FOR UPDATE</select>
+    <update id="completeCommand">UPDATE intel_command SET topic_id=#{id} WHERE actor_unit_id=#{unitId} AND action_code=#{action} AND idempotency_key=#{key}</update>
+    <!-- 由单位删除持有单位锁后调用；锁定读避免旧快照漏掉刚提交的引用。 -->
+    <select id="unitReferences" resultType="long">
+        SELECT id FROM intel_topic WHERE source_unit_id=#{id} FOR SHARE
+    </select>
+    <select id="scopeReferences" resultType="long">SELECT topic_id FROM intel_scope_unit WHERE unit_id=#{id} FOR SHARE</select>
+    <select id="targetReferences" resultType="long">SELECT topic_id FROM intel_draft_target WHERE unit_id=#{id} FOR SHARE</select>
+</mapper>

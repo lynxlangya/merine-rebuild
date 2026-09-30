@@ -54,6 +54,15 @@ public final class PermissionCodes {
     public static final String TASK_TRANSFER_RESPOND = "task:handling:transfer-respond";
     public static final String TASK_TRANSFER_DECIDE = "task:handling:transfer-decide";
 
+    public static final String INTEL_READ = "intelligence:topic:read";
+    public static final String INTEL_CREATE = "intelligence:topic:create";
+    public static final String INTEL_UPDATE = "intelligence:topic:update";
+    public static final String INTEL_SEND = "intelligence:topic:send";
+    public static final String INTEL_SIGN = "intelligence:topic:sign";
+    public static final String INTEL_FEEDBACK = "intelligence:topic:feedback";
+    public static final String INTEL_FORWARD = "intelligence:topic:forward";
+    public static final String INTEL_SUPPLEMENT = "intelligence:topic:supplement";
+
     /**
      * 管理底线：一个账号要么持有内置管理员角色，要么**同时**持有这两个权限，
      * 才算「还能把系统管理恢复回来」——改用户角色与改角色权限是恢复入口，
@@ -75,6 +84,7 @@ public final class PermissionCodes {
                 DICT_READ, DICT_CREATE, DICT_UPDATE,
                 TASK_READ, TASK_CREATE, TASK_ACCEPT, TASK_PROGRESS, TASK_DISPATCH,
                 TASK_RETURN, TASK_SUBMIT_RESULT, TASK_TRANSFER_REQUEST,
-                TASK_TRANSFER_RESPOND, TASK_TRANSFER_DECIDE);
+                TASK_TRANSFER_RESPOND, TASK_TRANSFER_DECIDE,
+                INTEL_READ, INTEL_CREATE, INTEL_UPDATE, INTEL_SEND, INTEL_SIGN, INTEL_FEEDBACK, INTEL_FORWARD, INTEL_SUPPLEMENT);
     }
 }

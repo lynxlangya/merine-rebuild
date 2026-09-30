@@ -45,6 +45,9 @@ public class MenuBootstrap {
             new Entry("page:tasks", "dir:collaboration", Type.PAGE, "任务处置",
                     "collaboration.tasks", PermissionCodes.TASK_READ, 10, "任务受理、下发与结果交付"),
 
+            new Entry("page:flows", "dir:collaboration", Type.PAGE, "信息流转",
+                    "collaboration.flows", PermissionCodes.INTEL_READ, 20, "情报共享、签收与线索反馈"),
+
             new Entry("btn:user:create", "page:users", Type.BUTTON, "新建用户",
                     null, PermissionCodes.USER_CREATE, 10, "新建账号并设置初始密码"),
             new Entry("btn:user:update", "page:users", Type.BUTTON, "编辑用户",
@@ -98,7 +101,21 @@ public class MenuBootstrap {
             new Entry("btn:task:transfer-respond", "page:tasks", Type.BUTTON, "回应支队交接",
                     null, PermissionCodes.TASK_TRANSFER_RESPOND, 80, "目标支队回应交接申请"),
             new Entry("btn:task:transfer-decide", "page:tasks", Type.BUTTON, "决定支队交接",
-                    null, PermissionCodes.TASK_TRANSFER_DECIDE, 90, "总队批准或拒绝支队交接并确定期限"));
+                    null, PermissionCodes.TASK_TRANSFER_DECIDE, 90, "总队批准或拒绝支队交接并确定期限"),
+            new Entry("btn:intel:create", "page:flows", Type.BUTTON, "新建情报",
+                    null, PermissionCodes.INTEL_CREATE, 10, "保存情报草稿"),
+            new Entry("btn:intel:update", "page:flows", Type.BUTTON, "修改草稿",
+                    null, PermissionCodes.INTEL_UPDATE, 20, "修改未发出情报"),
+            new Entry("btn:intel:send", "page:flows", Type.BUTTON, "发送情报",
+                    null, PermissionCodes.INTEL_SEND, 30, "源头单位发送情报"),
+            new Entry("btn:intel:sign", "page:flows", Type.BUTTON, "单位签收",
+                    null, PermissionCodes.INTEL_SIGN, 40, "签收本单位一次接收记录"),
+            new Entry("btn:intel:feedback", "page:flows", Type.BUTTON, "反馈线索",
+                    null, PermissionCodes.INTEL_FEEDBACK, 60, "签收后追加线索反馈"),
+            new Entry("btn:intel:forward", "page:flows", Type.BUTTON, "继续共享",
+                    null, PermissionCodes.INTEL_FORWARD, 70, "签收后沿合法关系继续共享"),
+            new Entry("btn:intel:supplement", "page:flows", Type.BUTTON, "补充更正",
+                    null, PermissionCodes.INTEL_SUPPLEMENT, 80, "源头追加补充或更正说明"));
 
     public List<Entry> entries() {
         return ENTRIES;

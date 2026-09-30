@@ -3,6 +3,7 @@ package com.merine.rebuild.system.unit;
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.system.user.usage.UserUnitUsageLookup;
 import com.merine.rebuild.task.TaskUnitUsageLookup;
+import com.merine.rebuild.intelligence.IntelligenceUnitUsageLookup;
 import com.merine.rebuild.system.unit.dto.UnitRequests;
 import com.merine.rebuild.system.unit.dto.UnitTreeNode;
 import com.merine.rebuild.system.unit.dto.UnitView;
@@ -34,11 +35,13 @@ public class UnitService {
     private final UnitMapper mapper;
     private final UserUnitUsageLookup userUsage;
     private final TaskUnitUsageLookup taskUsage;
+    private final IntelligenceUnitUsageLookup intelligenceUsage;
 
-    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage, TaskUnitUsageLookup taskUsage) {
+    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage, TaskUnitUsageLookup taskUsage, IntelligenceUnitUsageLookup intelligenceUsage) {
         this.mapper = mapper;
         this.userUsage = userUsage;
         this.taskUsage = taskUsage;
+        this.intelligenceUsage = intelligenceUsage;
     }
 
     @Transactional(readOnly = true)
@@ -128,6 +131,9 @@ public class UnitService {
 
         // 无外键兜底：并发安全来自上面的行锁与写用户侧的引用锁互斥，
         // 意外完整性错误交回统一 500 + 日志，不在这里翻译成业务冲突。
+        if (intelligenceUsage.hasReferences(target.id())) {
+            throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_INTELLIGENCE", "该单位已有情报或传播范围引用，不能删除");
+        }
         mapper.deleteById(target.id());
     }
 

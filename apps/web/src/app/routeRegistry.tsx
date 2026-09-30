@@ -41,7 +41,7 @@ export const TaskHandlingPage = lazy(() =>
     default: module.TaskHandlingPage,
   })),
 );
-const InformationFlowPage = lazy(() =>
+export const InformationFlowPage = lazy(() =>
   import('../features/flows/InformationFlowPage').then((module) => ({
     default: module.InformationFlowPage,
   })),
