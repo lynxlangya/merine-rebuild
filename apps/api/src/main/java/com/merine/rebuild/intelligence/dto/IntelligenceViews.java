@@ -42,6 +42,7 @@ public final class IntelligenceViews {
             @Schema(requiredMode=Schema.RequiredMode.REQUIRED) String toUnitName,
             @Schema(requiredMode=Schema.RequiredMode.REQUIRED) String senderName,
             @Schema(requiredMode=Schema.RequiredMode.REQUIRED) String note,
+            @Schema(types={"string","null"}) String assessmentSummary,
             @Schema(requiredMode=Schema.RequiredMode.REQUIRED) Instant sentAt,
             @Schema(requiredMode=Schema.RequiredMode.REQUIRED) boolean mine,
             @Schema(requiredMode=Schema.RequiredMode.REQUIRED, types={"string","null"}) String signedByName,

@@ -1,11 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { Alert, Button, Input, Select, Space, Spin, Table, Tabs, Tag } from 'antd';
+import { useParams, useSearchParams } from 'react-router';
+import { Alert, Button, Empty, Spin, Table, Tabs } from 'antd';
 import type { TableColumnsType } from 'antd';
 import type { IntelligenceListItem } from '@merine/api-contract';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { TablePager } from '../../shared/ui/TablePager';
-import { ApiError } from '../../shared/http';
+import { errorText, isForbiddenError } from '../../shared/api-error';
+import { DetailBackLink } from '../../shared/ui/DetailBackLink';
+import { StatusTag } from '../../shared/ui/StatusTag';
+import { RecordTitleLink } from '../../shared/ui/RecordTitleLink';
+import tableStyles from '../../shared/ui/RecordTable.module.css';
+import { FlowFilters } from './components/FlowFilters';
 import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { useAuth } from '../auth/public';
 import { fetchTopic, fetchTopics, fetchUnits } from './api';
@@ -20,13 +25,13 @@ import styles from './InformationFlowPage.module.css';
 export function InformationFlowPage() {
   const { state } = useAuth();
   const user = state.status === 'authenticated' ? state.user : undefined;
-  const navigate = useNavigate();
   const { topicId } = useParams();
   const [params, setParams] = useSearchParams();
   const view = params.get('view') === 'sent' ? 'sent' : 'received';
   const statuses = view === 'sent' ? ['all', 'DRAFT', 'PUBLISHED'] : ['all', 'pending', 'signed'];
   const status = statuses.includes(params.get('status') ?? '') ? params.get('status')! : 'all';
-  const page = Math.max(1, Number(params.get('page')) || 1);
+  const requestedPage = Number(params.get('page'));
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const keyword = params.get('keyword') ?? '';
   const canRead = hasPermission(user?.permissionCodes, PERMISSIONS.intelRead);
   const list = useQuery({
@@ -62,67 +67,73 @@ export function InformationFlowPage() {
     if (key !== 'page') next.set('page', '1');
     setParams(next);
   };
-  if (!canRead) return <PageHeader title="信息流转" description="当前账号没有信息流转查看权限。" />;
-  const queryError = topicId ? detail.error : list.error;
+  if (!canRead)
+    return (
+      <>
+        <PageHeader demo={false} title="信息流转" />
+        <div className={styles.page}>
+          <Alert type="warning" title="当前账号没有信息流转查看权限" />
+        </div>
+      </>
+    );
+
   const columns: TableColumnsType<IntelligenceListItem> = [
     {
       title: '情报',
       key: 'topic',
+      width: 430,
       render: (_, row) => (
-        <div>
-          <Button
-            type="link"
-            className={styles.titleLink}
-            onClick={() => navigate(`/collaboration/flows/${row.id}?${params}`)}
-          >
-            {row.title}
-          </Button>
-          <div className={styles.meta}>{row.topicNo}</div>
-        </div>
+        <RecordTitleLink to={`/collaboration/flows/${row.id}?${params}`} number={row.topicNo}>
+          {row.title}
+        </RecordTitleLink>
       ),
     },
-    { title: '原发起单位', dataIndex: 'sourceUnitName', width: 235 },
     {
       title: view === 'sent' ? '发送状态' : '本单位签收',
       key: 'status',
       width: 180,
       render: (_, row) =>
         view === 'sent' ? (
-          <Tag color={row.status === 'DRAFT' ? 'default' : 'blue'}>
-            {row.status === 'DRAFT' ? '草稿' : '已发出'}
-          </Tag>
+          <StatusTag
+            tone={row.status === 'DRAFT' ? 'neutral' : 'accent'}
+            label={row.status === 'DRAFT' ? '草稿' : '已发出'}
+          />
         ) : (
-          <span>
-            <Tag color={row.pendingReceiptCount ? 'orange' : 'green'}>
-              {row.pendingReceiptCount ? `${row.pendingReceiptCount} 次待签收` : '已签收'}
-            </Tag>
+          <div className={styles.statusCell}>
+            <StatusTag
+              tone={row.pendingReceiptCount ? 'warning' : 'success'}
+              label={row.pendingReceiptCount ? `${row.pendingReceiptCount} 次待签收` : '已签收'}
+            />
             <span className={styles.hint}>共 {row.myReceiptCount} 次送达</span>
-          </span>
+          </div>
         ),
     },
+    { title: '原发起单位', dataIndex: 'sourceUnitName', width: 235 },
     {
       title: '创建时间',
       dataIndex: 'createdAt',
-      width: 165,
+      width: 180,
       render: (value) => <span className={styles.time}>{formatFlowTime(value)}</span>,
     },
   ];
   return (
     <div>
+      {topicId && (
+        <DetailBackLink to={`/collaboration/flows?${params}`}>返回情报列表</DetailBackLink>
+      )}
       <PageHeader
+        demo={false}
         title={topicId ? (detail.data?.title ?? '情报详情') : '信息流转'}
         description={topicId ? undefined : '共享情报，汇集线索。'}
         actions={
           topicId ? (
-            <Space>
-              <Button
-                disabled={busy || uncertain}
-                onClick={() => navigate(`/collaboration/flows?${params}`)}
-              >
-                返回列表
-              </Button>
-              <Button onClick={() => void detail.refetch()}>刷新</Button>
-            </Space>
+            <Button
+              loading={detail.isFetching}
+              disabled={busy || uncertain}
+              onClick={() => void detail.refetch()}
+            >
+              刷新
+            </Button>
           ) : (
             hasPermission(user?.permissionCodes, PERMISSIONS.intelCreate) && (
               <Button
@@ -137,21 +148,6 @@ export function InformationFlowPage() {
         }
       />
       <div className={styles.page}>
-        {queryError && (
-          <Alert
-            type="error"
-            showIcon
-            title={queryError instanceof ApiError ? queryError.message : '加载失败'}
-            action={
-              <Button
-                size="small"
-                onClick={() => void (topicId ? detail.refetch() : list.refetch())}
-              >
-                重试
-              </Button>
-            }
-          />
-        )}
         {failure && !dialog && (
           <Alert
             type="error"
@@ -169,6 +165,17 @@ export function InformationFlowPage() {
         {topicId ? (
           detail.isPending ? (
             <Spin />
+          ) : detail.isError ? (
+            <Alert
+              type="error"
+              showIcon
+              title={errorText(detail.error)}
+              action={
+                <Button loading={detail.isFetching} onClick={() => void detail.refetch()}>
+                  重试
+                </Button>
+              }
+            />
           ) : (
             detail.data && (
               <TopicDetail
@@ -179,7 +186,7 @@ export function InformationFlowPage() {
             )
           )
         ) : (
-          <section className={styles.panel}>
+          <>
             <Tabs
               activeKey={view}
               onChange={(value) => {
@@ -192,55 +199,93 @@ export function InformationFlowPage() {
                 { key: 'sent', label: '我发出的' },
               ]}
             />
-            <div className={styles.filters}>
-              <Select
-                aria-label="筛选状态"
-                value={status}
-                onChange={(value) => setFilter('status', value)}
-                options={
-                  view === 'sent'
-                    ? [
-                        { value: 'all', label: '全部状态' },
-                        { value: 'DRAFT', label: '草稿' },
-                        { value: 'PUBLISHED', label: '已发出' },
-                      ]
-                    : [
-                        { value: 'all', label: '全部状态' },
-                        { value: 'pending', label: '待签收' },
-                        { value: 'signed', label: '已签收' },
-                      ]
-                }
-              />
-              <Input.Search
-                placeholder="搜索标题或编号"
-                defaultValue={keyword}
-                key={view}
-                allowClear
-                onSearch={(value) => setFilter('keyword', value)}
-              />
-            </div>
-            <Table
-              rowKey="id"
-              columns={columns}
-              dataSource={list.data?.items ?? []}
-              loading={list.isFetching}
-              pagination={false}
-              scroll={{ x: 900 }}
-              locale={{ emptyText: '暂无本单位情报' }}
+            <FlowFilters
+              key={`${view}:${status}:${keyword}`}
+              view={view}
+              status={status}
+              keyword={keyword}
+              onSearch={(nextStatus, nextKeyword) => {
+                const next = new URLSearchParams(params);
+                next.set('status', nextStatus);
+                next.set('keyword', nextKeyword);
+                next.set('page', '1');
+                setParams(next);
+              }}
             />
-            <TablePager
-              total={list.data?.total ?? 0}
-              page={page}
-              pageSize={20}
-              itemCount={list.data?.items.length ?? 0}
-              onPageChange={(value) => setFilter('page', String(value))}
-            />
-          </section>
+            <section className={tableStyles.frame}>
+              <div className={tableStyles.toolbar}>
+                <h2>{view === 'sent' ? '我发出的情报' : '我收到的情报'}</h2>
+                <Button loading={list.isFetching} onClick={() => void list.refetch()}>
+                  刷新
+                </Button>
+              </div>
+              {list.isError && (
+                <Alert
+                  type="error"
+                  showIcon
+                  className={tableStyles.error}
+                  title={
+                    list.data && !isForbiddenError(list.error)
+                      ? '刷新失败，当前显示上次加载的数据'
+                      : '情报加载失败'
+                  }
+                  description={errorText(list.error)}
+                  action={
+                    <Button loading={list.isFetching} onClick={() => void list.refetch()}>
+                      重试
+                    </Button>
+                  }
+                />
+              )}
+              {list.isPending ? (
+                <div className={styles.loading}>
+                  <Spin />
+                </div>
+              ) : (
+                list.data &&
+                !isForbiddenError(list.error) && (
+                  <>
+                    <Table
+                      rowKey="id"
+                      columns={columns}
+                      dataSource={list.data?.items ?? []}
+                      loading={list.isFetching}
+                      pagination={false}
+                      size="small"
+                      tableLayout="fixed"
+                      scroll={{ x: 1025 }}
+                      locale={{
+                        emptyText: (
+                          <Empty
+                            description={
+                              keyword || status !== 'all'
+                                ? '没有符合查询条件的情报'
+                                : view === 'sent'
+                                  ? '暂无我发出的情报'
+                                  : '暂无我收到的情报'
+                            }
+                          />
+                        ),
+                      }}
+                    />
+                    <TablePager
+                      total={list.data?.total ?? 0}
+                      page={page}
+                      pageSize={20}
+                      itemCount={list.data?.items.length ?? 0}
+                      onPageChange={(value) => setFilter('page', String(value))}
+                    />
+                  </>
+                )
+              )}
+            </section>
+          </>
         )}
       </div>
       {dialog && (
         <FlowFormDialog
           dialog={dialog}
+          topicId={topicId}
           options={units.data ?? []}
           unitLoading={units.isFetching}
           unitError={units.error}

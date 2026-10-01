@@ -762,7 +762,7 @@ describe('显式办结与撤回', () => {
       summary.outcomes.map((outcome) => outcome.code),
       ['NOT_FOUND'],
     );
-    assert.equal(taskTodos(detail)[0].commands[0].action, 'close');
+    assert.deepEqual(taskTodos(detail), []);
     assert.deepEqual(
       taskTodos({ ...detail, allowedActions: [allowed('close', '尚有分支未办结')] }),
       [],

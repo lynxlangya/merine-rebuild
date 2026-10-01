@@ -14,7 +14,9 @@ public final class IntelligenceRequests {
             @Size(max=1000) String note, @NotNull Integer version) { }
     public record IntelligenceSendRequest(
             @NotEmpty @Size(max=100) List<@NotBlank String> targetUnitCodes,
-            @Size(max=1000) String note) { }
+            @Size(max=1000) String note, String assessmentId, @Size(max=4000) String assessmentSummary) {
+        public IntelligenceSendRequest(List<String> targets,String note) { this(targets,note,null,null); }
+    }
     public record IntelligenceFeedbackRequest(@NotBlank @Size(max=4000) String body) { }
     public record IntelligenceSupplementRequest(@NotBlank String kind,
                                                 @NotBlank @Size(max=4000) String body) { }

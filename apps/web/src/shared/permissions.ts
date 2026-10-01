@@ -53,6 +53,8 @@ export const PERMISSIONS = {
   intelFeedback: 'intelligence:topic:feedback',
   intelForward: 'intelligence:topic:forward',
   intelSupplement: 'intelligence:topic:supplement',
+  intelAssess: 'intelligence:topic:assess',
+  intelCreateTask: 'intelligence:topic:create-task',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

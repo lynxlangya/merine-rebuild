@@ -14,6 +14,7 @@ export const DICTIONARY_CODES = {
   taskAssignmentStatus: 'task.assignment.status',
   taskTransferStatus: 'task.transfer.status',
   taskReturnReason: 'task.return.reason',
+  assessmentRecommendation: 'intelligence.assessment.recommendation',
 } as const;
 
 export type DictTone = 'neutral' | 'warning';

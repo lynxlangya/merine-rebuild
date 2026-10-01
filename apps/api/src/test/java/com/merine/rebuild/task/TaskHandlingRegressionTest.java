@@ -331,22 +331,16 @@ class TaskHandlingRegressionTest {
     }
 
     @Test
-    void outcomeAndSuggestedUnitValidationAndNotFoundResult() {
+    void removedSuggestedUnitIsRejectedAndNotFoundResultNeedsOnlyText() {
         TaskViews.TaskDetail task = create(hq, List.of(divisionA.code()));
         long taskId = number(task.id()), branchId = number(task.branches().getFirst().id());
         service.accept(a, taskId, branchId, key());
         assertThatThrownBy(() -> service.submitResult(a, taskId, branchId, key(),
-                new TaskRequests.SubmitResult("OUT_OF_JURISDICTION", "核查", "转出", null)))
-                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo("SUGGESTED_UNIT_REQUIRED"));
-        assertThatThrownBy(() -> service.submitResult(a, taskId, branchId, key(),
                 new TaskRequests.SubmitResult("OUT_OF_JURISDICTION", "核查", "转出", divisionA.code())))
-                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo("INVALID_TARGET_UNIT"));
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo("SUGGESTED_UNIT_DISABLED"));
         Authentication resultsOnly = principal(divisionA, ".results", List.of(PermissionCodes.TASK_READ, PermissionCodes.TASK_SUBMIT_RESULT));
-        assertThat(service.targets(resultsOnly, "suggest", taskId, branchId)).extracting(TaskViews.UnitOption::code)
-                .doesNotContain(divisionA.code()).contains(divisionB.code(), root.code());
-        assertThatThrownBy(() -> service.targets(resultsOnly, "suggest", null, null))
-                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo("INVALID_TASK_BRANCH"));
-        assertThatThrownBy(() -> service.targets(hq, "suggest", taskId, branchId)).isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> service.targets(a, "suggest", taskId, branchId))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo("INVALID_TASK_ACTION"));
         // 显示用状态项停用不阻止流程迁移。
         sql.update("UPDATE sys_dict_item i JOIN sys_dict_type t ON t.id=i.dict_type_id SET i.status='DISABLED' WHERE t.dict_code='task.order.status' AND i.item_value='AWAITING_CLOSE'");
         session.clearCache();
@@ -419,14 +413,14 @@ class TaskHandlingRegressionTest {
                 .isInstanceOf(ApiException.class).hasMessageContaining("下级分支");
         service.accept(aa, taskId, number(child), key());
         TaskViews.TaskDetail childCompleted = service.submitResult(aa, taskId, number(child), key(),
-                new TaskRequests.SubmitResult("OUT_OF_JURISDICTION", "发现跨辖区", "建议后续核查", brigadeB.code()));
+                new TaskRequests.SubmitResult("OUT_OF_JURISDICTION", "发现跨辖区", "已查明去向，相关情况已写入结论", null));
         String sourceResultId = childCompleted.branches().stream()
                 .filter(x -> child.equals(x.id())).findFirst().orElseThrow().result().id();
-        TaskViews.TaskDetail followup = service.create(a, key(),
+        assertThatThrownBy(() -> service.create(a, key(),
                 new TaskRequests.Create("独立后续任务", "继续核查", "新结果",
-                        Instant.now().plusSeconds(7200), List.of(brigadeA.code()), sourceResultId));
-        assertThat(followup.sourceResultId()).isEqualTo(sourceResultId);
-        assertThat(followup.initialDueAt()).isNotEqualTo(task.initialDueAt());
+                        Instant.now().plusSeconds(7200), List.of(brigadeA.code()), sourceResultId)))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo("SOURCE_RESULT_DISABLED"));
+        assertThat(childCompleted.branches().stream().filter(x -> child.equals(x.id())).findFirst().orElseThrow().result().suggestedUnitName()).isNull();
         service.submitResult(a, taskId, number(aBranch), key(),
                 new TaskRequests.SubmitResult("PARTIAL", "已督办", "部分完成", null));
         assertThat(service.detail(hq, taskId).status()).isEqualTo("OPEN");
@@ -530,7 +524,7 @@ class TaskHandlingRegressionTest {
         assertThatThrownBy(() -> service.create(a, key(), new TaskRequests.Create(
                 "错误引用", "继续核查", "反馈结果", Instant.now().plusSeconds(7200),
                 List.of(brigadeA.code()), childResultId)))
-                .isInstanceOf(ApiException.class).hasMessageContaining("任务不存在");
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.code()).isEqualTo("SOURCE_RESULT_DISABLED"));
         service.submitResult(b, taskId, parentId, key(),
                 new TaskRequests.SubmitResult("FULFILLED", "已汇总", "全部完成", null));
         TaskViews.TaskDetail historical = service.detail(a, taskId);

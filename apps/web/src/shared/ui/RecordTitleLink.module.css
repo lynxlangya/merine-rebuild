@@ -1,0 +1,28 @@
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  overflow-wrap: anywhere;
+}
+.link {
+  align-self: flex-start;
+  color: var(--fg);
+  font-weight: var(--fw-strong);
+  text-decoration: none;
+}
+.link:hover,
+.link:focus-visible {
+  color: var(--accent);
+}
+.link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+.number {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

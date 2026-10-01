@@ -126,6 +126,8 @@ apps/api/src/test/java/com/merine/rebuild/
 
 ### SQL 与数据归属
 
+串联模块的公开能力为 `intelligence.IntelligenceTaskAccess` 及其领域结果和 `AssessmentRequests/AssessmentViews`：任务模块用它重新判定情报数据范围、记录或读取本单位研判。`task_intel_source` 由任务模块写入，`task_intel_return` 只保留历史数据和引用保护，应用不再写入，`intel_assessment` 由情报模块写入；依赖只有 task → intelligence，不跨模块导入 Mapper 或持久化投射。单位管理继续通过两模块 `UnitUsageLookup` 校验新增引用。细节见[串联设计](../tasks/information-task-link-design-plan.md)。
+
 - **一张业务表只有一个业务写入 owner，不等于一个表只能有一个 Mapper。** 同一 owner 内可以按用例拆 Mapper：账号查询、登录时间登记、管理操作与统计各有职责；不能让不同入口各自复制同一套写入规则。普通用例优先复用已有 Mapper，不无依据拆分或合并。
 - 当前 user 拥有 `sys_user`、`sys_user_role`，unit 拥有 `sys_unit`，role 拥有 `sys_role`、`sys_role_permission`，permission 拥有 `sys_permission`，menu 拥有 `sys_menu`，dictionary 拥有 `sys_dict_type`、`sys_dict_item`。角色状态或权限变化需要让持有者会话失效时，role 调用 user 的授权命令，不直接写 `sys_user`；菜单删除要解除角色授权时，menu 调用 role 的 `RolePermissionCommands`，再由调用方递增持有者授权版本；成员数与成员清单由 user 的 `RoleUsageLookup` 回答。seed 是本地初始化入口，只补缺失数据，不供在线业务调用；它的事务与幂等约束独立明确。它不是新增业务跨表写入的模板。系统枚举字典（状态、菜单类型、单位层级）也落 `sys_dict_type`/`sys_dict_item`，只是引导数据由迁移写入、不在 Java 里再登记一份；想改标签或增删字典项都走字典接口，不再有"代码登记"的第二真源。
 - XML 文件名与 Mapper 接口同名；`namespace` 必须等于 Mapper **完整类名**。资源目录按业务/用例路径对应，**省略根包和技术子包 `persistence`**：`system.user.account.persistence.UserAccountMapper` 对应 `mapper/system/user/account/UserAccountMapper.xml`。由 `mybatis.mapper-locations` 显式扫描，不依赖同包自动发现。

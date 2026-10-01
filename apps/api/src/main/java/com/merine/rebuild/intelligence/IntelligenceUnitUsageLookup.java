@@ -7,9 +7,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class IntelligenceUnitUsageLookup {
     private final IntelligenceMapper mapper;
-    public IntelligenceUnitUsageLookup(IntelligenceMapper mapper) {this.mapper=mapper;}
+    private final com.merine.rebuild.intelligence.persistence.AssessmentMapper assessments;
+    public IntelligenceUnitUsageLookup(IntelligenceMapper mapper, com.merine.rebuild.intelligence.persistence.AssessmentMapper assessments) {this.mapper=mapper;this.assessments=assessments;}
     public boolean hasReferences(long unitId) {
         return !mapper.unitReferences(unitId).isEmpty() || !mapper.scopeReferences(unitId).isEmpty()
-                || !mapper.targetReferences(unitId).isEmpty();
+                || !mapper.targetReferences(unitId).isEmpty() || !assessments.unitReferences(unitId).isEmpty();
     }
 }

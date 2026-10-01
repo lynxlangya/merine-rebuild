@@ -78,6 +78,25 @@ test('动作入口拒绝未知动作和缺少回执的接收动作', () => {
   assert.equal(flowOperation('sign'), null);
   assert.deepEqual(flowOperation('supplement'), { code: 'supplement' });
 });
+test('只有明确开启共享研判才提交选定引用和摘要，内部输入不会被普通发送带出', () => {
+  const input = {
+    ...values,
+    attachAssessment: true,
+    assessmentId: '21',
+    assessmentSummary: ' 明确提供的摘要 ',
+  };
+  const shared = flowCommand({ code: 'send' }, input, '3');
+  assert.ok('body' in shared);
+  assert.deepEqual(shared.body, {
+    targetUnitCodes: ['b'],
+    note: '说明',
+    assessmentId: '21',
+    assessmentSummary: '明确提供的摘要',
+  });
+  const ordinary = flowCommand({ code: 'send' }, { ...input, attachAssessment: false }, '3');
+  assert.ok('body' in ordinary);
+  assert.deepEqual(ordinary.body, { targetUnitCodes: ['b'], note: '说明' });
+});
 test('网络、服务错误和处理中视为结果未知；普通业务拒绝允许修改', () => {
   for (const error of [
     new ApiError('网络', 0),

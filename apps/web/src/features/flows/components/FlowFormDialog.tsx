@@ -1,6 +1,9 @@
+import { useRestoreFocus } from '../../../shared/useRestoreFocus';
 import { useEffect } from 'react';
-import { Alert, Button, Form, Input, Modal, Select, Spin } from 'antd';
+import { Alert, App, Button, Checkbox, Form, Input, Modal, Select, Spin } from 'antd';
 import type { IntelligenceUnitOption } from '@merine/api-contract';
+import { useAuth } from '../../auth/public';
+import { AssessmentPicker } from './AssessmentPicker';
 import { ApiError } from '../../../shared/http';
 import { ScopeSelector } from './ScopeSelector';
 import { flowLabel, needsUnits as actionNeedsUnits } from '../actions';
@@ -11,6 +14,7 @@ import styles from '../InformationFlowPage.module.css';
 /** 每次打开都有自己的表单实例；预填、取消和失败保留输入不会与上一次弹窗交叉。 */
 export function FlowFormDialog({
   dialog,
+  topicId,
   options,
   unitLoading,
   unitError,
@@ -23,6 +27,7 @@ export function FlowFormDialog({
   onSubmit,
 }: {
   dialog: FlowDialogState;
+  topicId?: string;
   options: IntelligenceUnitOption[];
   unitLoading: boolean;
   unitError: Error | null;
@@ -34,7 +39,23 @@ export function FlowFormDialog({
   onCancel: () => void;
   onSubmit: (values: FlowForm) => void;
 }) {
+  useRestoreFocus();
   const [form] = Form.useForm<FlowForm>();
+  const { state } = useAuth();
+  const user = state.status === 'authenticated' ? state.user : undefined;
+  const { modal } = App.useApp();
+  const attach = Form.useWatch('attachAssessment', form);
+  const close = () => {
+    if (busy || locked) return;
+    if (form.isFieldsTouched())
+      modal.confirm({
+        title: '放弃未保存的内容？',
+        okText: '放弃',
+        cancelText: '继续填写',
+        onOk: onCancel,
+      });
+    else onCancel();
+  };
   const scope = Form.useWatch('scopeUnitCodes', form) ?? dialog.initialValues.scopeUnitCodes ?? [];
   const needsUnits = actionNeedsUnits(dialog.code);
   const isDraft = dialog.code === 'create' || dialog.code === 'update';
@@ -55,10 +76,22 @@ export function FlowFormDialog({
       destroyOnHidden
       mask={{ closable: !busy && !locked }}
       closable={!busy && !locked}
-      onCancel={onCancel}
+      onCancel={close}
       onOk={() => (locked ? onRetrySubmission() : form.submit())}
       confirmLoading={busy}
-      okText={locked ? '重试提交' : isDraft ? '保存草稿' : '确认提交'}
+      okText={
+        locked
+          ? '重试原提交'
+          : isDraft
+            ? '保存草稿'
+            : isSend
+              ? dialog.published || dialog.code === 'forward'
+                ? '共享情报'
+                : '发送情报'
+              : dialog.code === 'feedbacks'
+                ? '提交反馈'
+                : '保存说明'
+      }
       cancelButtonProps={{ disabled: busy || locked }}
       okButtonProps={{ disabled: !locked && needsUnits && (unitLoading || !!unitError) }}
     >
@@ -82,7 +115,7 @@ export function FlowFormDialog({
           <>
             <Form.Item
               name="title"
-              label="标题"
+              label="情报标题"
               rules={[{ required: true, whitespace: true, message: '请输入标题' }]}
             >
               <Input maxLength={160} showCount />
@@ -128,6 +161,31 @@ export function FlowFormDialog({
                   .map((u) => ({ value: u.code, label: u.name }))}
               />
             </Form.Item>
+            {isSend && dialog.published && (
+              <>
+                <Form.Item name="attachAssessment" valuePropName="checked">
+                  <Checkbox>附本单位研判</Checkbox>
+                </Form.Item>
+                {attach && (
+                  <>
+                    <Form.Item name="assessmentId" label="引用的研判" rules={[{ required: true }]}>
+                      <AssessmentPicker
+                        topicId={topicId!}
+                        onPick={(a) => form.setFieldValue('assessmentSummary', a.analysis)}
+                        userId={user?.id}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      name="assessmentSummary"
+                      label="本次共享研判摘要"
+                      rules={[{ required: true, whitespace: true }]}
+                    >
+                      <Input.TextArea rows={3} maxLength={4000} showCount />
+                    </Form.Item>
+                  </>
+                )}
+              </>
+            )}
             <Form.Item name="note" label="发送说明（可选）">
               <Input.TextArea rows={3} maxLength={1000} showCount />
             </Form.Item>

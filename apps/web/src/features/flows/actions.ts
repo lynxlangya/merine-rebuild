@@ -24,6 +24,9 @@ export type FlowOperation =
   | { code: 'feedbacks' | 'forward'; receipt: IntelligenceReceipt };
 export type FlowForm = Partial<Omit<IntelligenceDraftRequest, 'version'>> & {
   kind?: 'SUPPLEMENT' | 'CORRECTION';
+  attachAssessment?: boolean;
+  assessmentId?: string;
+  assessmentSummary?: string;
 };
 export type FlowDialogState = Exclude<FlowOperation, { code: 'sign' }> & {
   published: boolean;
@@ -91,14 +94,32 @@ export function flowCommand(
       return {
         code: 'send',
         topicId: id,
-        body: { targetUnitCodes: codes(values.targetUnitCodes), note: text(values.note) },
+        body: {
+          targetUnitCodes: codes(values.targetUnitCodes),
+          note: text(values.note),
+          ...(values.attachAssessment
+            ? {
+                assessmentId: values.assessmentId,
+                assessmentSummary: text(values.assessmentSummary),
+              }
+            : {}),
+        },
       };
     case 'forward':
       return {
         code: 'forward',
         topicId: id,
         receiptId: operation.receipt.id,
-        body: { targetUnitCodes: codes(values.targetUnitCodes), note: text(values.note) },
+        body: {
+          targetUnitCodes: codes(values.targetUnitCodes),
+          note: text(values.note),
+          ...(values.attachAssessment
+            ? {
+                assessmentId: values.assessmentId,
+                assessmentSummary: text(values.assessmentSummary),
+              }
+            : {}),
+        },
       };
     case 'sign':
       return { code: 'sign', topicId: id, receiptId: operation.receipt.id };

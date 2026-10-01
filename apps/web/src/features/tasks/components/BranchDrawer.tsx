@@ -142,7 +142,6 @@ interface BranchDrawerProps {
   open: boolean;
   history: HistoryEntry[];
   labels: TaskLabels;
-  canCreateFollowup: boolean;
   onClose: () => void;
   afterClose: () => void;
   onAction: TaskActionHandler;
@@ -158,7 +157,6 @@ export function BranchDrawer({
   open,
   history,
   labels,
-  canCreateFollowup,
   onClose,
   afterClose,
   onAction,
@@ -187,14 +185,7 @@ export function BranchDrawer({
       }
     >
       {row ? (
-        <BranchBody
-          task={task}
-          row={row}
-          history={history}
-          labels={labels}
-          canCreateFollowup={canCreateFollowup}
-          onAction={onAction}
-        />
+        <BranchBody task={task} row={row} history={history} labels={labels} onAction={onAction} />
       ) : null}
     </Drawer>
   );
@@ -205,9 +196,8 @@ function BranchBody({
   row,
   history,
   labels,
-  canCreateFollowup,
   onAction,
-}: Pick<BranchDrawerProps, 'task' | 'history' | 'labels' | 'canCreateFollowup' | 'onAction'> & {
+}: Pick<BranchDrawerProps, 'task' | 'history' | 'labels' | 'onAction'> & {
   row: BranchRow;
 }) {
   const { branch } = row;
@@ -269,21 +259,12 @@ function BranchBody({
             ) : null}
           </p>
           <dl className={styles.facts}>
-            <Fact label="结论与后续">{result.conclusion}</Fact>
-            <Fact label="已做工作与依据">{result.handlingDetail}</Fact>
+            <Fact label="结论">{result.conclusion}</Fact>
+            <Fact label="办理经过">{result.handlingDetail}</Fact>
             {result.suggestedUnitName ? (
-              <Fact label="建议后续单位">{result.suggestedUnitName}</Fact>
+              <Fact label="历史建议单位">{result.suggestedUnitName}</Fact>
             ) : null}
           </dl>
-          {canCreateFollowup && result.id ? (
-            <Button
-              type="link"
-              className={styles.followup}
-              onClick={() => onAction('create', undefined, undefined, result.id)}
-            >
-              基于此结果发后续任务
-            </Button>
-          ) : null}
         </section>
       ) : null}
 
@@ -327,7 +308,7 @@ function BranchBody({
           <h3>本分支要求</h3>
           <dl className={styles.facts}>
             {ownInstruction ? <Fact label="任务要求">{ownInstruction}</Fact> : null}
-            {ownExpected ? <Fact label="交付目标">{ownExpected}</Fact> : null}
+            {ownExpected ? <Fact label="预期结果">{ownExpected}</Fact> : null}
           </dl>
         </section>
       ) : null}

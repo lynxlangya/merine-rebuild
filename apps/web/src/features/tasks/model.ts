@@ -15,12 +15,11 @@ export interface TaskLabel {
 /** 结果类型的显示名来自字典；这里只接收解析函数，模型不依赖查询层。 */
 export type OutcomeLabel = (code?: string) => string;
 
-/** 打开办理弹窗：动作、所在分支、相关交接申请，以及发后续任务时的来源结果。 */
+/** 打开办理弹窗：动作、所在分支和相关交接申请。 */
 export type TaskActionHandler = (
   action: string,
   branch?: TaskBranch,
   transfer?: TaskTransfer,
-  sourceResultId?: string,
 ) => void;
 
 /** 状态与退回原因标签由页面字典解析；纯模型只接收函数。 */
@@ -529,16 +528,6 @@ export interface TaskTodo {
 /** 我单位待办：承办、回应交接、审批交接三类，各自一行；标题用表格里的单位名，便于对上是哪一行。 */
 export function taskTodos(task: TaskDetail): TaskTodo[] {
   const todos: TaskTodo[] = [];
-  const closing = taskCommands(task).filter(
-    (command) => command.action === 'close' && !command.disabledReason,
-  );
-  if (closing.length)
-    todos.push({
-      key: 'close',
-      title: '请填写总体结论并办结',
-      description: ['全部分支已答复或撤回。'],
-      commands: closing,
-    });
   for (const branch of task.branches ?? []) {
     const commands = branchCommands(task, branch);
     const holder = commands.filter(

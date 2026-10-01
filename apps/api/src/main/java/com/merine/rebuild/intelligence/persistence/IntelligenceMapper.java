@@ -17,14 +17,17 @@ public interface IntelligenceMapper {
     record ListRow(long id, String topicNo, String title, String status, String sourceUnitName,
                    Instant createdAt, Instant publishedAt, long pendingReceiptCount, long myReceiptCount) { }
     record ReceiptRow(long id, long sendId, long topicId, Long parentReceiptId,
-                      long fromUnitId, String fromUnitName, String senderName, String note, Instant sentAt,
+                      long fromUnitId, String fromUnitName, String senderName, String note, String assessmentSummary, Instant sentAt,
                       long toUnitId, String toUnitName, String signedByName, Instant signedAt) { }
     record ScopeRow(long unitId, String unitCode) { }
     record FeedbackRow(long id, long receiptId, String body, String unitName, String userName, Instant createdAt) { }
     record SupplementRow(long id, String kind, String body, String unitName, String userName, Instant createdAt) { }
     record CommandRow(String requestDigest, Long topicId) { }
 
+    @org.apache.ibatis.annotations.Select("SELECT EXISTS(SELECT 1 FROM sys_dict_item i JOIN sys_dict_type t ON t.id=i.dict_type_id WHERE t.dict_code='intelligence.assessment.recommendation' AND t.status='ENABLED' AND i.item_value=#{code} AND i.status='ENABLED')")
+    boolean recommendationEnabled(String code);
     ActorRow actor(@Param("userId") long userId);
+    ActorRow lockActor(@Param("userId") long userId);
     List<UnitRow> units();
     List<UnitRow> lockUnits();
     TopicRow topic(@Param("id") long id);
@@ -36,8 +39,10 @@ public interface IntelligenceMapper {
     List<ScopeRow> scope(@Param("topicId") long topicId);
     List<ScopeRow> draftTargets(@Param("topicId") long topicId);
     List<ReceiptRow> receipts(@Param("topicId") long topicId);
+    List<ReceiptRow> lockReceipts(@Param("topicId") long topicId);
     List<FeedbackRow> feedbacks(@Param("topicId") long topicId);
     List<SupplementRow> supplements(@Param("topicId") long topicId);
+    List<SupplementRow> lockSupplements(@Param("topicId") long topicId);
     long lastId();
     void insertTopic(@Param("number") String number, @Param("actor") ActorRow actor, @Param("unit") UnitRow unit,
                      @Param("title") String title, @Param("body") String body, @Param("note") String note, @Param("now") Instant now);
@@ -51,6 +56,8 @@ public interface IntelligenceMapper {
     void publish(@Param("id") long id, @Param("now") Instant now);
     void insertSend(@Param("id") long id, @Param("parent") Long parent, @Param("actor") ActorRow actor,
                     @Param("unit") UnitRow unit, @Param("note") String note, @Param("now") Instant now);
+    @org.apache.ibatis.annotations.Update("UPDATE intel_send SET assessment_id=#{assessmentId},assessment_summary=#{summary} WHERE id=#{sendId}")
+    void attachAssessment(@Param("sendId") long sendId,@Param("assessmentId") long assessmentId,@Param("summary") String summary);
     void insertReceipt(@Param("sendId") long sendId, @Param("unit") UnitRow unit);
     int sign(@Param("id") long id, @Param("actor") ActorRow actor, @Param("now") Instant now);
     void insertFeedback(@Param("id") long id, @Param("actor") ActorRow actor, @Param("unit") UnitRow unit,

@@ -3,6 +3,8 @@ package com.merine.rebuild.task.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
@@ -17,6 +19,7 @@ public final class TaskRequests {
             @NotBlank @Size(max = 1000) String expectedResult,
             @NotNull Instant dueAt,
             @NotEmpty @Size(max = 20) List<@NotBlank String> targetUnitCodes,
+            @Schema(hidden = true) @Null(message = "基于结果发后续任务已移除，请使用新建任务入口")
             String sourceResultId) { }
 
     public record Dispatch(
@@ -34,6 +37,7 @@ public final class TaskRequests {
             @NotBlank String outcomeCode,
             @NotBlank @Size(max = 4000) String handlingDetail,
             @NotBlank @Size(max = 4000) String conclusion,
+            @Schema(hidden = true) @Null(message = "建议后续单位选择已移除，请在结论中说明去向")
             String suggestedUnitCode) { }
 
     public record TransferRequest(

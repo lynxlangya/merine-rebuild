@@ -232,14 +232,13 @@ public class TaskService {
         Actor actor = actor(auth);
         String handlingDetail = input.handlingDetail().strip();
         String conclusion = input.conclusion().strip();
-        String suggestedCode = blankToNull(input.suggestedUnitCode());
-        String body = digest(taskId, branchId, input.outcomeCode(), handlingDetail,
-                conclusion, suggestedCode);
+        if (input.suggestedUnitCode() != null) {
+            throw bad("SUGGESTED_UNIT_DISABLED", "建议后续单位选择已移除，请在结论中说明去向");
+        }
+        String body = digest(taskId, branchId, input.outcomeCode(), handlingDetail, conclusion, null);
         TaskViews.TaskDetail prior = replay(actor, "RESULT", key, body);
         if (prior != null) return prior;
-        UnitRow suggested = suggestedCode == null ? null : mapper.unitByCode(suggestedCode);
-        if (suggested != null) lockUnits(actor.unit().id(), List.of(suggested.id()));
-        else lockUnits(actor.unit().id(), List.of());
+        lockUnits(actor.unit().id(), List.of());
         prior = reserve(actor, "RESULT", key, body);
         if (prior != null) return prior;
         if (!OUTCOMES.contains(input.outcomeCode())) throw bad("INVALID_OUTCOME", "结果类型不合法");
@@ -248,14 +247,6 @@ public class TaskService {
                 .noneMatch(item -> input.outcomeCode().equals(item.value()) && "ENABLED".equals(item.status()))) {
             throw bad("OUTCOME_DISABLED", "该结果类型已停用，请刷新后重选");
         }
-        if ("OUT_OF_JURISDICTION".equals(input.outcomeCode()) && suggestedCode == null) {
-            throw bad("SUGGESTED_UNIT_REQUIRED", "转出辖区须指明建议后续单位");
-        }
-        if (suggested != null && suggested.id() == actor.unit().id()) {
-            throw bad("INVALID_TARGET_UNIT", "建议单位不能是本单位");
-        }
-        if (suggestedCode != null
-                && (suggested == null || !"ENABLED".equals(suggested.status()))) throw bad("INVALID_TARGET_UNIT", "建议单位不存在或不可用");
         Context c = locked(actor, taskId, branchId);
         requireCurrent(actor, c, "IN_PROGRESS");
         if ("RETURN".equals(c.assignment().sourceAction())) throw returnPending();
@@ -264,7 +255,7 @@ public class TaskService {
         Instant now = Instant.now();
         mapper.insertResult(branchId, c.assignment().id(), input.outcomeCode(),
                 handlingDetail, conclusion,
-                suggested == null ? null : suggested.id(), actor.userId(), now);
+                null, actor.userId(), now);
         changed(mapper.endAssignment(c.assignment().id(), c.assignment().version(), "IN_PROGRESS",
                 "COMPLETED", actor.userId(), now, null, null));
         changed(mapper.completeBranch(branchId, c.branch().version(), now));
@@ -528,13 +519,12 @@ public class TaskService {
     @Transactional(readOnly = true)
     public List<TaskViews.UnitOption> targets(Authentication auth, String action, Long taskId,
                                                Long branchId) {
-        String permission = "suggest".equals(action) ? PermissionCodes.TASK_SUBMIT_RESULT
-                : "transfer".equals(action) ? PermissionCodes.TASK_TRANSFER_REQUEST
+        String permission = "transfer".equals(action) ? PermissionCodes.TASK_TRANSFER_REQUEST
                 : "dispatch".equals(action) || "reassign".equals(action) ? PermissionCodes.TASK_DISPATCH
                 : PermissionCodes.TASK_CREATE;
         guard.require(auth, permission, "没有选择目标单位的权限");
         Actor actor = actor(auth);
-        if (!Set.of("create", "dispatch", "transfer", "reassign", "suggest").contains(action)) {
+        if (!Set.of("create", "dispatch", "transfer", "reassign").contains(action)) {
             throw bad("INVALID_TASK_ACTION", "目标单位查询动作不合法");
         }
         Set<Long> formerHolders = Set.of();
@@ -550,9 +540,7 @@ public class TaskService {
         }
         Map<Long, UnitRow> all = new HashMap<>();
         mapper.allUnits().forEach(unit -> all.put(unit.id(), unit));
-        List<UnitRow> candidates = "suggest".equals(action)
-                ? mapper.enabledUnits().stream().filter(unit -> unit.id() != actor.unit().id()).toList()
-                : "transfer".equals(action) ? transferCandidates(actor.unit(), mapper.enabledUnits(), formerHolders)
+        List<UnitRow> candidates = "transfer".equals(action) ? transferCandidates(actor.unit(), mapper.enabledUnits(), formerHolders)
                 : dispatchCandidates(actor.unit(), mapper.enabledUnits(), returners);
         return candidates.stream().map(unit -> new TaskViews.UnitOption(unit.code(), unit.name(), unit.level(),
                 unit.parentId() == null ? null : all.get(unit.parentId()).code())).toList();
@@ -578,10 +566,11 @@ public class TaskService {
         String title = input.title().strip();
         String instruction = input.instruction().strip();
         String expectedResult = input.expectedResult().strip();
-        String sourceResultId = blankToNull(input.sourceResultId());
-        Long sourceId = sourceResultId == null ? null : parseId(sourceResultId);
+        if (input.sourceResultId() != null) {
+            throw bad("SOURCE_RESULT_DISABLED", "基于结果发后续任务已移除，请使用新建任务入口");
+        }
         String digest = digest(title, instruction, expectedResult,
-                input.dueAt(), codes, sourceId);
+                input.dueAt(), codes, null);
         TaskViews.TaskDetail replay = replay(actor, "CREATE", key, digest);
         if (replay != null) return replay;
 
@@ -596,18 +585,13 @@ public class TaskService {
         requireCanDispatch(actor.unit());
         for (UnitRow target : targets) requireDirect(actor.unit(), target);
 
-        if (sourceId != null) {
-            ResultRow source = mapper.resultById(sourceId);
-            if (source == null || !canSeeBranch(actor, source.branchId())) throw notFound();
-        }
-
         LocalDate day = Instant.now().atZone(TASK_ZONE).toLocalDate();
         mapper.allocateTaskNumber(day);
         long sequence = mapper.lastId(); // insertOrder 会覆盖 LAST_INSERT_ID，须立即读取。
         String taskNo = "RW-" + day.format(DateTimeFormatter.BASIC_ISO_DATE)
                 + "-" + String.format(Locale.ROOT, "%04d", sequence);
         mapper.insertOrder(taskNo, actor.unit().id(), actor.unit().name(), actor.userId(),
-                title, instruction, expectedResult, input.dueAt(), sourceId);
+                title, instruction, expectedResult, input.dueAt(), null);
         long taskId = mapper.lastId();
         action(taskId, null, null, null, "CREATE", actor, null, null, input.dueAt(),
                 "创建并下发给 " + targets.size() + " 个直属单位", now);

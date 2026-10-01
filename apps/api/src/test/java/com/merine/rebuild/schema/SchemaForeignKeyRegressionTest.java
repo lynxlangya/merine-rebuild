@@ -45,14 +45,17 @@ class SchemaForeignKeyRegressionTest extends MockMvcRegressionSupport {
             "V13__create_dictionary_tables.sql");
 
     /** 外键移除后必须原样保留的关联列索引与唯一约束：删约束不能顺手带走索引。 */
-    private static final Map<String, List<String>> REQUIRED_REFERENCE_INDEXES = Map.of(
-            "sys_unit", List.of("idx_sys_unit_parent"),
-            "sys_user", List.of("idx_sys_user_unit"),
-            "sys_user_role", List.of("uk_sys_user_role", "idx_sys_user_role_role"),
-            "sys_menu", List.of("idx_sys_menu_parent", "idx_sys_menu_permission"),
-            "sys_role_permission",
-            List.of("uk_sys_role_permission", "idx_sys_role_permission_permission"),
-            "sys_dict_item", List.of("uk_sys_dict_item_value", "idx_sys_dict_item_type"));
+    private static final Map<String, List<String>> REQUIRED_REFERENCE_INDEXES = Map.ofEntries(
+            Map.entry("sys_unit", List.of("idx_sys_unit_parent")),
+            Map.entry("sys_user", List.of("idx_sys_user_unit")),
+            Map.entry("sys_user_role", List.of("uk_sys_user_role", "idx_sys_user_role_role")),
+            Map.entry("sys_menu", List.of("idx_sys_menu_parent", "idx_sys_menu_permission")),
+            Map.entry("sys_role_permission", List.of("uk_sys_role_permission", "idx_sys_role_permission_permission")),
+            Map.entry("sys_dict_item", List.of("uk_sys_dict_item_value", "idx_sys_dict_item_type")),
+            Map.entry("intel_assessment", List.of("uk_intel_assessment_intent", "idx_intel_assessment_history", "idx_intel_assessment_receipt", "idx_intel_assessment_user")),
+            Map.entry("intel_send", List.of("idx_intel_send_assessment")),
+            Map.entry("task_intel_source", List.of("uk_task_intel_source_task", "idx_task_intel_source_topic", "idx_task_intel_source_assessment", "idx_task_intel_source_supplement", "idx_task_intel_source_unit", "idx_task_intel_source_user")),
+            Map.entry("task_intel_return", List.of("uk_task_intel_return_intent", "uk_task_intel_return_feedback", "uk_task_intel_return_supplement", "idx_task_intel_return_source", "idx_task_intel_return_result", "idx_task_intel_return_receipt", "idx_task_intel_return_user")));
 
     @Test
     void databaseHasNoForeignKey() {

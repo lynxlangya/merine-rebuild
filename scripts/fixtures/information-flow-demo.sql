@@ -6,8 +6,18 @@ SELECT id FROM sys_role WHERE role_code='SYSTEM_ADMIN' FOR UPDATE;
 INSERT INTO sys_role (role_code,role_name,description)
 SELECT 'INFORMATION_FLOW_DEMO','信息流转演示员','本地合成账号的独立信息共享功能权限'
 WHERE NOT EXISTS (SELECT 1 FROM sys_role WHERE role_code='INFORMATION_FLOW_DEMO');
+-- 新操作权限加入既有演示角色前，使持有者旧会话失效；重复执行没有缺失权限时不再更新。
+UPDATE sys_user u JOIN sys_user_role ur ON ur.user_id=u.id
+JOIN sys_role r ON r.id=ur.role_id AND r.role_code='INFORMATION_FLOW_DEMO'
+SET u.authorization_version=u.authorization_version+1
+WHERE u.login_name LIKE 'demo.%' AND EXISTS (
+ SELECT 1 FROM sys_permission p
+ WHERE p.permission_code LIKE 'intelligence:topic:%'
+ AND NOT EXISTS (SELECT 1 FROM sys_role_permission rp WHERE rp.role_id=r.id AND rp.permission_id=p.id)
+);
 INSERT INTO sys_role_permission (role_id,permission_id)
-SELECT r.id,p.id FROM sys_role r JOIN sys_permission p ON p.permission_code LIKE 'intelligence:topic:%'
+SELECT r.id,p.id FROM sys_role r JOIN sys_permission p
+ ON p.permission_code LIKE 'intelligence:topic:%'
 WHERE r.role_code='INFORMATION_FLOW_DEMO' AND NOT EXISTS (SELECT 1 FROM sys_role_permission existing WHERE existing.role_id=r.id AND existing.permission_id=p.id);
 UPDATE sys_user u JOIN sys_user_role ur ON ur.user_id=u.id JOIN sys_role existing ON existing.id=ur.role_id AND existing.role_code='TASK_DEMO'
 JOIN sys_role target ON target.role_code='INFORMATION_FLOW_DEMO'

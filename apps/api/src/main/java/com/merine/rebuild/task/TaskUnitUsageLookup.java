@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class TaskUnitUsageLookup {
     private final TaskMapper mapper;
-    public TaskUnitUsageLookup(TaskMapper mapper) { this.mapper = mapper; }
-    public boolean hasReferences(long unitId) { return mapper.unitActiveReferences(unitId) > 0; }
+    private final com.merine.rebuild.task.persistence.TaskIntelligenceMapper links;
+    public TaskUnitUsageLookup(TaskMapper mapper, com.merine.rebuild.task.persistence.TaskIntelligenceMapper links) { this.mapper = mapper; this.links=links; }
+    public boolean hasReferences(long unitId) { return mapper.unitActiveReferences(unitId) > 0 || !links.sourceUnits(unitId).isEmpty() || !links.returnUnits(unitId).isEmpty(); }
 }

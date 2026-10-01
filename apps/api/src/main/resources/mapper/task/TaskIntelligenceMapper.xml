@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.task.persistence.TaskIntelligenceMapper">
+ <sql id="visible">(o.issuer_unit_id=#{unitId} OR EXISTS(SELECT 1 FROM task_branch b JOIN task_assignment a ON a.branch_id=b.id WHERE b.task_id=o.id AND a.to_unit_id=#{unitId}) OR EXISTS(SELECT 1 FROM task_branch b JOIN task_transfer_request t ON t.branch_id=b.id WHERE b.task_id=o.id AND t.target_unit_id=#{unitId} AND t.status IN ('AWAITING_TARGET','AWAITING_ISSUER')))</sql>
+ <select id="count" resultType="long">SELECT COUNT(*) FROM task_intel_source s JOIN task_order o ON o.id=s.task_id WHERE s.topic_id=#{topicId} AND <include refid="visible"/></select>
+ <select id="list" resultType="com.merine.rebuild.task.dto.TaskIntelligenceViews$LinkedIntelligenceTask">SELECT CAST(o.id AS CHAR) AS id,o.task_no AS taskNo,o.title,o.status,o.current_due_at AS dueAt,o.issuer_unit_name_snapshot AS issuerUnitName FROM task_intel_source s JOIN task_order o ON o.id=s.task_id WHERE s.topic_id=#{topicId} AND <include refid="visible"/> ORDER BY o.id DESC LIMIT #{limit} OFFSET #{offset}</select>
+</mapper>

@@ -61,6 +61,26 @@ class IntelligenceRegressionTest {
     private void sign(Authentication auth,IntelligenceDetail d,long r) {service.receiptAction(auth,id(d),r,"sign",key(),null);}
     private static void error(String code,Runnable run) {assertThatThrownBy(run::run).isInstanceOfSatisfying(ApiException.class,e->assertThat(e.code()).isEqualTo(code));}
 
+    @Test void keywordSearchSupportsChineseNumbersAndLiteralWildcardsWithinDeliveryScope() {
+        String marker=UUID.randomUUID().toString();
+        IntelligenceDetail draft=service.create(hq,key(),new IntelligenceDraftRequest(
+                "中文检索 "+marker+" %_!", "合成检索样例",List.of(a.code(),b.code()),List.of(a.code()),"",0));
+        IntelligenceDetail published=send(hq,draft,null,List.of(a));
+        service.create(hq,key(),new IntelligenceDraftRequest(
+                "中文检索 "+marker+" ABC!", "用于排除通配符误匹配",List.of(a.code()),List.of(a.code()),"",0));
+        var chinese=service.list(pa,"received","all","中文检索 "+marker,1,20);
+        assertThat(chinese.total()).isEqualTo(1);
+        assertThat(chinese.items()).extracting(IntelligenceListItem::id).containsExactly(published.id());
+        var number=service.list(hq,"sent","all",published.topicNo(),1,20);
+        assertThat(number.total()).isEqualTo(1);
+        assertThat(number.items()).extracting(IntelligenceListItem::id).containsExactly(published.id());
+        var literal=service.list(hq,"sent","all",marker+" %_!",1,20);
+        assertThat(literal.total()).isEqualTo(1);
+        assertThat(literal.items()).extracting(IntelligenceListItem::id).containsExactly(published.id());
+        assertThat(service.list(pb,"received","all",marker,1,20).total()).isZero();
+        assertThat(service.list(pa,"received","all",marker+"不存在",1,20).items()).isEmpty();
+    }
+
     @Test void draftIsPrivateVersionedAndScopeRequiresExplicitTransit() {
         IntelligenceDetail d=create(hq,List.of(a,bb),List.of(a));
         error("TOPIC_NOT_FOUND",()->service.detail(pa,id(d)));
@@ -142,12 +162,19 @@ class IntelligenceRegressionTest {
         assertThat(sent.receipts()).extracting(IntelligenceReceipt::toUnitName).containsExactly(b.name());
     }
 
-    @Test void hierarchicalSiblingFlowsWorkAndInvalidTargetsRollBackWholeBatch() {
+    @Test void hierarchicalAndDivisionPeerFlowsWorkButBrigadePeersAreRejected() {
         IntelligenceDetail up=send(paa,create(paa,List.of(a,root),List.of(a)),null,List.of(a));
         sign(pa,up,receipt(service.detail(pa,id(up)),a)); send(pa,up,receipt(service.detail(pa,id(up)),a),List.of(root));
         assertThat(service.detail(hq,id(up)).sourceUnitName()).isEqualTo(aa.name());
-        IntelligenceDetail peers=send(paa,create(paa,List.of(aa2),List.of(aa2)),null,List.of(aa2));
-        assertThat(service.detail(paa2,id(peers)).receipts()).hasSize(1);
+        error("ILLEGAL_FLOW_RELATION",()->create(paa,List.of(a,aa2),List.of(aa2)));
+        assertThat(service.options(paa,"create",null,null).stream().filter(IntelligenceUnitOption::targetEligible))
+                .extracting(IntelligenceUnitOption::code).containsExactly(a.code());
+        IntelligenceDetail down=send(hq,create(hq,List.of(a,aa,aa2),List.of(a)),null,List.of(a));
+        long parent=receipt(service.detail(pa,id(down)),a);sign(pa,down,parent);send(pa,down,parent,List.of(aa));
+        long own=receipt(service.detail(paa,id(down)),aa);sign(paa,down,own);
+        assertThat(service.options(paa,"forward",id(down),own)).extracting(IntelligenceUnitOption::code).containsExactly(a.code());
+        error("ILLEGAL_FLOW_RELATION",()->send(paa,down,own,List.of(aa2)));
+        error("TOPIC_NOT_FOUND",()->service.detail(paa2,id(down)));
         error("ILLEGAL_FLOW_RELATION",()->create(hq,List.of(aa),List.of(aa)));
         error("ILLEGAL_FLOW_RELATION",()->create(paa,List.of(bb),List.of(bb)));
         IntelligenceDetail d=create(hq,List.of(a,b,c),List.of(a));

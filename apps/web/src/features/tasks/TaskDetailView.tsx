@@ -1,9 +1,10 @@
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import { Button, Empty, Select, Table, Typography } from 'antd';
+import { Button, Empty, Select, Space, Table, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { useId, useState, type MouseEvent } from 'react';
 import type { TaskDetail } from '@merine/api-contract';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { DetailBackLink } from '../../shared/ui/DetailBackLink';
+import { TaskIntelligenceBackground } from './components/TaskIntelligenceBackground';
 import { BranchDrawer } from './components/BranchDrawer';
 import { TaskHistoryList } from './components/TaskHistoryList';
 import { TaskTag } from './components/TaskTag';
@@ -24,7 +25,7 @@ import {
 } from './model';
 import styles from './TaskDetailView.module.css';
 
-/** 任务要求与交付目标默认两行，可展开看全文。 */
+/** 任务要求与预期结果默认两行，可展开看全文。 */
 const CLAMP = {
   rows: 2,
   expandable: 'collapsible',
@@ -56,10 +57,11 @@ function DueCell({ row }: { row: BranchRow }) {
 
 interface TaskDetailViewProps {
   task: TaskDetail;
-  canCreateFollowup: boolean;
   outcomeLabel: OutcomeLabel;
   labels: TaskLabels;
-  onBack: () => void;
+  backTo: string;
+  refreshing: boolean;
+  onRefresh: () => void;
   onAction: TaskActionHandler;
 }
 
@@ -69,10 +71,11 @@ interface TaskDetailViewProps {
  */
 export function TaskDetailView({
   task,
-  canCreateFollowup,
   outcomeLabel,
   labels,
-  onBack,
+  backTo,
+  refreshing,
+  onRefresh,
   onAction,
 }: TaskDetailViewProps) {
   const [drawer, setDrawer] = useState<{ key: string; open: boolean }>();
@@ -172,15 +175,21 @@ export function TaskDetailView({
 
   return (
     <div className={styles.page}>
-      <Button type="link" icon={<ArrowLeftOutlined />} className={styles.back} onClick={onBack}>
-        返回任务列表
-      </Button>
+      <DetailBackLink to={backTo}>返回任务列表</DetailBackLink>
       <PageHeader
         demo={false}
         title={task.title ?? '任务详情'}
-        actions={<TaskTag {...taskStatusTag(task.status, labels.order)} />}
+        actions={
+          <Space>
+            <TaskTag {...taskStatusTag(task.status, labels.order)} />
+            <Button loading={refreshing} onClick={onRefresh}>
+              刷新
+            </Button>
+          </Space>
+        }
       />
       <div className={styles.content}>
+        {task.id && <TaskIntelligenceBackground taskId={task.id} />}
         <div className={styles.headingMeta}>
           <span className={styles.mono}>{task.taskNo ?? '—'}</span>
           <span>· {task.issuerUnitName ?? '—'}</span>
@@ -335,7 +344,7 @@ export function TaskDetailView({
               </dd>
             </div>
             <div>
-              <dt>交付目标</dt>
+              <dt>预期结果</dt>
               <dd>
                 <Typography.Paragraph ellipsis={CLAMP}>
                   {task.expectedResult || '—'}
@@ -344,7 +353,7 @@ export function TaskDetailView({
             </div>
           </dl>
           {task.sourceResultId ? (
-            <p className={styles.note}>此任务根据另一项任务的处置结果发起。</p>
+            <p className={styles.note}>历史记录：此任务曾根据另一项任务的处置结果发起。</p>
           ) : null}
         </section>
 
@@ -426,7 +435,6 @@ export function TaskDetailView({
         open={!!drawer?.open && !!drawerRow}
         history={history}
         labels={labels}
-        canCreateFollowup={canCreateFollowup}
         onClose={() => setDrawer((current) => current && { ...current, open: false })}
         afterClose={() => setDrawer(undefined)}
         onAction={onAction}

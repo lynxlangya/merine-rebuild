@@ -8,6 +8,8 @@ import { executeFlowCommand } from './api';
 import { flowCommand, flowIntent, resultUncertain } from './actions';
 import type { FlowDialogState, FlowForm, FlowIntent, FlowOperation } from './actions';
 import { flowKeys } from './queries';
+import { assessmentKeys } from './assessmentApi';
+import { taskIntelKeys } from '../tasks/public';
 
 /** 同一次提交的内容和请求键一起保留；未知结果只允许重试原请求。 */
 export function useFlowActions(userId?: string, topicId?: string, detail?: IntelligenceDetail) {
@@ -51,6 +53,8 @@ export function useFlowActions(userId?: string, topicId?: string, detail?: Intel
     cache.setQueryData(flowKeys.detail(userId, data.id), data);
     void cache.invalidateQueries({ queryKey: flowKeys.lists(userId) });
     void cache.invalidateQueries({ queryKey: flowKeys.units(userId), refetchType: 'none' });
+    void cache.invalidateQueries({ queryKey: assessmentKeys.root(userId) });
+    void cache.invalidateQueries({ queryKey: taskIntelKeys.root(userId) });
     message.success('操作成功');
     if (pending.command.code === 'create') navigate(`/collaboration/flows/${data.id}?view=sent`);
   };

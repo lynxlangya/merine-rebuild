@@ -141,8 +141,3 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-
-.followup {
-  align-self: flex-start;
-  padding-inline: 0;
-}

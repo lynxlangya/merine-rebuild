@@ -1,4 +1,6 @@
-import { Button, Collapse, Space, Tag, Tooltip } from 'antd';
+import { StatusTag } from '../../../shared/ui/StatusTag';
+import { IntelligenceAssessmentPanel } from './IntelligenceAssessmentPanel';
+import { Button, Collapse, Space, Tooltip, Typography } from 'antd';
 import type {
   IntelligenceAction,
   IntelligenceDetail,
@@ -49,6 +51,13 @@ function Actions({
           </Tooltip>
         ))}
       </Space>
+      {visible
+        .filter(({ action }) => !action.enabled && action.reason)
+        .map(({ action, operation }) => (
+          <div key={action.code} className={styles.meta}>
+            {flowLabel(operation.code, published)}：{action.reason}
+          </div>
+        ))}
     </div>
   );
 }
@@ -72,6 +81,12 @@ function ReceiptContent({
           ? `${receipt.signedByName} 于 ${formatFlowTime(receipt.signedAt)} 签收`
           : '待单位签收'}
       </div>
+      {receipt.assessmentSummary && (
+        <div className={styles.feedback}>
+          <div className={styles.meta}>本次共享研判摘要</div>
+          <p className={styles.body}>{receipt.assessmentSummary}</p>
+        </div>
+      )}
       {receipt.note && <p className={styles.body}>{receipt.note}</p>}
       {receipt.mine && (
         <Actions
@@ -81,14 +96,40 @@ function ReceiptContent({
           busy={busy}
         />
       )}
-      {receipt.feedbacks.map((f) => (
-        <div className={styles.feedback} key={f.id}>
-          <div className={styles.meta}>
-            {f.unitName} · {f.userName} · {formatFlowTime(f.createdAt)}
-          </div>
-          <p className={styles.body}>{f.body}</p>
-        </div>
-      ))}
+      {receipt.feedbacks.length === 1 && <FeedbackItem feedback={receipt.feedbacks[0]} />}
+      {receipt.feedbacks.length > 1 && (
+        <Collapse
+          ghost
+          items={[
+            {
+              key: 'feedbacks',
+              label: `反馈记录（${receipt.feedbacks.length} 条）`,
+              children: receipt.feedbacks.map((feedback) => (
+                <FeedbackItem key={feedback.id} feedback={feedback} />
+              )),
+            },
+          ]}
+        />
+      )}
+    </div>
+  );
+}
+function FeedbackItem({ feedback: f }: { feedback: IntelligenceReceipt['feedbacks'][number] }) {
+  return (
+    <div className={styles.feedback}>
+      <div className={styles.meta}>
+        {f.unitName} · {f.userName} · {formatFlowTime(f.createdAt)}
+      </div>
+      <Typography.Paragraph
+        className={styles.body}
+        ellipsis={{
+          rows: 4,
+          expandable: 'collapsible',
+          symbol: (expanded) => (expanded ? '收起' : '展开'),
+        }}
+      >
+        {f.body}
+      </Typography.Paragraph>
     </div>
   );
 }
@@ -109,10 +150,13 @@ export function TopicDetail({
         <div className={styles.sectionHead}>
           <h2>原始情报</h2>
           <Space size={4}>
-            {detail.sourceMine && <Tag>范围 {detail.scopeUnitCodes.length} 个单位</Tag>}
-            <Tag color={detail.status === 'DRAFT' ? 'default' : 'blue'}>
-              {detail.status === 'DRAFT' ? '草稿' : '已发出'}
-            </Tag>
+            {detail.sourceMine && (
+              <StatusTag tone="neutral" label={`范围 ${detail.scopeUnitCodes.length} 个单位`} />
+            )}
+            <StatusTag
+              tone={detail.status === 'DRAFT' ? 'neutral' : 'accent'}
+              label={detail.status === 'DRAFT' ? '草稿' : '已发出'}
+            />
           </Space>
         </div>
         <div className={styles.meta}>
@@ -134,12 +178,22 @@ export function TopicDetail({
           {detail.supplements.map((s) => (
             <div className={styles.feedback} key={s.id}>
               <div className={styles.meta}>
-                <Tag color={s.kind === 'CORRECTION' ? 'orange' : 'blue'}>
-                  {s.kind === 'CORRECTION' ? '更正' : '补充'}
-                </Tag>
+                <StatusTag
+                  tone={s.kind === 'CORRECTION' ? 'warning' : 'accent'}
+                  label={s.kind === 'CORRECTION' ? '更正' : '补充'}
+                />
                 {s.unitName} · {s.userName} · {formatFlowTime(s.createdAt)}
               </div>
-              <p className={styles.body}>{s.body}</p>
+              <Typography.Paragraph
+                className={styles.body}
+                ellipsis={{
+                  rows: 4,
+                  expandable: 'collapsible',
+                  symbol: (expanded) => (expanded ? '收起' : '展开'),
+                }}
+              >
+                {s.body}
+              </Typography.Paragraph>
             </div>
           ))}
         </section>
@@ -153,14 +207,18 @@ export function TopicDetail({
                 <h3>
                   第 {index + 1} 次送达 · {r.fromUnitName} → {r.toUnitName}
                 </h3>
-                <Tag color={r.signedAt ? 'green' : 'orange'}>
-                  {r.signedAt ? '已签收' : '待签收'}
-                </Tag>
+                <StatusTag
+                  tone={r.signedAt ? 'success' : 'warning'}
+                  label={r.signedAt ? '已签收' : '待签收'}
+                />
               </div>
               <ReceiptContent receipt={r} all={detail.receipts} onAction={onAction} busy={busy} />
             </article>
           ))}
         </section>
+      )}
+      {detail.status === 'PUBLISHED' && (
+        <IntelligenceAssessmentPanel key={detail.id} detail={detail} busy={busy} />
       )}
       {history.length > 0 && (
         <section className={styles.panel}>
@@ -171,7 +229,10 @@ export function TopicDetail({
               label: (
                 <Space wrap>
                   {r.fromUnitName} → {r.toUnitName}
-                  <Tag>{r.signedAt ? '已签收' : '待签收'}</Tag>
+                  <StatusTag
+                    tone={r.signedAt ? 'success' : 'warning'}
+                    label={r.signedAt ? '已签收' : '待签收'}
+                  />
                   <span className={styles.meta}>
                     {formatFlowTime(r.sentAt)}
                     {r.feedbacks.length ? ` · ${r.feedbacks.length} 条反馈` : ''}

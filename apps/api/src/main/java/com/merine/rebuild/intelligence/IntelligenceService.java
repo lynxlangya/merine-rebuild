@@ -32,13 +32,15 @@ public class IntelligenceService {
     private final PermissionGuard guard;
     private final AdminCoverageGuard authorization;
     private final ObjectMapper json;
+    private final IntelligenceTaskAccess taskAccess;
 
     public IntelligenceService(IntelligenceMapper mapper, PermissionGuard guard,
-            AdminCoverageGuard authorization, ObjectMapper json) {
+            AdminCoverageGuard authorization, ObjectMapper json, IntelligenceTaskAccess taskAccess) {
         this.mapper = mapper;
         this.guard = guard;
         this.authorization = authorization;
         this.json = json;
+        this.taskAccess = taskAccess;
     }
 
     private record Actor(ActorRow row, UnitRow unit, List<UnitRow> units, Set<String> permissions) {
@@ -161,7 +163,9 @@ public class IntelligenceService {
         TopicRow topic = visible(actor, topicId, true);
         FlowState state = flowState(topicId);
         ReceiptRow receipt = receiptId == null ? null : ownReceipt(actor, state, receiptId);
-        IntelligenceSendRequest input = new IntelligenceSendRequest(codes(raw.targetUnitCodes()), text(raw.note(), 1000, false));
+        IntelligenceSendRequest input = new IntelligenceSendRequest(codes(raw.targetUnitCodes()), text(raw.note(), 1000, false), raw.assessmentId(), raw.assessmentSummary()==null ? null : text(raw.assessmentSummary(),4000,true));
+        if ((input.assessmentId()==null)!=(input.assessmentSummary()==null)) throw bad("INVALID_ASSESSMENT_SHARE","研判引用和共享摘要须同时填写");
+        if(input.assessmentId()!=null) taskAccess.requireAssessment(auth,topicId,parseId(input.assessmentId()));
         String action = op + ":" + topicId + (receiptId == null ? "" : ":" + receiptId);
         Long replay = reserve(actor, action, key, input);
         if (replay != null) return detailFor(actor, visible(actor, replay, true));
@@ -176,6 +180,7 @@ public class IntelligenceService {
         Instant now = Instant.now();
         mapper.insertSend(topicId, receiptId, actor.row(), actor.unit(), input.note(), now);
         long sendId = mapper.lastId();
+        if(input.assessmentId()!=null) mapper.attachAssessment(sendId,parseId(input.assessmentId()),input.assessmentSummary());
         for (UnitRow target : targets) mapper.insertReceipt(sendId, target);
         if (topic.status().equals("DRAFT")) {
             mapper.freezeScopeNames(topicId);
@@ -292,7 +297,7 @@ public class IntelligenceService {
             }
             receipts.add(new IntelligenceReceipt(id(receipt.id()), id(receipt.sendId()),
                     receipt.parentReceiptId() == null ? null : id(receipt.parentReceiptId()),
-                    receipt.fromUnitName(), receipt.toUnitName(), receipt.senderName(), receipt.note(),
+                    receipt.fromUnitName(), receipt.toUnitName(), receipt.senderName(), receipt.note(), receipt.assessmentSummary(),
                     receipt.sentAt(), receipt.toUnitId() == actor.unitId(), receipt.signedByName(), receipt.signedAt(),
                     feedbackVisible ? feedbacks.getOrDefault(receipt.id(), List.of()).stream()
                             .map(f -> new IntelligenceFeedback(id(f.id()), f.body(), f.unitName(), f.userName(), f.createdAt()))
@@ -406,7 +411,7 @@ public class IntelligenceService {
         if (from.id() == to.id()) return false;
         return (Objects.equals(to.parentId(), from.id()) && to.level() == from.level() + 1)
                 || (Objects.equals(from.parentId(), to.id()) && from.level() == to.level() + 1)
-                || (from.level() >= 2 && from.level() == to.level() && from.parentId() != null
+                || (from.level() == 2 && to.level() == 2 && from.parentId() != null
                         && Objects.equals(from.parentId(), to.parentId()));
     }
 
@@ -432,7 +437,7 @@ public class IntelligenceService {
     private static void validateTargets(UnitRow from, List<UnitRow> targets, Set<Long> scope) {
         for (UnitRow u : targets) {
             if (!scope.contains(u.id())) throw bad("OUTSIDE_SCOPE", "接收单位超出允许传播范围");
-            if (!legal(from, u)) throw bad("ILLEGAL_FLOW_RELATION", "只允许直属上下级、同总队支队或同支队大队共享");
+            if (!legal(from, u)) throw bad("ILLEGAL_FLOW_RELATION", "大队仅可向直属支队上报；其他单位仅可向直属上下级或同总队支队共享");
         }
     }
 

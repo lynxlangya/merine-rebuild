@@ -422,6 +422,23 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
         checks.put("intel_read belongs to recipient unit", "SELECT COUNT(*) FROM intel_read d JOIN intel_receipt r ON r.id=d.receipt_id WHERE d.unit_id<>r.to_unit_id");
         checks.put("intel_feedback signed recipient", "SELECT COUNT(*) FROM intel_feedback f JOIN intel_receipt r ON r.id=f.receipt_id WHERE f.unit_id<>r.to_unit_id OR r.signed_at IS NULL");
         checks.put("intel_supplement source unit", "SELECT COUNT(*) FROM intel_supplement s JOIN intel_topic t ON t.id=s.topic_id WHERE s.unit_id<>t.source_unit_id OR t.status<>'PUBLISHED'");
+        String[][] linkageReferences = {
+            {"intel_assessment","topic_id","intel_topic"},{"intel_assessment","receipt_id","intel_receipt"},
+            {"intel_assessment","unit_id","sys_unit"},{"intel_assessment","user_id","sys_user"},
+            {"intel_send","assessment_id","intel_assessment"},
+            {"task_intel_source","task_id","task_order"},{"task_intel_source","topic_id","intel_topic"},
+            {"task_intel_source","assessment_id","intel_assessment"},{"task_intel_source","last_supplement_id","intel_supplement"},
+            {"task_intel_source","created_unit_id","sys_unit"},{"task_intel_source","created_user_id","sys_user"},
+            {"task_intel_return","source_link_id","task_intel_source"},{"task_intel_return","result_id","task_result"},
+            {"task_intel_return","target_receipt_id","intel_receipt"},{"task_intel_return","feedback_id","intel_feedback"},
+            {"task_intel_return","supplement_id","intel_supplement"},{"task_intel_return","unit_id","sys_unit"},{"task_intel_return","user_id","sys_user"}
+        };
+        for(var r:linkageReferences) checks.put(r[0]+"."+r[1]+" -> "+r[2],"SELECT COUNT(*) FROM "+r[0]+" c LEFT JOIN "+r[2]+" p ON p.id=c."+r[1]+" WHERE c."+r[1]+" IS NOT NULL AND p.id IS NULL");
+        checks.put("intel_assessment signed local receipt", "SELECT COUNT(*) FROM intel_assessment a JOIN intel_topic t ON t.id=a.topic_id LEFT JOIN intel_receipt r ON r.id=a.receipt_id LEFT JOIN intel_send s ON s.id=r.send_id WHERE t.status<>'PUBLISHED' OR (a.receipt_id IS NULL AND a.unit_id<>t.source_unit_id) OR (a.receipt_id IS NOT NULL AND (r.signed_at IS NULL OR r.to_unit_id<>a.unit_id OR s.topic_id<>a.topic_id))");
+        checks.put("intel_send shared own assessment", "SELECT COUNT(*) FROM intel_send s JOIN intel_assessment a ON a.id=s.assessment_id WHERE s.topic_id<>a.topic_id OR s.from_unit_id<>a.unit_id");
+        checks.put("task source and assessment", "SELECT COUNT(*) FROM task_intel_source l JOIN task_order o ON o.id=l.task_id JOIN intel_assessment a ON a.id=l.assessment_id LEFT JOIN intel_supplement p ON p.id=l.last_supplement_id WHERE l.topic_id<>a.topic_id OR o.issuer_unit_id<>a.unit_id OR l.created_unit_id<>o.issuer_unit_id OR o.background_summary IS NULL OR (p.id IS NOT NULL AND p.topic_id<>l.topic_id)");
+        checks.put("return result belongs to task", "SELECT COUNT(*) FROM task_intel_return r JOIN task_intel_source s ON s.id=r.source_link_id JOIN task_result x ON x.id=r.result_id JOIN task_branch b ON b.id=x.branch_id WHERE b.task_id<>s.task_id");
+        checks.put("return target matches topic and actor", "SELECT COUNT(*) FROM task_intel_return x JOIN task_intel_source l ON l.id=x.source_link_id LEFT JOIN intel_feedback f ON f.id=x.feedback_id LEFT JOIN intel_receipt r ON r.id=x.target_receipt_id LEFT JOIN intel_send s ON s.id=r.send_id LEFT JOIN intel_supplement p ON p.id=x.supplement_id WHERE (f.id IS NOT NULL AND (f.receipt_id<>r.id OR f.unit_id<>x.unit_id OR s.topic_id<>l.topic_id OR f.body<>x.shared_summary)) OR (p.id IS NOT NULL AND (p.topic_id<>l.topic_id OR p.unit_id<>x.unit_id OR p.body<>x.shared_summary))");
         return checks;
     }
 }

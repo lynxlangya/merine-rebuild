@@ -2,11 +2,6 @@
   padding-bottom: var(--sp-6);
 }
 
-.back {
-  margin: var(--sp-2) var(--sp-4) 0;
-  padding-left: 0;
-}
-
 .content {
   display: flex;
   flex-direction: column;

@@ -9,6 +9,10 @@
         SELECT id AS userId, unit_id AS unitId, display_name AS userName, authorization_version AS authorizationVersion
         FROM sys_user WHERE id=#{userId} AND status='ENABLED'
     </select>
+    <select id="lockActor" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ActorRow">
+        SELECT id AS userId, unit_id AS unitId, display_name AS userName, authorization_version AS authorizationVersion
+        FROM sys_user WHERE id=#{userId} AND status='ENABLED'
+     FOR SHARE</select>
     <select id="units" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$UnitRow">SELECT <include refid="unitCols"/> FROM sys_unit ORDER BY id</select>
     <select id="lockUnits" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$UnitRow">SELECT <include refid="unitCols"/> FROM sys_unit ORDER BY id FOR UPDATE</select>
     <select id="topic" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$TopicRow">SELECT <include refid="topicCols"/> FROM intel_topic WHERE id=#{id}</select>
@@ -22,7 +26,8 @@
         <if test="status == 'DRAFT' or status == 'PUBLISHED'">AND t.status=#{status}</if>
         <if test="status == 'pending'">AND EXISTS (<include refid="myReceipts"/> AND r.signed_at IS NULL)</if>
         <if test="status == 'signed'">AND NOT EXISTS (<include refid="myReceipts"/> AND r.signed_at IS NULL)</if>
-        <if test="keyword != null">AND (t.title LIKE #{keyword} ESCAPE '!' OR t.topic_no LIKE #{keyword} ESCAPE '!')</if>
+        <!-- 编号保留 ASCII 存储；匹配中文关键词时显式转换字符集，并保留编号的大小写语义。 -->
+        <if test="keyword != null">AND (t.title LIKE #{keyword} ESCAPE '!' OR CONVERT(t.topic_no USING utf8mb4) COLLATE utf8mb4_bin LIKE #{keyword} ESCAPE '!')</if>
     </sql>
     <select id="count" resultType="long">SELECT COUNT(*) FROM intel_topic t <include refid="listWhere"/></select>
     <select id="list" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ListRow">
@@ -36,12 +41,19 @@
     <select id="draftTargets" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ScopeRow">SELECT s.unit_id AS unitId,u.unit_code AS unitCode FROM intel_draft_target s JOIN sys_unit u ON u.id=s.unit_id WHERE s.topic_id=#{topicId} ORDER BY s.unit_id</select>
     <select id="receipts" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ReceiptRow">
         SELECT r.id,r.send_id AS sendId,s.topic_id AS topicId,s.parent_receipt_id AS parentReceiptId,
-            s.from_unit_id AS fromUnitId,s.from_unit_name AS fromUnitName,s.sender_name AS senderName,s.note,s.sent_at AS sentAt,
+            s.from_unit_id AS fromUnitId,s.from_unit_name AS fromUnitName,s.sender_name AS senderName,s.note,s.assessment_summary AS assessmentSummary,s.sent_at AS sentAt,
             r.to_unit_id AS toUnitId,r.to_unit_name AS toUnitName,r.signed_by_name AS signedByName,r.signed_at AS signedAt
         FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=#{topicId} ORDER BY r.id
     </select>
+    <select id="lockReceipts" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$ReceiptRow">
+        SELECT r.id,r.send_id AS sendId,s.topic_id AS topicId,s.parent_receipt_id AS parentReceiptId,
+            s.from_unit_id AS fromUnitId,s.from_unit_name AS fromUnitName,s.sender_name AS senderName,s.note,s.assessment_summary AS assessmentSummary,s.sent_at AS sentAt,
+            r.to_unit_id AS toUnitId,r.to_unit_name AS toUnitName,r.signed_by_name AS signedByName,r.signed_at AS signedAt
+        FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=#{topicId} ORDER BY r.id
+     FOR SHARE</select>
     <select id="feedbacks" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$FeedbackRow">SELECT f.id,f.receipt_id AS receiptId,f.body,f.unit_name AS unitName,f.user_name AS userName,f.created_at AS createdAt FROM intel_feedback f JOIN intel_receipt r ON r.id=f.receipt_id JOIN intel_send s ON s.id=r.send_id WHERE s.topic_id=#{topicId} ORDER BY f.id</select>
     <select id="supplements" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$SupplementRow">SELECT id,kind,body,unit_name AS unitName,user_name AS userName,created_at AS createdAt FROM intel_supplement WHERE topic_id=#{topicId} ORDER BY id</select>
+    <select id="lockSupplements" resultType="com.merine.rebuild.intelligence.persistence.IntelligenceMapper$SupplementRow">SELECT id,kind,body,unit_name AS unitName,user_name AS userName,created_at AS createdAt FROM intel_supplement WHERE topic_id=#{topicId} ORDER BY id FOR SHARE</select>
     <select id="lastId" resultType="long">SELECT LAST_INSERT_ID()</select>
     <insert id="insertTopic">INSERT INTO intel_topic (topic_no,source_unit_id,source_user_id,source_unit_name,source_user_name,title,body,status,draft_note,created_at) VALUES (#{number},#{unit.id},#{actor.userId},#{unit.name},#{actor.userName},#{title},#{body},'DRAFT',#{note},#{now})</insert>
     <update id="updateDraft">UPDATE intel_topic SET title=#{title},body=#{body},draft_note=#{note},version=version+1 WHERE id=#{id} AND status='DRAFT' AND version=#{version}</update>

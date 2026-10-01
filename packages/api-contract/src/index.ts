@@ -90,3 +90,16 @@ export type IntelligenceDraftRequest = components['schemas']['IntelligenceDraftR
 export type IntelligenceSendRequest = components['schemas']['IntelligenceSendRequest'];
 export type IntelligenceFeedbackRequest = components['schemas']['IntelligenceFeedbackRequest'];
 export type IntelligenceSupplementRequest = components['schemas']['IntelligenceSupplementRequest'];
+
+/** 情报研判与任务关联。 */
+export type Assessment = components['schemas']['Assessment'];
+export type RecordAssessment = components['schemas']['RecordAssessment'];
+export type AssessmentContext = components['schemas']['AssessmentContext'];
+export type SignedReceipt = components['schemas']['SignedReceipt'];
+export type PageResultAssessment = components['schemas']['PageResultAssessment'];
+export type IntelligenceTaskContext = components['schemas']['IntelligenceTaskContext'];
+export type CreateIntelligenceTask = components['schemas']['CreateIntelligenceTask'];
+export type LinkedIntelligenceTask = components['schemas']['LinkedIntelligenceTask'];
+export type PageResultLinkedIntelligenceTask =
+  components['schemas']['PageResultLinkedIntelligenceTask'];
+export type TaskIntelligenceSource = components['schemas']['TaskIntelligenceSource'];

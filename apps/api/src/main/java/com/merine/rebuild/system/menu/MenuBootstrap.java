@@ -115,7 +115,11 @@ public class MenuBootstrap {
             new Entry("btn:intel:forward", "page:flows", Type.BUTTON, "继续共享",
                     null, PermissionCodes.INTEL_FORWARD, 70, "签收后沿合法关系继续共享"),
             new Entry("btn:intel:supplement", "page:flows", Type.BUTTON, "补充更正",
-                    null, PermissionCodes.INTEL_SUPPLEMENT, 80, "源头追加补充或更正说明"));
+                    null, PermissionCodes.INTEL_SUPPLEMENT, 80, "源头追加补充或更正说明"),
+            new Entry("btn:intel:assess", "page:flows", Type.BUTTON, "记录研判",
+                    null, PermissionCodes.INTEL_ASSESS, 90, "签收后记录本单位研判"),
+            new Entry("btn:intel:create-task", "page:flows", Type.BUTTON, "发起任务",
+                    null, PermissionCodes.INTEL_CREATE_TASK, 100, "结合本单位研判向直属下级发任务"));
 
     public List<Entry> entries() {
         return ENTRIES;
