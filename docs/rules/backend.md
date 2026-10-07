@@ -22,7 +22,7 @@
 
 数组为空时返回 `[]`；字段是否可空、是否省略明确写入 DTO/OpenAPI。下载、SSE、Actuator 和 OpenAPI 保持各自协议，不强制套 JSON 包装。错误不统一变成 HTTP 200，异常只在负责的一层转换与记录。
 
-**契约定义在后端 DTO、校验和接口声明**，springdoc 输出 OpenAPI，`packages/api-contract` 保存生成快照与类型。`schema.d.ts` 是产物，不是反向定义后端的真源；类型生成也不能证明真实 JSON 的格式正确。修改接口后，用当前源码启动的本地 API 重新生成并核对代表性响应。
+**契约定义在后端 DTO、校验和接口声明**，springdoc 输出 OpenAPI，`packages/api-contract/openapi/*.json` 与 `src/generated/*.d.ts` 保存按业务模块生成的快照与类型。生成类型是产物，不是反向定义后端的真源；类型生成也不能证明真实 JSON 的格式正确。修改接口后，用当前源码启动的本地 API 重新生成并核对代表性响应。
 
 沿用 Boot 管理的 Jackson 3；优先配置属性，确有定制时使用 `JsonMapperBuilderCustomizer` 等官方扩展点。普通业务不自行声明全局 `@Primary JsonMapper` 替换默认配置，也不为复用 Boot 3 示例开启 `spring.jackson.use-jackson2-defaults`；特殊外部协议隔离自己的适配。序列化行为与 OpenAPI 必须共同验证，不能假定 springdoc 与运行时只靠“同一个 mapper”就永远一致。参见 [Boot 4 官方迁移说明](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide#upgrading-jackson)。
 

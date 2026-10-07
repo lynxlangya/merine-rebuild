@@ -186,6 +186,7 @@ case "${1:-help}" in
     prepare_test_db
     compose exec -T web pnpm --filter @merine/web typecheck
     compose exec -T web pnpm --filter @merine/web test
+    compose exec -T web pnpm contract:test
     compose exec -T web pnpm format:check
     compose exec -T \
       -e TEST_DB_URL="$DB_URL_TEST" \

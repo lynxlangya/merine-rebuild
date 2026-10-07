@@ -1,0 +1,1572 @@
+{
+  "components": {
+    "schemas": {
+      "AnchorageView": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "fixtureKey": { "type": ["string", "null"] },
+          "id": { "type": "string" },
+          "location": { "type": ["string", "null"] },
+          "name": { "type": "string" },
+          "purpose": { "type": ["string", "null"] },
+          "region": { "type": "string" },
+          "status": { "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "createdAt",
+          "fixtureKey",
+          "id",
+          "location",
+          "name",
+          "purpose",
+          "region",
+          "status",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ApiResponseAnchorageView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/AnchorageView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseIslandView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/IslandView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultAnchorageView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultAnchorageView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultArchiveOption": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultArchiveOption" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultIslandView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultIslandView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultPoliceStationView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultPoliceStationView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultPortOfficerView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultPortOfficerView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultPortView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultPortView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultWharfRelationView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultWharfRelationView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultWharfView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultWharfView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePoliceStationView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PoliceStationView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePortOfficerView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PortOfficerView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePortView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PortView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseVoid": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": {},
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseWharfView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/WharfView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ArchiveOption": {
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "policeStationId": { "type": ["string", "null"] },
+          "status": { "type": "string" }
+        },
+        "required": ["id", "name", "policeStationId", "status"],
+        "type": "object"
+      },
+      "FieldError": {
+        "properties": { "field": { "type": "string" }, "message": { "type": "string" } },
+        "required": ["field", "message"],
+        "type": "object"
+      },
+      "IslandView": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "fixtureKey": { "type": ["string", "null"] },
+          "id": { "type": "string" },
+          "inhabitationType": { "type": "string" },
+          "location": { "type": ["string", "null"] },
+          "name": { "type": "string" },
+          "region": { "type": "string" },
+          "status": { "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "createdAt",
+          "fixtureKey",
+          "id",
+          "inhabitationType",
+          "location",
+          "name",
+          "region",
+          "status",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "PageResultAnchorageView": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/AnchorageView" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultArchiveOption": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/ArchiveOption" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultIslandView": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/IslandView" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultPoliceStationView": {
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/PoliceStationView" },
+            "type": "array"
+          },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultPortOfficerView": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/PortOfficerView" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultPortView": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/PortView" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultWharfRelationView": {
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/WharfRelationView" },
+            "type": "array"
+          },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultWharfView": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/WharfView" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PoliceStationView": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "fixtureKey": { "type": ["string", "null"] },
+          "id": { "type": "string" },
+          "location": { "type": ["string", "null"] },
+          "name": { "type": "string" },
+          "region": { "type": "string" },
+          "status": { "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "createdAt",
+          "fixtureKey",
+          "id",
+          "location",
+          "name",
+          "region",
+          "status",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "PortOfficerView": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "duty": { "type": ["string", "null"] },
+          "fixtureKey": { "type": ["string", "null"] },
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "policeStationId": { "type": "string" },
+          "policeStationName": { "type": ["string", "null"] },
+          "policeStationStatus": { "type": ["string", "null"] },
+          "region": { "type": "string" },
+          "status": { "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "createdAt",
+          "duty",
+          "fixtureKey",
+          "id",
+          "name",
+          "policeStationId",
+          "policeStationName",
+          "policeStationStatus",
+          "region",
+          "status",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "PortView": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "fixtureKey": { "type": ["string", "null"] },
+          "id": { "type": "string" },
+          "location": { "type": ["string", "null"] },
+          "name": { "type": "string" },
+          "purpose": { "type": ["string", "null"] },
+          "region": { "type": "string" },
+          "status": { "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "createdAt",
+          "fixtureKey",
+          "id",
+          "location",
+          "name",
+          "purpose",
+          "region",
+          "status",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "WharfRelationView": {
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "responsibleOfficerId": { "type": ["string", "null"] },
+          "responsibleOfficerName": { "type": ["string", "null"] },
+          "status": { "type": "string" }
+        },
+        "required": ["id", "name", "responsibleOfficerId", "responsibleOfficerName", "status"],
+        "type": "object"
+      },
+      "WharfView": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "fixtureKey": { "type": ["string", "null"] },
+          "id": { "type": "string" },
+          "location": { "type": ["string", "null"] },
+          "name": { "type": "string" },
+          "policeStationId": { "type": ["string", "null"] },
+          "policeStationName": { "type": ["string", "null"] },
+          "policeStationStatus": { "type": ["string", "null"] },
+          "portId": { "type": ["string", "null"] },
+          "portName": { "type": ["string", "null"] },
+          "portStatus": { "type": ["string", "null"] },
+          "purpose": { "type": ["string", "null"] },
+          "region": { "type": "string" },
+          "responsibleOfficerId": { "type": ["string", "null"] },
+          "responsibleOfficerName": { "type": ["string", "null"] },
+          "responsibleOfficerStatus": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "createdAt",
+          "fixtureKey",
+          "id",
+          "location",
+          "name",
+          "policeStationId",
+          "policeStationName",
+          "policeStationStatus",
+          "portId",
+          "portName",
+          "portStatus",
+          "purpose",
+          "region",
+          "responsibleOfficerId",
+          "responsibleOfficerName",
+          "responsibleOfficerStatus",
+          "status",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "WriteAnchorage": {
+        "properties": {
+          "location": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "name": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "purpose": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "region": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "status": { "minLength": 1, "pattern": "ENABLED|DISABLED", "type": "string" },
+          "version": {
+            "description": "新建不传；编辑必填，缺失返回400，旧版本返回409",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["name", "region", "status"],
+        "type": "object"
+      },
+      "WriteIsland": {
+        "properties": {
+          "inhabitationType": {
+            "minLength": 1,
+            "pattern": "INHABITED|UNINHABITED",
+            "type": "string"
+          },
+          "location": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "name": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "region": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "status": { "minLength": 1, "pattern": "ENABLED|DISABLED", "type": "string" },
+          "version": {
+            "description": "新建不传；编辑必填，缺失返回400，旧版本返回409",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["inhabitationType", "name", "region", "status"],
+        "type": "object"
+      },
+      "WritePoliceStation": {
+        "properties": {
+          "location": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "name": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "region": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "status": { "minLength": 1, "pattern": "ENABLED|DISABLED", "type": "string" },
+          "version": {
+            "description": "新建不传；编辑必填，缺失返回400，旧版本返回409",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["name", "region", "status"],
+        "type": "object"
+      },
+      "WritePort": {
+        "properties": {
+          "location": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "name": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "purpose": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "region": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "status": { "minLength": 1, "pattern": "ENABLED|DISABLED", "type": "string" },
+          "version": {
+            "description": "新建不传；编辑必填，缺失返回400，旧版本返回409",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["name", "region", "status"],
+        "type": "object"
+      },
+      "WritePortOfficer": {
+        "properties": {
+          "duty": { "maxLength": 120, "minLength": 0, "type": ["string", "null"] },
+          "name": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "policeStationId": { "minLength": 1, "pattern": "[1-9][0-9]{0,18}", "type": "string" },
+          "status": { "minLength": 1, "pattern": "ENABLED|DISABLED", "type": "string" },
+          "version": {
+            "description": "新建不传；编辑必填，缺失返回400，旧版本返回409",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["name", "policeStationId", "status"],
+        "type": "object"
+      },
+      "WriteWharf": {
+        "properties": {
+          "location": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "name": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "policeStationId": { "pattern": "[1-9][0-9]{0,18}", "type": ["string", "null"] },
+          "portId": { "pattern": "[1-9][0-9]{0,18}", "type": ["string", "null"] },
+          "purpose": { "maxLength": 200, "minLength": 0, "type": ["string", "null"] },
+          "region": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "responsibleOfficerId": { "pattern": "[1-9][0-9]{0,18}", "type": ["string", "null"] },
+          "status": { "minLength": 1, "pattern": "ENABLED|DISABLED", "type": "string" },
+          "version": {
+            "description": "新建不传；编辑必填，缺失返回400，旧版本返回409",
+            "format": "int32",
+            "minimum": 0,
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["name", "region", "status"],
+        "type": "object"
+      }
+    }
+  },
+  "info": { "title": "OpenAPI definition", "version": "v0" },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/maritime/anchorages": {
+      "get": {
+        "operationId": "anchorageList",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "region", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultAnchorageView" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "分页查询锚地",
+        "tags": ["涉海档案 · 锚地"]
+      },
+      "post": {
+        "operationId": "anchorageCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WriteAnchorage" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseAnchorageView" } }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "新建锚地",
+        "tags": ["涉海档案 · 锚地"]
+      }
+    },
+    "/api/maritime/anchorages/{id}": {
+      "delete": {
+        "operationId": "anchorageDelete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除未被引用的锚地，需最新版本",
+        "tags": ["涉海档案 · 锚地"]
+      },
+      "get": {
+        "operationId": "anchorageDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseAnchorageView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询锚地完整档案",
+        "tags": ["涉海档案 · 锚地"]
+      },
+      "put": {
+        "operationId": "anchorageUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WriteAnchorage" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseAnchorageView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "编辑或启停锚地，需最新版本",
+        "tags": ["涉海档案 · 锚地"]
+      }
+    },
+    "/api/maritime/islands": {
+      "get": {
+        "operationId": "islandList",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "region", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "inhabitationType",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultIslandView" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "分页查询海岛",
+        "tags": ["涉海档案 · 海岛"]
+      },
+      "post": {
+        "operationId": "islandCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WriteIsland" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIslandView" } }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "新建海岛",
+        "tags": ["涉海档案 · 海岛"]
+      }
+    },
+    "/api/maritime/islands/{id}": {
+      "delete": {
+        "operationId": "islandDelete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除未被引用的海岛，需最新版本",
+        "tags": ["涉海档案 · 海岛"]
+      },
+      "get": {
+        "operationId": "islandDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIslandView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询海岛完整档案",
+        "tags": ["涉海档案 · 海岛"]
+      },
+      "put": {
+        "operationId": "islandUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WriteIsland" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIslandView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "编辑或启停海岛，需最新版本",
+        "tags": ["涉海档案 · 海岛"]
+      }
+    },
+    "/api/maritime/options/police-stations": {
+      "get": {
+        "operationId": "maritimeOptionsStations",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultArchiveOption" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["maritime-options-controller"]
+      }
+    },
+    "/api/maritime/options/port-officers": {
+      "get": {
+        "operationId": "maritimeOptionsOfficers",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "policeStationId",
+            "required": false,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultArchiveOption" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["maritime-options-controller"]
+      }
+    },
+    "/api/maritime/options/ports": {
+      "get": {
+        "operationId": "maritimeOptionsPorts",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultArchiveOption" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["maritime-options-controller"]
+      }
+    },
+    "/api/maritime/options/wharf-relations": {
+      "get": {
+        "operationId": "maritimeOptionsWharfs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "policeStationId",
+            "required": false,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "responsibleOfficerId",
+            "required": false,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultWharfRelationView" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["maritime-options-controller"]
+      }
+    },
+    "/api/maritime/police-stations": {
+      "get": {
+        "operationId": "policeStationList",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "region", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultPoliceStationView" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "分页查询派出所",
+        "tags": ["涉海档案 · 派出所"]
+      },
+      "post": {
+        "operationId": "policeStationCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WritePoliceStation" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePoliceStationView" } }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "新建派出所",
+        "tags": ["涉海档案 · 派出所"]
+      }
+    },
+    "/api/maritime/police-stations/{id}": {
+      "delete": {
+        "operationId": "policeStationDelete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除未被引用的派出所，需最新版本",
+        "tags": ["涉海档案 · 派出所"]
+      },
+      "get": {
+        "operationId": "policeStationDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePoliceStationView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询派出所完整档案",
+        "tags": ["涉海档案 · 派出所"]
+      },
+      "put": {
+        "operationId": "policeStationUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WritePoliceStation" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePoliceStationView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "编辑或启停派出所，需最新版本",
+        "tags": ["涉海档案 · 派出所"]
+      }
+    },
+    "/api/maritime/port-officers": {
+      "get": {
+        "operationId": "portOfficerList",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "region", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "policeStationId",
+            "required": false,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultPortOfficerView" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "分页查询民警",
+        "tags": ["涉海档案 · 民警"]
+      },
+      "post": {
+        "operationId": "portOfficerCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WritePortOfficer" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePortOfficerView" } }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "新建民警",
+        "tags": ["涉海档案 · 民警"]
+      }
+    },
+    "/api/maritime/port-officers/{id}": {
+      "delete": {
+        "operationId": "portOfficerDelete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除未被引用的民警，需最新版本",
+        "tags": ["涉海档案 · 民警"]
+      },
+      "get": {
+        "operationId": "portOfficerDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePortOfficerView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询民警完整档案",
+        "tags": ["涉海档案 · 民警"]
+      },
+      "put": {
+        "operationId": "portOfficerUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WritePortOfficer" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePortOfficerView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "编辑或启停民警，需最新版本",
+        "tags": ["涉海档案 · 民警"]
+      }
+    },
+    "/api/maritime/ports": {
+      "get": {
+        "operationId": "portList",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "region", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePageResultPortView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "分页查询港口",
+        "tags": ["涉海档案 · 港口"]
+      },
+      "post": {
+        "operationId": "portCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WritePort" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePortView" } }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "新建港口",
+        "tags": ["涉海档案 · 港口"]
+      }
+    },
+    "/api/maritime/ports/{id}": {
+      "delete": {
+        "operationId": "portDelete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除未被引用的港口，需最新版本",
+        "tags": ["涉海档案 · 港口"]
+      },
+      "get": {
+        "operationId": "portDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePortView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询港口完整档案",
+        "tags": ["涉海档案 · 港口"]
+      },
+      "put": {
+        "operationId": "portUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WritePort" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePortView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "编辑或启停港口，需最新版本",
+        "tags": ["涉海档案 · 港口"]
+      }
+    },
+    "/api/maritime/wharfs": {
+      "get": {
+        "operationId": "wharfList",
+        "parameters": [
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "region", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "status", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "portId",
+            "required": false,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "policeStationId",
+            "required": false,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "responsibleOfficerId",
+            "required": false,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePageResultWharfView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "分页查询码头",
+        "tags": ["涉海档案 · 码头"]
+      },
+      "post": {
+        "operationId": "wharfCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WriteWharf" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWharfView" } }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "新建码头",
+        "tags": ["涉海档案 · 码头"]
+      }
+    },
+    "/api/maritime/wharfs/{id}": {
+      "delete": {
+        "operationId": "wharfDelete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除未被引用的码头，需最新版本",
+        "tags": ["涉海档案 · 码头"]
+      },
+      "get": {
+        "operationId": "wharfDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWharfView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询码头完整档案",
+        "tags": ["涉海档案 · 码头"]
+      },
+      "put": {
+        "operationId": "wharfUpdate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "format": "int64", "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/WriteWharf" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWharfView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "编辑或启停码头，需最新版本",
+        "tags": ["涉海档案 · 码头"]
+      }
+    }
+  },
+  "servers": [{ "url": "/" }]
+}

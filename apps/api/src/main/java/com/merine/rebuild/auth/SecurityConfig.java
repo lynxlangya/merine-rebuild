@@ -86,7 +86,7 @@ public class SecurityConfig {
                     if (publicApiDocs) {
                         registry.requestMatchers(HttpMethod.GET,
                                 "/api/docs", "/api/openapi", "/api/openapi.yaml",
-                                "/api/openapi/swagger-config", "/api/swagger-ui/**").permitAll();
+                                "/api/openapi/**", "/api/swagger-ui/**").permitAll();
                     }
                     registry.anyRequest().authenticated();
                 })

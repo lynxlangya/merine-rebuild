@@ -1,0 +1,755 @@
+{
+  "components": {
+    "schemas": {
+      "ApiResponseAssessment": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/Assessment" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseAssessmentContext": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/AssessmentContext" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseIntelligenceDetail": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/IntelligenceDetail" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseListIntelligenceUnitOption": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": {
+            "items": { "$ref": "#/components/schemas/IntelligenceUnitOption" },
+            "type": "array"
+          },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultAssessment": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultAssessment" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultIntelligenceListItem": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultIntelligenceListItem" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "Assessment": {
+        "properties": {
+          "analysis": { "type": "string" },
+          "createdAt": { "format": "date-time", "type": "string" },
+          "id": { "type": "string" },
+          "receiptId": { "type": "string" },
+          "recommendationCode": { "type": "string" },
+          "unitName": { "type": "string" },
+          "userName": { "type": "string" }
+        },
+        "required": ["analysis", "createdAt", "id", "recommendationCode", "unitName", "userName"],
+        "type": "object"
+      },
+      "AssessmentContext": {
+        "properties": {
+          "canAssess": { "type": "boolean" },
+          "reason": { "type": "string" },
+          "reasonCode": { "type": "string" },
+          "signedReceipts": {
+            "items": { "$ref": "#/components/schemas/SignedReceipt" },
+            "type": "array"
+          },
+          "sourceMine": { "type": "boolean" }
+        },
+        "required": ["canAssess", "signedReceipts", "sourceMine"],
+        "type": "object"
+      },
+      "FieldError": {
+        "properties": { "field": { "type": "string" }, "message": { "type": "string" } },
+        "required": ["field", "message"],
+        "type": "object"
+      },
+      "IntelligenceAction": {
+        "properties": {
+          "code": { "type": "string" },
+          "enabled": { "type": "boolean" },
+          "reason": { "type": ["string", "null"] },
+          "reasonCode": { "type": ["string", "null"] }
+        },
+        "required": ["code", "enabled", "reason", "reasonCode"],
+        "type": "object"
+      },
+      "IntelligenceDetail": {
+        "properties": {
+          "allowedActions": {
+            "items": { "$ref": "#/components/schemas/IntelligenceAction" },
+            "type": "array"
+          },
+          "body": { "type": "string" },
+          "createdAt": { "format": "date-time", "type": "string" },
+          "draftNote": { "type": ["string", "null"] },
+          "draftTargetUnitCodes": { "items": { "type": "string" }, "type": "array" },
+          "id": { "type": "string" },
+          "publishedAt": { "format": "date-time", "type": ["string", "null"] },
+          "receipts": {
+            "items": { "$ref": "#/components/schemas/IntelligenceReceipt" },
+            "type": "array"
+          },
+          "scopeUnitCodes": { "items": { "type": "string" }, "type": "array" },
+          "sourceMine": { "type": "boolean" },
+          "sourceUnitName": { "type": "string" },
+          "sourceUserName": { "type": "string" },
+          "status": { "type": "string" },
+          "supplements": {
+            "items": { "$ref": "#/components/schemas/IntelligenceSupplement" },
+            "type": "array"
+          },
+          "title": { "type": "string" },
+          "topicNo": { "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "allowedActions",
+          "body",
+          "createdAt",
+          "draftNote",
+          "draftTargetUnitCodes",
+          "id",
+          "publishedAt",
+          "receipts",
+          "scopeUnitCodes",
+          "sourceMine",
+          "sourceUnitName",
+          "sourceUserName",
+          "status",
+          "supplements",
+          "title",
+          "topicNo",
+          "version"
+        ],
+        "type": "object"
+      },
+      "IntelligenceDraftRequest": {
+        "properties": {
+          "body": { "maxLength": 4000, "minLength": 0, "type": "string" },
+          "note": { "maxLength": 1000, "minLength": 0, "type": "string" },
+          "scopeUnitCodes": {
+            "items": { "minLength": 1, "type": "string" },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "targetUnitCodes": {
+            "items": { "minLength": 1, "type": "string" },
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array"
+          },
+          "title": { "maxLength": 160, "minLength": 0, "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": ["body", "scopeUnitCodes", "targetUnitCodes", "title", "version"],
+        "type": "object"
+      },
+      "IntelligenceFeedback": {
+        "properties": {
+          "body": { "type": "string" },
+          "createdAt": { "format": "date-time", "type": "string" },
+          "id": { "type": "string" },
+          "unitName": { "type": "string" },
+          "userName": { "type": "string" }
+        },
+        "required": ["body", "createdAt", "id", "unitName", "userName"],
+        "type": "object"
+      },
+      "IntelligenceFeedbackRequest": {
+        "properties": { "body": { "maxLength": 4000, "minLength": 0, "type": "string" } },
+        "required": ["body"],
+        "type": "object"
+      },
+      "IntelligenceListItem": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "id": { "type": "string" },
+          "myReceiptCount": { "format": "int64", "type": "integer" },
+          "pendingReceiptCount": { "format": "int64", "type": "integer" },
+          "publishedAt": { "format": "date-time", "type": ["string", "null"] },
+          "sourceUnitName": { "type": "string" },
+          "status": { "type": "string" },
+          "title": { "type": "string" },
+          "topicNo": { "type": "string" }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "myReceiptCount",
+          "pendingReceiptCount",
+          "publishedAt",
+          "sourceUnitName",
+          "status",
+          "title",
+          "topicNo"
+        ],
+        "type": "object"
+      },
+      "IntelligenceReceipt": {
+        "properties": {
+          "allowedActions": {
+            "items": { "$ref": "#/components/schemas/IntelligenceAction" },
+            "type": "array"
+          },
+          "assessmentSummary": { "type": ["string", "null"] },
+          "feedbacks": {
+            "items": { "$ref": "#/components/schemas/IntelligenceFeedback" },
+            "type": "array"
+          },
+          "fromUnitName": { "type": "string" },
+          "id": { "type": "string" },
+          "mine": { "type": "boolean" },
+          "note": { "type": "string" },
+          "parentReceiptId": { "type": ["string", "null"] },
+          "sendId": { "type": "string" },
+          "senderName": { "type": "string" },
+          "sentAt": { "format": "date-time", "type": "string" },
+          "signedAt": { "format": "date-time", "type": ["string", "null"] },
+          "signedByName": { "type": ["string", "null"] },
+          "toUnitName": { "type": "string" }
+        },
+        "required": [
+          "allowedActions",
+          "feedbacks",
+          "fromUnitName",
+          "id",
+          "mine",
+          "note",
+          "parentReceiptId",
+          "sendId",
+          "senderName",
+          "sentAt",
+          "signedAt",
+          "signedByName",
+          "toUnitName"
+        ],
+        "type": "object"
+      },
+      "IntelligenceSendRequest": {
+        "properties": {
+          "assessmentId": { "type": "string" },
+          "assessmentSummary": { "maxLength": 4000, "minLength": 0, "type": "string" },
+          "note": { "maxLength": 1000, "minLength": 0, "type": "string" },
+          "targetUnitCodes": {
+            "items": { "minLength": 1, "type": "string" },
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": ["targetUnitCodes"],
+        "type": "object"
+      },
+      "IntelligenceSupplement": {
+        "properties": {
+          "body": { "type": "string" },
+          "createdAt": { "format": "date-time", "type": "string" },
+          "id": { "type": "string" },
+          "kind": { "type": "string" },
+          "unitName": { "type": "string" },
+          "userName": { "type": "string" }
+        },
+        "required": ["body", "createdAt", "id", "kind", "unitName", "userName"],
+        "type": "object"
+      },
+      "IntelligenceSupplementRequest": {
+        "properties": {
+          "body": { "maxLength": 4000, "minLength": 0, "type": "string" },
+          "kind": { "minLength": 1, "type": "string" }
+        },
+        "required": ["body", "kind"],
+        "type": "object"
+      },
+      "IntelligenceUnitOption": {
+        "properties": {
+          "code": { "type": "string" },
+          "enabled": { "type": "boolean" },
+          "level": { "format": "int32", "type": "integer" },
+          "name": { "type": "string" },
+          "parentCode": { "type": ["string", "null"] },
+          "targetEligible": { "type": "boolean" }
+        },
+        "required": ["code", "enabled", "level", "name", "parentCode", "targetEligible"],
+        "type": "object"
+      },
+      "PageResultAssessment": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/Assessment" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultIntelligenceListItem": {
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/IntelligenceListItem" },
+            "type": "array"
+          },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "RecordAssessment": {
+        "properties": {
+          "analysis": { "maxLength": 4000, "minLength": 0, "type": "string" },
+          "receiptId": { "type": "string" },
+          "recommendationCode": { "maxLength": 24, "minLength": 0, "type": "string" }
+        },
+        "required": ["analysis", "recommendationCode"],
+        "type": "object"
+      },
+      "SignedReceipt": {
+        "properties": {
+          "fromUnitName": { "type": "string" },
+          "id": { "type": "string" },
+          "signedAt": { "format": "date-time", "type": "string" }
+        },
+        "required": ["fromUnitName", "id", "signedAt"],
+        "type": "object"
+      }
+    }
+  },
+  "info": { "title": "OpenAPI definition", "version": "v0" },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/intelligence-topics": {
+      "get": {
+        "operationId": "intelligenceList",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "view",
+            "required": false,
+            "schema": { "default": "received", "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": { "default": "all", "type": "string" }
+          },
+          { "in": "query", "name": "keyword", "required": false, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResultIntelligenceListItem"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询本单位收到或发出的情报，不扩大数据范围",
+        "tags": ["信息流转"]
+      },
+      "post": {
+        "operationId": "intelligenceCreate",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IntelligenceDraftRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    },
+    "/api/intelligence-topics/unit-options": {
+      "get": {
+        "operationId": "intelligenceOptions",
+        "parameters": [
+          { "in": "query", "name": "action", "required": true, "schema": { "type": "string" } },
+          { "in": "query", "name": "topicId", "required": false, "schema": { "type": "string" } },
+          { "in": "query", "name": "receiptId", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseListIntelligenceUnitOption" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    },
+    "/api/intelligence-topics/{id}": {
+      "get": {
+        "operationId": "intelligenceDetail",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查看情报及当前单位可见的流转历史",
+        "tags": ["信息流转"]
+      },
+      "put": {
+        "operationId": "intelligenceUpdate",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IntelligenceDraftRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    },
+    "/api/intelligence-topics/{id}/assessment-context": {
+      "get": {
+        "operationId": "assessmentContext",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseAssessmentContext" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["assessment-controller"]
+      }
+    },
+    "/api/intelligence-topics/{id}/assessments": {
+      "get": {
+        "operationId": "assessmentList",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultAssessment" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["assessment-controller"]
+      },
+      "post": {
+        "operationId": "assessmentRecord",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/RecordAssessment" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseAssessment" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["assessment-controller"]
+      }
+    },
+    "/api/intelligence-topics/{id}/receipts/{receiptId}/feedbacks": {
+      "post": {
+        "operationId": "intelligenceFeedback",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "receiptId", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IntelligenceFeedbackRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    },
+    "/api/intelligence-topics/{id}/receipts/{receiptId}/forward": {
+      "post": {
+        "operationId": "intelligenceForward",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "receiptId", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IntelligenceSendRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    },
+    "/api/intelligence-topics/{id}/receipts/{receiptId}/sign": {
+      "post": {
+        "operationId": "intelligenceSign",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          { "in": "path", "name": "receiptId", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    },
+    "/api/intelligence-topics/{id}/send": {
+      "post": {
+        "operationId": "intelligenceSend",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IntelligenceSendRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    },
+    "/api/intelligence-topics/{id}/supplements": {
+      "post": {
+        "operationId": "intelligenceSupplement",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/IntelligenceSupplementRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseIntelligenceDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["信息流转"]
+      }
+    }
+  },
+  "servers": [{ "url": "/" }],
+  "tags": [{ "description": "情报共享、签收和线索反馈", "name": "信息流转" }]
+}

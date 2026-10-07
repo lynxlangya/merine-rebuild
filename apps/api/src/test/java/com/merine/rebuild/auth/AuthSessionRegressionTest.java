@@ -38,6 +38,7 @@ class AuthSessionRegressionTest extends AuthSessionRegressionSupport {
     @Test
     void apiDocsAndTheirAssetsRemainProtectedByDefault() throws Exception {
         for (String path : List.of("/api/docs", "/api/openapi", "/api/openapi/swagger-config",
+                "/api/openapi/maritime", "/api/openapi/tasks",
                 "/api/swagger-ui/index.html", "/api/swagger-ui/swagger-ui.css")) {
             assertThat(mockMvc.perform(get(path)).andReturn().getResponse().getStatus())
                     .as("默认保护文档路径 %s", path).isEqualTo(401);

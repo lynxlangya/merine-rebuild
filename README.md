@@ -125,8 +125,13 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 - `check`：建好测试库并跑 TypeScript、Node 内置前端回归测试、格式检查与 Maven 验证（含认证、用户管理与单位管理回归测试）。
 - `build`：前端生产构建与后端 jar 打包（`project.build.outputTimestamp` 固定产物时间戳，同一份源码重复构建哈希一致）。交付镜像见下面的「交付形态演练」。
 - `test-db`：准备隔离的测试库 `merine_rebuild_test` 并应用同一套迁移；重复执行是幂等的，不动开发库。
-- `contract:generate`：从当前源码启动的本地后端导出 OpenAPI，更新 `packages/api-contract/openapi.json` 与 `src/schema.d.ts`。页面消费生成类型，生成文件不手改。本地开发通过 dev 入口建立会话；非 dev 环境需提供 `API_LOGIN_NAME` / `API_PASSWORD`。接口文档访问不额外要求系统管理角色。
+- `contract:generate`：从当前源码启动的本地后端自动发现 OpenAPI 分组，更新 `packages/api-contract/openapi/*.json` 与 `src/generated/*.d.ts`。页面仍通过 `@merine/api-contract` 统一导入类型，生成文件不手改。本地开发通过 dev 入口建立临时会话，导出后注销；非 dev 环境需提供 `API_LOGIN_NAME` / `API_PASSWORD`。接口文档访问不额外要求系统管理角色。
+- `contract:test`：验证分组发现、完整覆盖、重复接口、协议一致性和引用完整性的生成工具回归，已接入 `check`。
 - `smoke`：经 Vite 的 `/api` 代理走一遍「CSRF → 登录（含错误密码与未登录）→ MySQL 读写 → 参数校验 → 退出后会话失效」；每次追加一条 `SMOKE-` 合成记录，不清理或重置已有数据。密码经环境变量传入，不写在脚本里。
+
+契约目前按认证、系统管理、任务、信息流转、涉海要素、工程诊断六个业务模块组织。分组在 `apps/api/src/main/resources/application.yaml` 的 `springdoc.group-configs` 中按 Java 包定义；情报关联任务接口归任务用例，即使 URL 位于 `/api/intelligence-topics` 下。新增模块只需在后端注册分组，生成脚本从 `/api/openapi/swagger-config` 发现并导出；存在未分组、重复分组、协议差异或悬空引用时停止，不写生成文件。全量文档继续由 `/api/openapi` 提供，不再保存单个全量快照。
+
+显式类型导出分置在 `packages/api-contract/src/{auth,system,tasks,intelligence,maritime,diagnostics}.ts`，`index.ts` 保留统一入口。共享响应类型随各分组自动生成，不另维护公共 JSON。接口 `operationId` 默认由 Controller 名称与方法名组成（如 `portList`）；需要自定义或处理重名时在后端使用 `@Operation(operationId="...")`，生成器校验全局唯一。
 
 `smoke` 在容器内默认访问同容器的 Vite `5173`。`contract:generate` 通过容器服务名访问 API。初次下载依赖较慢时可查看对应服务日志；状态未知时先查看 `status`，不删卷重试。
 

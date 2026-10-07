@@ -65,6 +65,20 @@ management:
 springdoc:
   api-docs:
     path: /api/openapi
+  # 以 Java 用例归属分组；生成脚本通过 swagger-config 自动发现，不复制此清单。
+  group-configs:
+    - group: auth
+      packages-to-scan: com.merine.rebuild.auth
+    - group: system
+      packages-to-scan: com.merine.rebuild.system
+    - group: tasks
+      packages-to-scan: com.merine.rebuild.task
+    - group: intelligence
+      packages-to-scan: com.merine.rebuild.intelligence
+    - group: maritime
+      packages-to-scan: com.merine.rebuild.maritime
+    - group: diagnostics
+      packages-to-scan: com.merine.rebuild.bootstrap
   swagger-ui:
     path: /api/docs
 

@@ -1,0 +1,38 @@
+import type { components } from './generated/system';
+
+/** 系统管理与导航：显式导出生成契约，字段定义仍来自后端。 */
+export type UserSummary = components['schemas']['UserSummary'];
+export type PageResultUserSummary = components['schemas']['PageResultUserSummary'];
+export type CreateUser = components['schemas']['CreateUser'];
+export type UpdateUser = components['schemas']['UpdateUser'];
+export type ChangeStatus = components['schemas']['ChangeStatus'];
+export type ResetPassword = components['schemas']['ResetPassword'];
+export type UnitSummary = components['schemas']['UnitSummary'];
+export type UnitTreeNode = components['schemas']['UnitTreeNode'];
+export type UnitView = components['schemas']['UnitView'];
+export type CreateUnit = components['schemas']['CreateUnit'];
+export type UpdateUnit = components['schemas']['UpdateUnit'];
+export type RoleSummary = components['schemas']['RoleSummary'];
+export type RoleListItem = components['schemas']['RoleListItem'];
+export type RoleDetail = components['schemas']['RoleDetail'];
+export type RoleMember = components['schemas']['RoleMember'];
+export type PageResultRoleListItem = components['schemas']['PageResultRoleListItem'];
+export type PageResultRoleMember = components['schemas']['PageResultRoleMember'];
+export type CreateRole = components['schemas']['CreateRole'];
+export type UpdateRole = components['schemas']['UpdateRole'];
+export type ChangeRoleStatus = components['schemas']['ChangeRoleStatus'];
+export type MenuNode = components['schemas']['MenuNode'];
+export type NavigationNode = components['schemas']['NavigationNode'];
+export type RouteKeyOption = components['schemas']['RouteKeyOption'];
+export type IconOption = components['schemas']['IconOption'];
+export type CreateMenu = components['schemas']['CreateMenu'];
+export type UpdateMenu = components['schemas']['UpdateMenu'];
+export type MenuDeleteImpact = components['schemas']['MenuDeleteImpact'];
+export type RestoreMenusResult = components['schemas']['RestoreMenusResult'];
+export type DictionaryItemView = components['schemas']['DictionaryItemView'];
+export type DictionaryView = components['schemas']['DictionaryView'];
+export type DictionaryListItem = components['schemas']['DictionaryListItem'];
+export type CreateDictionary = components['schemas']['CreateDictionary'];
+export type UpdateDictionary = components['schemas']['UpdateDictionary'];
+export type CreateDictionaryItem = components['schemas']['CreateDictionaryItem'];
+export type UpdateDictionaryItem = components['schemas']['UpdateDictionaryItem'];

@@ -17,6 +17,7 @@
     "build": "bash scripts/dev.sh build",
     "smoke": "node scripts/smoke.mjs",
     "contract:generate": "node scripts/generate-contract.mjs",
+    "contract:test": "node --test scripts/contract-schema.test.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
