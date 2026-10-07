@@ -107,6 +107,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/maritime/wharfs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询码头完整档案 */
+        get: operations["detail_3"];
+        /** 编辑或启停码头，需最新版本 */
+        put: operations["update_5"];
+        post?: never;
+        /** 删除未被引用的码头，需最新版本 */
+        delete: operations["delete_3"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/ports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询港口完整档案 */
+        get: operations["detail_4"];
+        /** 编辑或启停港口，需最新版本 */
+        put: operations["update_6"];
+        post?: never;
+        /** 删除未被引用的港口，需最新版本 */
+        delete: operations["delete_4"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/port-officers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询民警完整档案 */
+        get: operations["detail_5"];
+        /** 编辑或启停民警，需最新版本 */
+        put: operations["update_7"];
+        post?: never;
+        /** 删除未被引用的民警，需最新版本 */
+        delete: operations["delete_5"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/police-stations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询派出所完整档案 */
+        get: operations["detail_6"];
+        /** 编辑或启停派出所，需最新版本 */
+        put: operations["update_8"];
+        post?: never;
+        /** 删除未被引用的派出所，需最新版本 */
+        delete: operations["delete_6"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/islands/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询海岛完整档案 */
+        get: operations["detail_7"];
+        /** 编辑或启停海岛，需最新版本 */
+        put: operations["update_9"];
+        post?: never;
+        /** 删除未被引用的海岛，需最新版本 */
+        delete: operations["delete_7"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/anchorages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询锚地完整档案 */
+        get: operations["detail_8"];
+        /** 编辑或启停锚地，需最新版本 */
+        put: operations["update_10"];
+        post?: never;
+        /** 删除未被引用的锚地，需最新版本 */
+        delete: operations["delete_8"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/intelligence-topics/{id}": {
         parameters: {
             query?: never;
@@ -115,8 +229,8 @@ export interface paths {
             cookie?: never;
         };
         /** 查看情报及当前单位可见的流转历史 */
-        get: operations["detail_3"];
-        put: operations["update_5"];
+        get: operations["detail_9"];
+        put: operations["update_11"];
         post?: never;
         delete?: never;
         options?: never;
@@ -543,6 +657,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/maritime/wharfs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页查询码头 */
+        get: operations["list_5"];
+        put?: never;
+        /** 新建码头 */
+        post: operations["create_6"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/ports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页查询港口 */
+        get: operations["list_6"];
+        put?: never;
+        /** 新建港口 */
+        post: operations["create_7"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/port-officers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页查询民警 */
+        get: operations["list_7"];
+        put?: never;
+        /** 新建民警 */
+        post: operations["create_8"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/police-stations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页查询派出所 */
+        get: operations["list_8"];
+        put?: never;
+        /** 新建派出所 */
+        post: operations["create_9"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/islands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页查询海岛 */
+        get: operations["list_9"];
+        put?: never;
+        /** 新建海岛 */
+        post: operations["create_10"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/anchorages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页查询锚地 */
+        get: operations["list_10"];
+        put?: never;
+        /** 新建锚地 */
+        post: operations["create_11"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/intelligence-topics": {
         parameters: {
             query?: never;
@@ -551,9 +773,9 @@ export interface paths {
             cookie?: never;
         };
         /** 查询本单位收到或发出的情报，不扩大数据范围 */
-        get: operations["list_5"];
+        get: operations["list_11"];
         put?: never;
-        post: operations["create_6"];
+        post: operations["create_12"];
         delete?: never;
         options?: never;
         head?: never;
@@ -567,9 +789,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_6"];
+        get: operations["list_12"];
         put?: never;
-        post: operations["create_7"];
+        post: operations["create_13"];
         delete?: never;
         options?: never;
         head?: never;
@@ -663,7 +885,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_7"];
+        get: operations["list_13"];
         put?: never;
         post: operations["record"];
         delete?: never;
@@ -682,7 +904,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** 写入一条本地合成联调记录 */
-        post: operations["create_8"];
+        post: operations["create_14"];
         delete?: never;
         options?: never;
         head?: never;
@@ -733,7 +955,7 @@ export interface paths {
             cookie?: never;
         };
         /** 查询任务详情和可见分支 */
-        get: operations["detail_4"];
+        get: operations["detail_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -911,6 +1133,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/maritime/options/wharf-relations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["wharfs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/options/ports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/options/port-officers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["officers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/maritime/options/police-stations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/intelligence-topics/{id}/task-context": {
         parameters: {
             query?: never;
@@ -967,7 +1253,7 @@ export interface paths {
             cookie?: never;
         };
         /** 批量读取字典；不传 codes 时返回全部字典（含停用项） */
-        get: operations["list_8"];
+        get: operations["list_14"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1295,6 +1581,227 @@ export interface components {
             code: string;
             message: string;
             data: components["schemas"]["DictionaryItemView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        WriteWharf: {
+            /**
+             * Format: int32
+             * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
+             */
+            version?: number | null;
+            name: string;
+            region: string;
+            location?: string | null;
+            status: string;
+            purpose?: string | null;
+            portId?: string | null;
+            policeStationId?: string | null;
+            responsibleOfficerId?: string | null;
+        };
+        ApiResponseWharfView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["WharfView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        WharfView: {
+            id: string;
+            name: string;
+            region: string;
+            location: string | null;
+            status: string;
+            purpose: string | null;
+            portId: string | null;
+            policeStationId: string | null;
+            responsibleOfficerId: string | null;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            fixtureKey: string | null;
+            portName: string | null;
+            portStatus: string | null;
+            policeStationName: string | null;
+            policeStationStatus: string | null;
+            responsibleOfficerName: string | null;
+            responsibleOfficerStatus: string | null;
+        };
+        WritePort: {
+            /**
+             * Format: int32
+             * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
+             */
+            version?: number | null;
+            name: string;
+            region: string;
+            location?: string | null;
+            status: string;
+            purpose?: string | null;
+        };
+        ApiResponsePortView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PortView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PortView: {
+            id: string;
+            name: string;
+            region: string;
+            location: string | null;
+            status: string;
+            purpose: string | null;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            fixtureKey: string | null;
+        };
+        WritePortOfficer: {
+            /**
+             * Format: int32
+             * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
+             */
+            version?: number | null;
+            name: string;
+            status: string;
+            policeStationId: string;
+            duty?: string | null;
+        };
+        ApiResponsePortOfficerView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PortOfficerView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PortOfficerView: {
+            id: string;
+            name: string;
+            status: string;
+            policeStationId: string;
+            duty: string | null;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            fixtureKey: string | null;
+            region: string;
+            policeStationName: string | null;
+            policeStationStatus: string | null;
+        };
+        WritePoliceStation: {
+            /**
+             * Format: int32
+             * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
+             */
+            version?: number | null;
+            name: string;
+            region: string;
+            location?: string | null;
+            status: string;
+        };
+        ApiResponsePoliceStationView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PoliceStationView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PoliceStationView: {
+            id: string;
+            name: string;
+            region: string;
+            location: string | null;
+            status: string;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            fixtureKey: string | null;
+        };
+        WriteIsland: {
+            /**
+             * Format: int32
+             * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
+             */
+            version?: number | null;
+            name: string;
+            region: string;
+            location?: string | null;
+            status: string;
+            inhabitationType: string;
+        };
+        ApiResponseIslandView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["IslandView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        IslandView: {
+            id: string;
+            name: string;
+            region: string;
+            location: string | null;
+            status: string;
+            inhabitationType: string;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            fixtureKey: string | null;
+        };
+        WriteAnchorage: {
+            /**
+             * Format: int32
+             * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
+             */
+            version?: number | null;
+            name: string;
+            region: string;
+            location?: string | null;
+            status: string;
+            purpose?: string | null;
+        };
+        AnchorageView: {
+            id: string;
+            name: string;
+            region: string;
+            location: string | null;
+            status: string;
+            purpose: string | null;
+            /** Format: int32 */
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            fixtureKey: string | null;
+        };
+        ApiResponseAnchorageView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["AnchorageView"];
             requestId: string;
             /** @description 字段级校验错误；无字段错误时为 null */
             fieldErrors?: components["schemas"]["FieldError"][];
@@ -2118,6 +2625,155 @@ export interface components {
             description?: string | null;
             children: components["schemas"]["NavigationNode"][];
         };
+        ApiResponsePageResultWharfView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultWharfView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultWharfView: {
+            items: components["schemas"]["WharfView"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        ApiResponsePageResultPortView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultPortView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultPortView: {
+            items: components["schemas"]["PortView"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        ApiResponsePageResultPortOfficerView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultPortOfficerView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultPortOfficerView: {
+            items: components["schemas"]["PortOfficerView"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        ApiResponsePageResultPoliceStationView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultPoliceStationView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultPoliceStationView: {
+            items: components["schemas"]["PoliceStationView"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        ApiResponsePageResultWharfRelationView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultWharfRelationView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultWharfRelationView: {
+            items: components["schemas"]["WharfRelationView"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        WharfRelationView: {
+            id: string;
+            name: string;
+            status: string;
+            responsibleOfficerId: string | null;
+            responsibleOfficerName: string | null;
+        };
+        ApiResponsePageResultArchiveOption: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultArchiveOption"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        ArchiveOption: {
+            id: string;
+            name: string;
+            status: string;
+            policeStationId: string | null;
+        };
+        PageResultArchiveOption: {
+            items: components["schemas"]["ArchiveOption"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        ApiResponsePageResultIslandView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultIslandView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultIslandView: {
+            items: components["schemas"]["IslandView"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
+        ApiResponsePageResultAnchorageView: {
+            code: string;
+            message: string;
+            data: components["schemas"]["PageResultAnchorageView"];
+            requestId: string;
+            /** @description 字段级校验错误；无字段错误时为 null */
+            fieldErrors?: components["schemas"]["FieldError"][];
+        };
+        PageResultAnchorageView: {
+            items: components["schemas"]["AnchorageView"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+        };
         ApiResponsePageResultIntelligenceListItem: {
             code: string;
             message: string;
@@ -2612,6 +3268,438 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseWharfView"];
+                };
+            };
+        };
+    };
+    update_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteWharf"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseWharfView"];
+                };
+            };
+        };
+    };
+    delete_3: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    detail_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePortView"];
+                };
+            };
+        };
+    };
+    update_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WritePort"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePortView"];
+                };
+            };
+        };
+    };
+    delete_4: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    detail_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePortOfficerView"];
+                };
+            };
+        };
+    };
+    update_7: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WritePortOfficer"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePortOfficerView"];
+                };
+            };
+        };
+    };
+    delete_5: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    detail_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePoliceStationView"];
+                };
+            };
+        };
+    };
+    update_8: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WritePoliceStation"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePoliceStationView"];
+                };
+            };
+        };
+    };
+    delete_6: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    detail_7: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIslandView"];
+                };
+            };
+        };
+    };
+    update_9: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteIsland"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIslandView"];
+                };
+            };
+        };
+    };
+    delete_7: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    detail_8: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAnchorageView"];
+                };
+            };
+        };
+    };
+    update_10: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteAnchorage"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAnchorageView"];
+                };
+            };
+        };
+    };
+    delete_8: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    detail_9: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
                 id: string;
             };
             cookie?: never;
@@ -2629,7 +3717,7 @@ export interface operations {
             };
         };
     };
-    update_5: {
+    update_11: {
         parameters: {
             query?: never;
             header: {
@@ -3452,6 +4540,311 @@ export interface operations {
     list_5: {
         parameters: {
             query?: {
+                keyword?: string;
+                region?: string;
+                status?: string;
+                portId?: number;
+                policeStationId?: number;
+                responsibleOfficerId?: number;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultWharfView"];
+                };
+            };
+        };
+    };
+    create_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteWharf"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseWharfView"];
+                };
+            };
+        };
+    };
+    list_6: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                region?: string;
+                status?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultPortView"];
+                };
+            };
+        };
+    };
+    create_7: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WritePort"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePortView"];
+                };
+            };
+        };
+    };
+    list_7: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                region?: string;
+                status?: string;
+                policeStationId?: number;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultPortOfficerView"];
+                };
+            };
+        };
+    };
+    create_8: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WritePortOfficer"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePortOfficerView"];
+                };
+            };
+        };
+    };
+    list_8: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                region?: string;
+                status?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultPoliceStationView"];
+                };
+            };
+        };
+    };
+    create_9: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WritePoliceStation"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePoliceStationView"];
+                };
+            };
+        };
+    };
+    list_9: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                region?: string;
+                status?: string;
+                inhabitationType?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultIslandView"];
+                };
+            };
+        };
+    };
+    create_10: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteIsland"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIslandView"];
+                };
+            };
+        };
+    };
+    list_10: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                region?: string;
+                status?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultAnchorageView"];
+                };
+            };
+        };
+    };
+    create_11: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteAnchorage"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAnchorageView"];
+                };
+            };
+        };
+    };
+    list_11: {
+        parameters: {
+            query?: {
                 view?: string;
                 status?: string;
                 keyword?: string;
@@ -3475,7 +4868,7 @@ export interface operations {
             };
         };
     };
-    create_6: {
+    create_12: {
         parameters: {
             query?: never;
             header: {
@@ -3501,7 +4894,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_12: {
         parameters: {
             query?: {
                 page?: number;
@@ -3526,7 +4919,7 @@ export interface operations {
             };
         };
     };
-    create_7: {
+    create_13: {
         parameters: {
             query?: never;
             header: {
@@ -3693,7 +5086,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_13: {
         parameters: {
             query?: {
                 page?: number;
@@ -3746,7 +5139,7 @@ export interface operations {
             };
         };
     };
-    create_8: {
+    create_14: {
         parameters: {
             query?: never;
             header?: never;
@@ -3858,7 +5251,7 @@ export interface operations {
             };
         };
     };
-    detail_4: {
+    detail_10: {
         parameters: {
             query?: never;
             header?: never;
@@ -4093,6 +5486,104 @@ export interface operations {
             };
         };
     };
+    wharfs: {
+        parameters: {
+            query?: {
+                policeStationId?: number;
+                responsibleOfficerId?: number;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultWharfRelationView"];
+                };
+            };
+        };
+    };
+    ports: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultArchiveOption"];
+                };
+            };
+        };
+    };
+    officers: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                policeStationId?: number;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultArchiveOption"];
+                };
+            };
+        };
+    };
+    stations: {
+        parameters: {
+            query?: {
+                keyword?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResultArchiveOption"];
+                };
+            };
+        };
+    };
     context: {
         parameters: {
             query?: never;
@@ -4161,7 +5652,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_14: {
         parameters: {
             query?: {
                 codes?: string;

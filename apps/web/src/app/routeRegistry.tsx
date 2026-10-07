@@ -1,5 +1,7 @@
 import {
   ApartmentOutlined,
+  GlobalOutlined,
+  EnvironmentOutlined,
   BookOutlined,
   MenuOutlined,
   SafetyCertificateOutlined,
@@ -47,6 +49,20 @@ export const InformationFlowPage = lazy(() =>
   })),
 );
 
+const HarborSitesPage = lazy(() =>
+  import('../features/maritime/HarborSitesPage').then((module) => ({
+    default: module.HarborSitesPage,
+  })),
+);
+const IslandsPage = lazy(() =>
+  import('../features/maritime/IslandsPage').then((module) => ({ default: module.IslandsPage })),
+);
+const PoliceResourcesPage = lazy(() =>
+  import('../features/maritime/PoliceResourcesPage').then((module) => ({
+    default: module.PoliceResourcesPage,
+  })),
+);
+
 /**
  * 前端已注册页面：路由 key → 组件、路径与图标。
  *
@@ -62,6 +78,24 @@ export interface RegisteredRoute {
 }
 
 export const appRoutes: RegisteredRoute[] = [
+  {
+    key: 'maritime.harbor-sites',
+    path: '/maritime/harbor-sites',
+    element: <HarborSitesPage />,
+    icon: <GlobalOutlined />,
+  },
+  {
+    key: 'maritime.islands',
+    path: '/maritime/islands',
+    element: <IslandsPage />,
+    icon: <EnvironmentOutlined />,
+  },
+  {
+    key: 'maritime.police-resources',
+    path: '/maritime/police-resources',
+    element: <PoliceResourcesPage />,
+    icon: <SafetyCertificateOutlined />,
+  },
   {
     key: 'system.users',
     path: '/system/users',

@@ -1,0 +1,61 @@
+package com.merine.rebuild.maritime.persistence;
+
+import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+@Mapper
+public interface MaritimeMapper {
+    ArchiveRow findPort(@Param("id") long id);
+    ArchiveRow lockPort(@Param("id") long id);
+    ArchiveRow findPortFixture(@Param("key") String key);
+    List<ArchiveRow> listPort(ArchiveQuery query);
+    long countPort(ArchiveQuery query);
+    int insertPort(ArchiveRow row);
+    int updatePort(ArchiveRow row);
+    int deletePort(@Param("id") long id, @Param("version") int version);
+    ArchiveRow findWharf(@Param("id") long id);
+    ArchiveRow lockWharf(@Param("id") long id);
+    ArchiveRow findWharfFixture(@Param("key") String key);
+    List<ArchiveRow> listWharf(ArchiveQuery query);
+    long countWharf(ArchiveQuery query);
+    int insertWharf(ArchiveRow row);
+    int updateWharf(ArchiveRow row);
+    int deleteWharf(@Param("id") long id, @Param("version") int version);
+    ArchiveRow findAnchorage(@Param("id") long id);
+    ArchiveRow lockAnchorage(@Param("id") long id);
+    ArchiveRow findAnchorageFixture(@Param("key") String key);
+    List<ArchiveRow> listAnchorage(ArchiveQuery query);
+    long countAnchorage(ArchiveQuery query);
+    int insertAnchorage(ArchiveRow row);
+    int updateAnchorage(ArchiveRow row);
+    int deleteAnchorage(@Param("id") long id, @Param("version") int version);
+    ArchiveRow findIsland(@Param("id") long id);
+    ArchiveRow lockIsland(@Param("id") long id);
+    ArchiveRow findIslandFixture(@Param("key") String key);
+    List<ArchiveRow> listIsland(ArchiveQuery query);
+    long countIsland(ArchiveQuery query);
+    int insertIsland(ArchiveRow row);
+    int updateIsland(ArchiveRow row);
+    int deleteIsland(@Param("id") long id, @Param("version") int version);
+    ArchiveRow findPoliceStation(@Param("id") long id);
+    ArchiveRow lockPoliceStation(@Param("id") long id);
+    ArchiveRow findPoliceStationFixture(@Param("key") String key);
+    List<ArchiveRow> listPoliceStation(ArchiveQuery query);
+    long countPoliceStation(ArchiveQuery query);
+    int insertPoliceStation(ArchiveRow row);
+    int updatePoliceStation(ArchiveRow row);
+    int deletePoliceStation(@Param("id") long id, @Param("version") int version);
+    ArchiveRow findPortOfficer(@Param("id") long id);
+    ArchiveRow lockPortOfficer(@Param("id") long id);
+    ArchiveRow findPortOfficerFixture(@Param("key") String key);
+    List<ArchiveRow> listPortOfficer(ArchiveQuery query);
+    long countPortOfficer(ArchiveQuery query);
+    int insertPortOfficer(ArchiveRow row);
+    int updatePortOfficer(ArchiveRow row);
+    int deletePortOfficer(@Param("id") long id, @Param("version") int version);
+    List<Long> lockStationOfficers(@Param("id") long id);
+    List<Long> lockStationWharfs(@Param("id") long id);
+    List<Long> lockOfficerWharfs(@Param("id") long id);
+    List<Long> lockPortWharfs(@Param("id") long id);
+}

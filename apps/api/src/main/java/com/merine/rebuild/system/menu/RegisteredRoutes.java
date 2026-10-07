@@ -16,6 +16,9 @@ public final class RegisteredRoutes {
     }
 
     private static final List<Route> ALL = List.of(
+            new Route("maritime.harbor-sites", "港口与停泊点"),
+            new Route("maritime.islands", "海岛"),
+            new Route("maritime.police-resources", "警务资源"),
             new Route("system.users", "用户管理"),
             new Route("system.roles", "角色管理"),
             new Route("system.menus", "菜单管理"),

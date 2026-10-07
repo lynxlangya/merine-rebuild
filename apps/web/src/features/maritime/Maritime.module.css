@@ -1,0 +1,99 @@
+.page,
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.page {
+  padding: 0 var(--sp-4) var(--sp-4);
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+  padding: 20px;
+}
+.filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.filters :global(.ant-form-item) {
+  margin-bottom: 0;
+  min-width: 156px;
+  flex: 1;
+}
+.filters :global(.ant-form-item):last-child {
+  flex: 0;
+  min-width: 140px;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.toolbar h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+.policing {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.stations {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stationLink {
+  display: block;
+  color: var(--text);
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  line-height: 1.6;
+}
+.stationLink:hover,
+.activeStation {
+  background: var(--surface-selected);
+  border-color: var(--primary);
+}
+.stationLink small {
+  display: block;
+  color: var(--muted);
+}
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+.drawerGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+.drawerGrid :global(.ant-form-item) {
+  min-width: 0;
+}
+.full {
+  grid-column: 1 / -1;
+}
+
+.policing > section {
+  min-width: 0;
+}

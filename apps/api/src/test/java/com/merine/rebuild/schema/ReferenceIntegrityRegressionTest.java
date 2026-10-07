@@ -439,6 +439,18 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
         checks.put("task source and assessment", "SELECT COUNT(*) FROM task_intel_source l JOIN task_order o ON o.id=l.task_id JOIN intel_assessment a ON a.id=l.assessment_id LEFT JOIN intel_supplement p ON p.id=l.last_supplement_id WHERE l.topic_id<>a.topic_id OR o.issuer_unit_id<>a.unit_id OR l.created_unit_id<>o.issuer_unit_id OR o.background_summary IS NULL OR (p.id IS NOT NULL AND p.topic_id<>l.topic_id)");
         checks.put("return result belongs to task", "SELECT COUNT(*) FROM task_intel_return r JOIN task_intel_source s ON s.id=r.source_link_id JOIN task_result x ON x.id=r.result_id JOIN task_branch b ON b.id=x.branch_id WHERE b.task_id<>s.task_id");
         checks.put("return target matches topic and actor", "SELECT COUNT(*) FROM task_intel_return x JOIN task_intel_source l ON l.id=x.source_link_id LEFT JOIN intel_feedback f ON f.id=x.feedback_id LEFT JOIN intel_receipt r ON r.id=x.target_receipt_id LEFT JOIN intel_send s ON s.id=r.send_id LEFT JOIN intel_supplement p ON p.id=x.supplement_id WHERE (f.id IS NOT NULL AND (f.receipt_id<>r.id OR f.unit_id<>x.unit_id OR s.topic_id<>l.topic_id OR f.body<>x.shared_summary)) OR (p.id IS NOT NULL AND (p.topic_id<>l.topic_id OR p.unit_id<>x.unit_id OR p.body<>x.shared_summary))");
+        String[][] maritimeReferences = {
+                {"archive_wharf", "port_id", "archive_port"},
+                {"archive_wharf", "police_station_id", "archive_police_station"},
+                {"archive_wharf", "responsible_officer_id", "archive_port_officer"},
+                {"archive_port_officer", "police_station_id", "archive_police_station"}
+        };
+        for (String[] relation : maritimeReferences) {
+            checks.put(relation[0] + "." + relation[1], "SELECT COUNT(*) FROM " + relation[0]
+                    + " c LEFT JOIN " + relation[2] + " p ON p.id=c." + relation[1]
+                    + " WHERE c." + relation[1] + " IS NOT NULL AND p.id IS NULL");
+        }
+        checks.put("archive_wharf officer belongs to station", "SELECT COUNT(*) FROM archive_wharf w JOIN archive_port_officer o ON o.id=w.responsible_officer_id WHERE w.police_station_id IS NULL OR w.police_station_id<>o.police_station_id");
         return checks;
     }
 }

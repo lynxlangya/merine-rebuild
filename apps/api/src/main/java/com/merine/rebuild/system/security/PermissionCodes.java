@@ -66,6 +66,28 @@ public final class PermissionCodes {
     public static final String INTEL_ASSESS = "intelligence:topic:assess";
     public static final String INTEL_CREATE_TASK = "intelligence:topic:create-task";
 
+    public static final String MARITIME_HARBOR_READ = "maritime:harbor:read";
+    public static final String MARITIME_ISLAND_READ = "maritime:island:read";
+    public static final String MARITIME_POLICING_READ = "maritime:policing:read";
+    public static final String MARITIME__PORT_CREATE = "maritime:port:create";
+    public static final String MARITIME__PORT_UPDATE = "maritime:port:update";
+    public static final String MARITIME__PORT_DELETE = "maritime:port:delete";
+    public static final String MARITIME__WHARF_CREATE = "maritime:wharf:create";
+    public static final String MARITIME__WHARF_UPDATE = "maritime:wharf:update";
+    public static final String MARITIME__WHARF_DELETE = "maritime:wharf:delete";
+    public static final String MARITIME__ANCHORAGE_CREATE = "maritime:anchorage:create";
+    public static final String MARITIME__ANCHORAGE_UPDATE = "maritime:anchorage:update";
+    public static final String MARITIME__ANCHORAGE_DELETE = "maritime:anchorage:delete";
+    public static final String MARITIME__ISLAND_CREATE = "maritime:island:create";
+    public static final String MARITIME__ISLAND_UPDATE = "maritime:island:update";
+    public static final String MARITIME__ISLAND_DELETE = "maritime:island:delete";
+    public static final String MARITIME__POLICE_STATION_CREATE = "maritime:police-station:create";
+    public static final String MARITIME__POLICE_STATION_UPDATE = "maritime:police-station:update";
+    public static final String MARITIME__POLICE_STATION_DELETE = "maritime:police-station:delete";
+    public static final String MARITIME__PORT_OFFICER_CREATE = "maritime:port-officer:create";
+    public static final String MARITIME__PORT_OFFICER_UPDATE = "maritime:port-officer:update";
+    public static final String MARITIME__PORT_OFFICER_DELETE = "maritime:port-officer:delete";
+
     /**
      * 管理底线：一个账号要么持有内置管理员角色，要么**同时**持有这两个权限，
      * 才算「还能把系统管理恢复回来」——改用户角色与改角色权限是恢复入口，
@@ -88,6 +110,7 @@ public final class PermissionCodes {
                 TASK_READ, TASK_CREATE, TASK_ACCEPT, TASK_PROGRESS, TASK_DISPATCH,
                 TASK_RETURN, TASK_SUBMIT_RESULT, TASK_TRANSFER_REQUEST,
                 TASK_TRANSFER_RESPOND, TASK_TRANSFER_DECIDE,
-                INTEL_READ, INTEL_CREATE, INTEL_UPDATE, INTEL_SEND, INTEL_SIGN, INTEL_FEEDBACK, INTEL_FORWARD, INTEL_SUPPLEMENT, INTEL_ASSESS, INTEL_CREATE_TASK);
+                INTEL_READ, INTEL_CREATE, INTEL_UPDATE, INTEL_SEND, INTEL_SIGN, INTEL_FEEDBACK, INTEL_FORWARD, INTEL_SUPPLEMENT, INTEL_ASSESS, INTEL_CREATE_TASK,
+                MARITIME_HARBOR_READ, MARITIME_ISLAND_READ, MARITIME_POLICING_READ, MARITIME__PORT_CREATE, MARITIME__PORT_UPDATE, MARITIME__PORT_DELETE, MARITIME__WHARF_CREATE, MARITIME__WHARF_UPDATE, MARITIME__WHARF_DELETE, MARITIME__ANCHORAGE_CREATE, MARITIME__ANCHORAGE_UPDATE, MARITIME__ANCHORAGE_DELETE, MARITIME__ISLAND_CREATE, MARITIME__ISLAND_UPDATE, MARITIME__ISLAND_DELETE, MARITIME__POLICE_STATION_CREATE, MARITIME__POLICE_STATION_UPDATE, MARITIME__POLICE_STATION_DELETE, MARITIME__PORT_OFFICER_CREATE, MARITIME__PORT_OFFICER_UPDATE, MARITIME__PORT_OFFICER_DELETE);
     }
 }

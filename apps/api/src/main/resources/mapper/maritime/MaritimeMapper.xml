@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.maritime.persistence.MaritimeMapper">
+  <sql id="filterPort">
+    <where>
+      <if test="keyword != null"> AND a.name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '!' </if>
+      <if test="region != null"> AND a.region LIKE CONCAT('%', #{region}, '%') ESCAPE '!' </if>
+      <if test="status != null"> AND a.status = #{status} </if>
+    </where>
+  </sql>
+  <select id="findPort" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_port a WHERE a.id=#{id} </select>
+  <select id="lockPort" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT id, name, region, location, status, purpose, fixture_key AS fixtureKey, version, created_at AS createdAt, updated_at AS updatedAt FROM archive_port WHERE id=#{id} FOR UPDATE </select>
+  <select id="findPortFixture" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_port a WHERE a.fixture_key=#{key} </select>
+  <select id="listPort" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_port a <include refid="filterPort"/> ORDER BY a.id DESC LIMIT #{pageSize} OFFSET #{offset} </select>
+  <select id="countPort" resultType="long"> SELECT COUNT(*) FROM archive_port a <include refid="filterPort"/>
+  </select>
+  <insert id="insertPort" useGeneratedKeys="true" keyProperty="id"> INSERT INTO archive_port (name, region, location, status, purpose, fixture_key) VALUES (#{name}, #{region}, #{location}, #{status}, #{purpose}, #{fixtureKey}) </insert>
+  <update id="updatePort"> UPDATE archive_port SET name=#{name}, region=#{region}, location=#{location}, status=#{status}, purpose=#{purpose}, version=version+1, updated_at=UTC_TIMESTAMP(6) WHERE id=#{id} AND version=#{version} </update>
+  <delete id="deletePort"> DELETE FROM archive_port WHERE id=#{id} AND version=#{version} </delete>
+  <sql id="filterWharf">
+    <where>
+      <if test="keyword != null"> AND a.name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '!' </if>
+      <if test="region != null"> AND a.region LIKE CONCAT('%', #{region}, '%') ESCAPE '!' </if>
+      <if test="status != null"> AND a.status = #{status} </if>
+      <if test="portId != null"> AND a.port_id = #{portId} </if>
+      <if test="policeStationId != null"> AND a.police_station_id = #{policeStationId} </if>
+      <if test="responsibleOfficerId != null"> AND a.responsible_officer_id = #{responsibleOfficerId} </if>
+    </where>
+  </sql>
+  <select id="findWharf" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.port_id AS portId, a.police_station_id AS policeStationId, a.responsible_officer_id AS responsibleOfficerId, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt, p.name AS portName, p.status AS portStatus, s.name AS policeStationName, s.status AS policeStationStatus, o.name AS responsibleOfficerName, o.status AS responsibleOfficerStatus FROM archive_wharf a LEFT JOIN archive_port p ON p.id=a.port_id LEFT JOIN archive_police_station s ON s.id=a.police_station_id LEFT JOIN archive_port_officer o ON o.id=a.responsible_officer_id WHERE a.id=#{id} </select>
+  <select id="lockWharf" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT id, name, region, location, status, purpose, port_id AS portId, police_station_id AS policeStationId, responsible_officer_id AS responsibleOfficerId, fixture_key AS fixtureKey, version, created_at AS createdAt, updated_at AS updatedAt FROM archive_wharf WHERE id=#{id} FOR UPDATE </select>
+  <select id="findWharfFixture" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.port_id AS portId, a.police_station_id AS policeStationId, a.responsible_officer_id AS responsibleOfficerId, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt, p.name AS portName, p.status AS portStatus, s.name AS policeStationName, s.status AS policeStationStatus, o.name AS responsibleOfficerName, o.status AS responsibleOfficerStatus FROM archive_wharf a LEFT JOIN archive_port p ON p.id=a.port_id LEFT JOIN archive_police_station s ON s.id=a.police_station_id LEFT JOIN archive_port_officer o ON o.id=a.responsible_officer_id WHERE a.fixture_key=#{key} </select>
+  <select id="listWharf" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.port_id AS portId, a.police_station_id AS policeStationId, a.responsible_officer_id AS responsibleOfficerId, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt, p.name AS portName, p.status AS portStatus, s.name AS policeStationName, s.status AS policeStationStatus, o.name AS responsibleOfficerName, o.status AS responsibleOfficerStatus FROM archive_wharf a LEFT JOIN archive_port p ON p.id=a.port_id LEFT JOIN archive_police_station s ON s.id=a.police_station_id LEFT JOIN archive_port_officer o ON o.id=a.responsible_officer_id <include refid="filterWharf"/> ORDER BY a.id DESC LIMIT #{pageSize} OFFSET #{offset} </select>
+  <select id="countWharf" resultType="long"> SELECT COUNT(*) FROM archive_wharf a LEFT JOIN archive_port p ON p.id=a.port_id LEFT JOIN archive_police_station s ON s.id=a.police_station_id LEFT JOIN archive_port_officer o ON o.id=a.responsible_officer_id <include refid="filterWharf"/>
+  </select>
+  <insert id="insertWharf" useGeneratedKeys="true" keyProperty="id"> INSERT INTO archive_wharf (name, region, location, status, purpose, port_id, police_station_id, responsible_officer_id, fixture_key) VALUES (#{name}, #{region}, #{location}, #{status}, #{purpose}, #{portId}, #{policeStationId}, #{responsibleOfficerId}, #{fixtureKey}) </insert>
+  <update id="updateWharf"> UPDATE archive_wharf SET name=#{name}, region=#{region}, location=#{location}, status=#{status}, purpose=#{purpose}, port_id=#{portId}, police_station_id=#{policeStationId}, responsible_officer_id=#{responsibleOfficerId}, version=version+1, updated_at=UTC_TIMESTAMP(6) WHERE id=#{id} AND version=#{version} </update>
+  <delete id="deleteWharf"> DELETE FROM archive_wharf WHERE id=#{id} AND version=#{version} </delete>
+  <sql id="filterAnchorage">
+    <where>
+      <if test="keyword != null"> AND a.name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '!' </if>
+      <if test="region != null"> AND a.region LIKE CONCAT('%', #{region}, '%') ESCAPE '!' </if>
+      <if test="status != null"> AND a.status = #{status} </if>
+    </where>
+  </sql>
+  <select id="findAnchorage" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_anchorage a WHERE a.id=#{id} </select>
+  <select id="lockAnchorage" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT id, name, region, location, status, purpose, fixture_key AS fixtureKey, version, created_at AS createdAt, updated_at AS updatedAt FROM archive_anchorage WHERE id=#{id} FOR UPDATE </select>
+  <select id="findAnchorageFixture" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_anchorage a WHERE a.fixture_key=#{key} </select>
+  <select id="listAnchorage" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.purpose, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_anchorage a <include refid="filterAnchorage"/> ORDER BY a.id DESC LIMIT #{pageSize} OFFSET #{offset} </select>
+  <select id="countAnchorage" resultType="long"> SELECT COUNT(*) FROM archive_anchorage a <include refid="filterAnchorage"/>
+  </select>
+  <insert id="insertAnchorage" useGeneratedKeys="true" keyProperty="id"> INSERT INTO archive_anchorage (name, region, location, status, purpose, fixture_key) VALUES (#{name}, #{region}, #{location}, #{status}, #{purpose}, #{fixtureKey}) </insert>
+  <update id="updateAnchorage"> UPDATE archive_anchorage SET name=#{name}, region=#{region}, location=#{location}, status=#{status}, purpose=#{purpose}, version=version+1, updated_at=UTC_TIMESTAMP(6) WHERE id=#{id} AND version=#{version} </update>
+  <delete id="deleteAnchorage"> DELETE FROM archive_anchorage WHERE id=#{id} AND version=#{version} </delete>
+  <sql id="filterIsland">
+    <where>
+      <if test="keyword != null"> AND a.name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '!' </if>
+      <if test="region != null"> AND a.region LIKE CONCAT('%', #{region}, '%') ESCAPE '!' </if>
+      <if test="status != null"> AND a.status = #{status} </if>
+      <if test="inhabitationType != null"> AND a.inhabitation_type = #{inhabitationType} </if>
+    </where>
+  </sql>
+  <select id="findIsland" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.inhabitation_type AS inhabitationType, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_island a WHERE a.id=#{id} </select>
+  <select id="lockIsland" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT id, name, region, location, status, inhabitation_type AS inhabitationType, fixture_key AS fixtureKey, version, created_at AS createdAt, updated_at AS updatedAt FROM archive_island WHERE id=#{id} FOR UPDATE </select>
+  <select id="findIslandFixture" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.inhabitation_type AS inhabitationType, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_island a WHERE a.fixture_key=#{key} </select>
+  <select id="listIsland" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.inhabitation_type AS inhabitationType, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_island a <include refid="filterIsland"/> ORDER BY a.id DESC LIMIT #{pageSize} OFFSET #{offset} </select>
+  <select id="countIsland" resultType="long"> SELECT COUNT(*) FROM archive_island a <include refid="filterIsland"/>
+  </select>
+  <insert id="insertIsland" useGeneratedKeys="true" keyProperty="id"> INSERT INTO archive_island (name, region, location, status, inhabitation_type, fixture_key) VALUES (#{name}, #{region}, #{location}, #{status}, #{inhabitationType}, #{fixtureKey}) </insert>
+  <update id="updateIsland"> UPDATE archive_island SET name=#{name}, region=#{region}, location=#{location}, status=#{status}, inhabitation_type=#{inhabitationType}, version=version+1, updated_at=UTC_TIMESTAMP(6) WHERE id=#{id} AND version=#{version} </update>
+  <delete id="deleteIsland"> DELETE FROM archive_island WHERE id=#{id} AND version=#{version} </delete>
+  <sql id="filterPoliceStation">
+    <where>
+      <if test="keyword != null"> AND a.name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '!' </if>
+      <if test="region != null"> AND a.region LIKE CONCAT('%', #{region}, '%') ESCAPE '!' </if>
+      <if test="status != null"> AND a.status = #{status} </if>
+    </where>
+  </sql>
+  <select id="findPoliceStation" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_police_station a WHERE a.id=#{id} </select>
+  <select id="lockPoliceStation" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT id, name, region, location, status, fixture_key AS fixtureKey, version, created_at AS createdAt, updated_at AS updatedAt FROM archive_police_station WHERE id=#{id} FOR UPDATE </select>
+  <select id="findPoliceStationFixture" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_police_station a WHERE a.fixture_key=#{key} </select>
+  <select id="listPoliceStation" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.region, a.location, a.status, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt FROM archive_police_station a <include refid="filterPoliceStation"/> ORDER BY a.id DESC LIMIT #{pageSize} OFFSET #{offset} </select>
+  <select id="countPoliceStation" resultType="long"> SELECT COUNT(*) FROM archive_police_station a <include refid="filterPoliceStation"/>
+  </select>
+  <insert id="insertPoliceStation" useGeneratedKeys="true" keyProperty="id"> INSERT INTO archive_police_station (name, region, location, status, fixture_key) VALUES (#{name}, #{region}, #{location}, #{status}, #{fixtureKey}) </insert>
+  <update id="updatePoliceStation"> UPDATE archive_police_station SET name=#{name}, region=#{region}, location=#{location}, status=#{status}, version=version+1, updated_at=UTC_TIMESTAMP(6) WHERE id=#{id} AND version=#{version} </update>
+  <delete id="deletePoliceStation"> DELETE FROM archive_police_station WHERE id=#{id} AND version=#{version} </delete>
+  <sql id="filterPortOfficer">
+    <where>
+      <if test="keyword != null"> AND a.name LIKE CONCAT('%', #{keyword}, '%') ESCAPE '!' </if>
+      <if test="region != null"> AND s.region LIKE CONCAT('%', #{region}, '%') ESCAPE '!' </if>
+      <if test="status != null"> AND a.status = #{status} </if>
+      <if test="policeStationId != null"> AND a.police_station_id = #{policeStationId} </if>
+    </where>
+  </sql>
+  <select id="findPortOfficer" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.status, a.police_station_id AS policeStationId, a.duty, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt, s.region AS region, s.name AS policeStationName, s.status AS policeStationStatus FROM archive_port_officer a JOIN archive_police_station s ON s.id=a.police_station_id WHERE a.id=#{id} </select>
+  <select id="lockPortOfficer" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT id, name, status, police_station_id AS policeStationId, duty, fixture_key AS fixtureKey, version, created_at AS createdAt, updated_at AS updatedAt FROM archive_port_officer WHERE id=#{id} FOR UPDATE </select>
+  <select id="findPortOfficerFixture" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.status, a.police_station_id AS policeStationId, a.duty, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt, s.region AS region, s.name AS policeStationName, s.status AS policeStationStatus FROM archive_port_officer a JOIN archive_police_station s ON s.id=a.police_station_id WHERE a.fixture_key=#{key} </select>
+  <select id="listPortOfficer" resultType="com.merine.rebuild.maritime.persistence.ArchiveRow"> SELECT a.id, a.name, a.status, a.police_station_id AS policeStationId, a.duty, a.fixture_key AS fixtureKey, a.version, a.created_at AS createdAt, a.updated_at AS updatedAt, s.region AS region, s.name AS policeStationName, s.status AS policeStationStatus FROM archive_port_officer a JOIN archive_police_station s ON s.id=a.police_station_id <include refid="filterPortOfficer"/> ORDER BY a.id DESC LIMIT #{pageSize} OFFSET #{offset} </select>
+  <select id="countPortOfficer" resultType="long"> SELECT COUNT(*) FROM archive_port_officer a JOIN archive_police_station s ON s.id=a.police_station_id <include refid="filterPortOfficer"/>
+  </select>
+  <insert id="insertPortOfficer" useGeneratedKeys="true" keyProperty="id"> INSERT INTO archive_port_officer (name, status, police_station_id, duty, fixture_key) VALUES (#{name}, #{status}, #{policeStationId}, #{duty}, #{fixtureKey}) </insert>
+  <update id="updatePortOfficer"> UPDATE archive_port_officer SET name=#{name}, status=#{status}, police_station_id=#{policeStationId}, duty=#{duty}, version=version+1, updated_at=UTC_TIMESTAMP(6) WHERE id=#{id} AND version=#{version} </update>
+  <delete id="deletePortOfficer"> DELETE FROM archive_port_officer WHERE id=#{id} AND version=#{version} </delete>
+  <select id="lockStationOfficers" resultType="long"> SELECT id FROM archive_port_officer WHERE police_station_id=#{id} ORDER BY id FOR UPDATE </select>
+  <select id="lockStationWharfs" resultType="long"> SELECT id FROM archive_wharf WHERE police_station_id=#{id} ORDER BY id FOR UPDATE </select>
+  <select id="lockOfficerWharfs" resultType="long"> SELECT id FROM archive_wharf WHERE responsible_officer_id=#{id} ORDER BY id FOR UPDATE </select>
+  <select id="lockPortWharfs" resultType="long"> SELECT id FROM archive_wharf WHERE port_id=#{id} ORDER BY id FOR UPDATE </select>
+</mapper>

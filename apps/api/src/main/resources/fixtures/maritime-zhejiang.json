@@ -1,0 +1,354 @@
+{
+  "notes": [
+    "地点与机构名称参考公开资料；位置、用途、人员姓名及警务责任配置为本地合成样例，不对应真实人员或已核定的警务管辖关系。"
+  ],
+  "records": [
+    {
+      "kind": "Port",
+      "key": "port.nbzs",
+      "input": {
+        "name": "宁波舟山港",
+        "status": "ENABLED",
+        "region": "宁波市、舟山市",
+        "location": "浙江沿海，主要港区分布于宁波北仑、梅山及舟山金塘一带",
+        "purpose": "集装箱、散杂货及大宗货物运输"
+      }
+    },
+    {
+      "kind": "Port",
+      "key": "port.wz",
+      "input": {
+        "name": "温州港",
+        "status": "ENABLED",
+        "region": "温州市",
+        "location": "温州市沿海，港区分布于瓯江口、状元岙及乐清湾一带",
+        "purpose": "集装箱、散杂货与沿海客货运输"
+      }
+    },
+    {
+      "kind": "Port",
+      "key": "port.jx",
+      "input": {
+        "name": "嘉兴港",
+        "status": "ENABLED",
+        "region": "嘉兴市",
+        "location": "嘉兴市平湖沿海，主要港区位于乍浦、独山港一带",
+        "purpose": "集装箱、散货及临港产业货物运输"
+      }
+    },
+    {
+      "kind": "Port",
+      "key": "port.tz",
+      "input": {
+        "name": "台州港",
+        "status": "ENABLED",
+        "region": "台州市",
+        "location": "台州市沿海，主要港区分布于海门、健跳及大麦屿一带",
+        "purpose": "散杂货、集装箱与沿海客货运输"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.ms",
+      "input": {
+        "name": "宁波市公安局北仑分局梅山派出所",
+        "status": "ENABLED",
+        "region": "宁波市北仑区",
+        "location": "宁波市北仑区梅山街道"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.sjm",
+      "input": {
+        "name": "舟山市公安局普陀区分局沈家门派出所",
+        "status": "ENABLED",
+        "region": "舟山市普陀区",
+        "location": "舟山市普陀区沈家门街道"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.jt",
+      "input": {
+        "name": "舟山市公安局定海区分局金塘派出所",
+        "status": "ENABLED",
+        "region": "舟山市定海区",
+        "location": "舟山市定海区金塘镇"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.ba",
+      "input": {
+        "name": "温州市公安局洞头区分局北岙派出所",
+        "status": "ENABLED",
+        "region": "温州市洞头区",
+        "location": "温州市洞头区北岙街道"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.dmy",
+      "input": {
+        "name": "玉环市公安局大麦屿派出所",
+        "status": "ENABLED",
+        "region": "台州市玉环市",
+        "location": "台州市玉环市大麦屿街道"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.zp",
+      "input": {
+        "name": "嘉兴市公安局港区分局乍浦派出所",
+        "status": "ENABLED",
+        "region": "嘉兴市港区",
+        "location": "嘉兴市平湖市乍浦镇"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.ms",
+      "input": {
+        "name": "陈浩",
+        "status": "ENABLED",
+        "policeStationKey": "station.ms",
+        "duty": "港区责任民警"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.sjm",
+      "input": {
+        "name": "周明远",
+        "status": "ENABLED",
+        "policeStationKey": "station.sjm",
+        "duty": "港区责任民警"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.jt",
+      "input": {
+        "name": "林嘉诚",
+        "status": "ENABLED",
+        "policeStationKey": "station.jt",
+        "duty": "港区责任民警"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.ba",
+      "input": {
+        "name": "吴志航",
+        "status": "ENABLED",
+        "policeStationKey": "station.ba",
+        "duty": "港区责任民警"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.dmy",
+      "input": {
+        "name": "徐立新",
+        "status": "ENABLED",
+        "policeStationKey": "station.dmy",
+        "duty": "港区责任民警"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.zp",
+      "input": {
+        "name": "沈亦凡",
+        "status": "ENABLED",
+        "policeStationKey": "station.zp",
+        "duty": "港区责任民警"
+      }
+    },
+    {
+      "kind": "Wharf",
+      "key": "wharf.ms",
+      "input": {
+        "name": "梅山集装箱码头",
+        "status": "ENABLED",
+        "region": "宁波市北仑区",
+        "location": "宁波市北仑区梅山港区",
+        "purpose": "集装箱装卸、堆存与中转",
+        "portKey": "port.nbzs",
+        "policeStationKey": "station.ms",
+        "responsibleOfficerKey": "officer.ms"
+      }
+    },
+    {
+      "kind": "Wharf",
+      "key": "wharf.cs",
+      "input": {
+        "name": "穿山集装箱码头",
+        "status": "ENABLED",
+        "region": "宁波市北仑区",
+        "location": "宁波市北仑区穿山港区",
+        "purpose": "集装箱装卸与国际航线中转",
+        "portKey": "port.nbzs",
+        "policeStationKey": "station.ms",
+        "responsibleOfficerKey": "officer.ms"
+      }
+    },
+    {
+      "kind": "Wharf",
+      "key": "wharf.dpk",
+      "input": {
+        "name": "大浦口集装箱码头",
+        "status": "ENABLED",
+        "region": "舟山市定海区",
+        "location": "舟山市金塘岛大浦口港区",
+        "purpose": "集装箱装卸、堆存与物流服务",
+        "portKey": "port.nbzs",
+        "policeStationKey": "station.jt",
+        "responsibleOfficerKey": "officer.jt"
+      }
+    },
+    {
+      "kind": "Wharf",
+      "key": "wharf.zya",
+      "input": {
+        "name": "温州港状元岙港区5—6号泊位码头",
+        "status": "ENABLED",
+        "region": "温州市洞头区",
+        "location": "温州市洞头区状元岙港区",
+        "purpose": "集装箱及散杂货装卸",
+        "portKey": "port.wz",
+        "policeStationKey": "station.ba",
+        "responsibleOfficerKey": "officer.ba"
+      }
+    },
+    {
+      "kind": "Wharf",
+      "key": "wharf.dsg",
+      "input": {
+        "name": "嘉兴港独山港区B25—26泊位码头",
+        "status": "ENABLED",
+        "region": "嘉兴市平湖市",
+        "location": "嘉兴市平湖市独山港区",
+        "purpose": "散杂货装卸与临港物流",
+        "portKey": "port.jx",
+        "policeStationKey": "station.zp",
+        "responsibleOfficerKey": "officer.zp"
+      }
+    },
+    {
+      "kind": "Wharf",
+      "key": "wharf.dmy",
+      "input": {
+        "name": "大麦屿港务码头",
+        "status": "ENABLED",
+        "region": "台州市玉环市",
+        "location": "台州市玉环市大麦屿港区",
+        "purpose": "集装箱及散杂货装卸",
+        "portKey": "port.tz",
+        "policeStationKey": "station.dmy",
+        "responsibleOfficerKey": "officer.dmy"
+      }
+    },
+    {
+      "kind": "Anchorage",
+      "key": "anchorage.mz1",
+      "input": {
+        "name": "马峙1号锚地",
+        "status": "ENABLED",
+        "region": "舟山市",
+        "location": "舟山市定海区马峙水道附近水域",
+        "purpose": "船舶候泊与临时锚泊"
+      }
+    },
+    {
+      "kind": "Anchorage",
+      "key": "anchorage.xzm",
+      "input": {
+        "name": "虾峙门北锚地",
+        "status": "ENABLED",
+        "region": "舟山市",
+        "location": "宁波舟山港虾峙门水道北侧水域",
+        "purpose": "进出港船舶候泊与待引"
+      }
+    },
+    {
+      "kind": "Anchorage",
+      "key": "anchorage.jbs",
+      "input": {
+        "name": "交杯山锚地",
+        "status": "ENABLED",
+        "region": "舟山市",
+        "location": "舟山市交杯山附近水域",
+        "purpose": "船舶候泊与临时锚泊"
+      }
+    },
+    {
+      "kind": "Island",
+      "key": "island.1",
+      "input": {
+        "name": "岱山岛",
+        "status": "ENABLED",
+        "region": "舟山市岱山县",
+        "inhabitationType": "INHABITED",
+        "location": "舟山市岱山县中部，岱山本岛"
+      }
+    },
+    {
+      "kind": "Island",
+      "key": "island.2",
+      "input": {
+        "name": "衢山岛",
+        "status": "ENABLED",
+        "region": "舟山市岱山县",
+        "inhabitationType": "INHABITED",
+        "location": "舟山市岱山县东北部，衢山镇"
+      }
+    },
+    {
+      "kind": "Island",
+      "key": "island.3",
+      "input": {
+        "name": "秀山岛",
+        "status": "ENABLED",
+        "region": "舟山市岱山县",
+        "inhabitationType": "INHABITED",
+        "location": "舟山市岱山县南部，秀山乡"
+      }
+    },
+    {
+      "kind": "Island",
+      "key": "island.4",
+      "input": {
+        "name": "小长涂岛",
+        "status": "ENABLED",
+        "region": "舟山市岱山县",
+        "inhabitationType": "INHABITED",
+        "location": "舟山市岱山县东南部，长涂镇周边海域"
+      }
+    },
+    {
+      "kind": "Island",
+      "key": "island.5",
+      "input": {
+        "name": "小衢山岛",
+        "status": "ENABLED",
+        "region": "舟山市岱山县",
+        "inhabitationType": "UNINHABITED",
+        "location": "舟山市岱山县衢山岛周边海域"
+      }
+    },
+    {
+      "kind": "Island",
+      "key": "island.6",
+      "input": {
+        "name": "黄泽山岛",
+        "status": "ENABLED",
+        "region": "舟山市岱山县",
+        "inhabitationType": "UNINHABITED",
+        "location": "舟山市岱山县衢山岛东北侧海域"
+      }
+    }
+  ]
+}

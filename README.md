@@ -2,7 +2,7 @@
 
 React + Java 的独立 monorepo。M1.1 打通了 React 页面 → API → 本地 MySQL 的最小链路；当前在此基础上完成了真实登录闭环、前端公共架构与基于设计稿的基础页面。
 
-> 当前进度（2026-10-01）：登录、系统管理五个模块、**任务处置**与**信息流转**均已接真实 Java API 和本地 MySQL，并已串联本单位研判、基于情报发任务和来源追溯；大队只向直属支队上报，任务结果留在任务模块。菜单/页面/按钮级功能权限已实现；两个业务模块分别按责任链、实际送达及发送链限制数据可见范围，任务背景摘要不授予情报原文权限，系统管理员不自动获得全部业务数据。通用数据范围配置与系统管理的跨单位管理限制仍待实现，详见[本轮边界](#本轮边界)。设计稿只作样式参考；账号与业务样例为合成数据，单位树来自已授权组织参考数据，不含联系人信息。
+> 当前进度（2026-10-07）：登录、系统管理五个模块、**任务处置**与**信息流转**均已接真实 Java API 和本地 MySQL，并已串联本单位研判、基于情报发任务和来源追溯；大队只向直属支队上报，任务结果留在任务模块。菜单/页面/按钮级功能权限已实现；两个业务模块分别按责任链、实际送达及发送链限制数据可见范围，任务背景摘要不授予情报原文权限，系统管理员不自动获得全部业务数据。通用数据范围配置与系统管理的跨单位管理限制仍待实现，详见[本轮边界](#本轮边界)。设计稿只作样式参考；账号、任务与情报样例为合成数据，涉海档案样例使用公开地点、机构名称与虚构人员配置；单位树来自已授权组织参考数据，不含联系人信息。
 
 ## 启动
 
@@ -24,23 +24,26 @@ SEED_ROLE_NAME='系统管理员' SEED_DISPLAY_NAME='陈知远' ./scripts/dev.sh 
 
 密码下限 6 位，上限为 72 个 UTF-8 字节（中文通常占 3 字节）；不足 12 位会打出警告——这类密码只适用于本地合成数据。
 
-| 入口                 | 地址                                            |
-| -------------------- | ----------------------------------------------- |
-| 登录页               | http://127.0.0.1:5173/login                     |
-| 应用首页（登录后）   | http://127.0.0.1:5173/                          |
-| 用户管理（登录后）   | http://127.0.0.1:5173/system/users              |
-| 角色管理（登录后）   | http://127.0.0.1:5173/system/roles              |
-| 菜单管理（登录后）   | http://127.0.0.1:5173/system/menus              |
-| 单位管理（登录后）   | http://127.0.0.1:5173/system/units              |
-| 字典管理（登录后）   | http://127.0.0.1:5173/system/dictionaries       |
-| 任务处置（登录后）   | http://127.0.0.1:5173/collaboration/tasks       |
-| 信息流转（登录后）   | http://127.0.0.1:5173/collaboration/flows       |
-| 工程诊断（联调探针） | http://127.0.0.1:5173/dev/diagnostics           |
-| 业务接口（需登录）   | http://127.0.0.1:9002/api/bootstrap             |
-| 后端就绪探针         | http://127.0.0.1:9002/actuator/health/readiness |
-| Swagger UI（需登录） | http://127.0.0.1:9002/api/docs                  |
-| OpenAPI（需登录）    | http://127.0.0.1:9002/api/openapi               |
-| MySQL 宿主端口       | `127.0.0.1:3307`                                |
+| 入口                   | 地址                                            |
+| ---------------------- | ----------------------------------------------- |
+| 登录页                 | http://127.0.0.1:5173/login                     |
+| 应用首页（登录后）     | http://127.0.0.1:5173/                          |
+| 用户管理（登录后）     | http://127.0.0.1:5173/system/users              |
+| 角色管理（登录后）     | http://127.0.0.1:5173/system/roles              |
+| 菜单管理（登录后）     | http://127.0.0.1:5173/system/menus              |
+| 单位管理（登录后）     | http://127.0.0.1:5173/system/units              |
+| 字典管理（登录后）     | http://127.0.0.1:5173/system/dictionaries       |
+| 任务处置（登录后）     | http://127.0.0.1:5173/collaboration/tasks       |
+| 港口与停泊点（登录后） | http://127.0.0.1:5173/maritime/harbor-sites     |
+| 海岛（登录后）         | http://127.0.0.1:5173/maritime/islands          |
+| 警务资源（登录后）     | http://127.0.0.1:5173/maritime/police-resources |
+| 信息流转（登录后）     | http://127.0.0.1:5173/collaboration/flows       |
+| 工程诊断（联调探针）   | http://127.0.0.1:5173/dev/diagnostics           |
+| 业务接口（需登录）     | http://127.0.0.1:9002/api/bootstrap             |
+| 后端就绪探针           | http://127.0.0.1:9002/actuator/health/readiness |
+| Swagger UI（需登录）   | http://127.0.0.1:9002/api/docs                  |
+| OpenAPI（需登录）      | http://127.0.0.1:9002/api/openapi               |
+| MySQL 宿主端口         | `127.0.0.1:3307`                                |
 
 开发编排同时启用 `dev` profile 与本地免密登录开关：登录页从本地数据库列出可用账号，选择后即可建立会话，无需输入密码。停用账号不会出现在下拉框；其他环境默认不注册此入口，交付构建仍使用账号密码登录。开发环境的账号列表与选择登录接口分别为 `GET /api/auth/dev/accounts`、`POST /api/auth/dev/session`，后者仍校验 CSRF。
 
@@ -173,6 +176,10 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 - **任务处置** `/collaboration/tasks`：承接、办理、下发、退回重派、支队交接、正式结果和总体办结；详见[任务设计及验收](docs/tasks/task-handling-design-plan.md)。
 - **信息流转** `/collaboration/flows`：草稿、范围冻结、发送、每次送达签收、反馈、继续共享和源头补充更正；详见[信息流转设计及验收](docs/tasks/information-flow-design-plan.md)。
 - **工程诊断** `/dev/diagnostics`：页面 → API → MySQL 的最小读写链路与探针记录。
+
+**涉海要素第一版**：三个菜单对应 `archive_port`、`archive_wharf`、`archive_anchorage`、`archive_island`、`archive_police_station`、`archive_port_officer` 六张档案表。支持分页查询、详情、新增、编辑、启停与删除，以及港口 → 码头 → 派出所 / 主要责任民警和反向责任查询。按页面及对象维护权限统一授权，不按单位过滤；派出所档案独立于单位树和登录账号。被引用的港口、派出所、民警不能删除；停用保留已有关系，新关联只允许启用档案，版本冲突返回409。
+
+运行 `./scripts/dev.sh seed-maritime` 向**本项目开发库**填入31条固定样例；普通启动和迁移不填样例，重复执行只补缺失的 `fixture_key`，不覆盖人工修改。清单在 `apps/api/src/main/resources/fixtures/maritime-zhejiang.json`，不在运行时访问网页。地点与机构名称参考公开资料，位置、用途、民警姓名和警务责任配置为本地合成样例；档案仅维护业务字段，不保存来源、资料日期、查阅日期或演示标识。接口入口为 `maritime/*Controller`，事务规则在 `MaritimeService`，固定 SQL 在 `mapper/maritime/MaritimeMapper.xml`。警务页反向查询用 `/api/maritime/options/wharf-relations` 最小摘要；完整码头档案仍需港口页面查看权限。
 
 **已经接真实的**：登录、退出、当前身份与 CSRF（Spring Security Session + HttpOnly Cookie，账号落 `sys_user`，密码 BCrypt 哈希）；用户、角色、菜单、单位、字典与功能权限的查询与写入；单位三级组织树与 50 行已授权组织参考数据；路由守卫、身份恢复、会话失效处理。
 

@@ -48,6 +48,15 @@ public class ApiExceptionHandler {
                 .body(ApiResponse.error("INVALID_PARAMETER", "参数格式不正确：" + error.getName(), request));
     }
 
+    /** 删除等接口的必填版本参数缺失属于400，不能落入未预期异常。 */
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    ResponseEntity<ApiResponse<Void>> missingParameter(
+            org.springframework.web.bind.MissingServletRequestParameterException error,
+            HttpServletRequest request) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error("INVALID_PARAMETER", "缺少必要参数：" + error.getParameterName(), request));
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     ResponseEntity<ApiResponse<Void>> notFound(HttpServletRequest request) {
         return ResponseEntity.status(404).body(ApiResponse.error("NOT_FOUND", "请求的资源不存在", request));

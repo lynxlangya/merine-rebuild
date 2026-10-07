@@ -151,6 +151,16 @@ case "${1:-help}" in
       api ./mvnw -B spring-boot:run
     unset seed_password
     ;;
+  seed-maritime)
+    require_env
+    load_env
+    compose config --quiet
+    compose build api
+    compose up -d --wait --wait-timeout 180 mysql
+    compose run --rm --no-deps -T migrate < /dev/null
+    # 只复用开发栈 DB_URL；没有 prod-* 入口、覆盖参数或自动启动填充。
+    compose run --rm --no-deps -T -e SPRING_PROFILES_ACTIVE=seed-maritime api ./mvnw -B spring-boot:run
+    ;;
   test-db)
     require_env
     ensure_env_key MYSQL_TEST_PASSWORD
@@ -246,7 +256,7 @@ case "${1:-help}" in
     compose_prod down
     ;;
   *)
-    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|menus|test-db|status|logs [service]|restart [api|web]|down|check|build|prod-build|prod-up|prod-seed|prod-down}\n'
+    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|seed-maritime|menus|test-db|status|logs [service]|restart [api|web]|down|check|build|prod-build|prod-up|prod-seed|prod-down}\n'
     printf 'up starts the local development stack; down preserves all named volumes.\n'
     printf 'restart recompiles and restarts api/web (Java changes are not hot-reloaded).\n'
     printf 'prod-* builds and runs the delivery-shaped images (jar + nginx) for a local rehearsal.\n'

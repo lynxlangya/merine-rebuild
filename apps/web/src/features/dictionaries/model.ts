@@ -6,6 +6,7 @@ import type { DictionaryItemView, DictionaryView } from '@merine/api-contract';
  */
 export const DICTIONARY_CODES = {
   status: 'common.status',
+  islandInhabitation: 'maritime.island.inhabitation',
   menuType: 'system.menu.type',
   unitLevel: 'system.unit.level',
   taskResultOutcome: 'task.result.outcome',
