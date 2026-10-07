@@ -8,6 +8,7 @@ import { PageHeader } from '../../shared/ui/PageHeader';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { useAuth } from '../auth/public';
+import { maritimeKeys } from '../maritime/public';
 import {
   EMPTY_USER_FILTERS,
   isPageOutOfRangeError,
@@ -92,6 +93,7 @@ export function UserListPage() {
       setStatusRequest(null);
       setSelectedIds([]);
       await queryClient.invalidateQueries({ queryKey: userKeys.lists });
+      await queryClient.invalidateQueries({ queryKey: maritimeKeys.all });
       message.success(
         request.ids.length === 1
           ? `已${request.enable ? '启用' : '禁用'}账号 ${updated[0]?.loginName ?? request.ids[0]}`

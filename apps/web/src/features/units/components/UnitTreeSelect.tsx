@@ -13,6 +13,7 @@ export interface UnitTreeSelectProps {
   loading?: boolean;
   /** 编辑用户时，当前已停用的单位仍应显示，避免下拉回落到编码。 */
   currentCode?: string;
+  allowedLevels?: readonly number[];
 }
 
 /**
@@ -30,9 +31,10 @@ export function UnitTreeSelect({
   allowClear = false,
   loading = false,
   currentCode,
+  allowedLevels,
 }: UnitTreeSelectProps) {
   const units = useUnitOptionsQuery();
-  const treeData = buildUnitSelectTree(units.data ?? [], currentCode);
+  const treeData = buildUnitSelectTree(units.data ?? [], currentCode, allowedLevels);
 
   return (
     <TreeSelect<string>

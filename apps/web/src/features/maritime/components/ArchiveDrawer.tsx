@@ -10,6 +10,8 @@ import { archives, writeInput, type ArchiveKind, type ArchiveRecord } from '../m
 import { maritimeKeys } from '../queries';
 import styles from '../Maritime.module.css';
 import { ArchiveSelect } from './ArchiveSelect';
+import { OfficerUserSelect } from './OfficerUserSelect';
+import { UnitTreeSelect } from '../../units/public';
 
 export function ArchiveDrawer({
   kind,
@@ -66,7 +68,7 @@ export function ArchiveDrawer({
       <Drawer
         open
         width={640}
-        title={`${record ? '编辑' : '新建'}${archives[kind].label}${record ? ' · ' + record.name : ''}`}
+        title={`${record ? '编辑' : kind === 'port-officers' ? '添加' : '新建'}${archives[kind].label}${record ? ' · ' + record.name : ''}`}
         onClose={close}
         mask={{ closable: !save.isPending }}
         keyboard={!save.isPending}
@@ -95,8 +97,10 @@ export function ArchiveDrawer({
           onValuesChange={(changed) => {
             setDirty(true);
             save.reset();
-            if ('policeStationId' in changed && kind === 'wharfs')
-              form.setFieldValue('responsibleOfficerId', undefined);
+            if ('policeStationId' in changed) {
+              if (kind === 'wharfs') form.setFieldValue('responsibleOfficerId', undefined);
+              if (kind === 'port-officers' && !record) form.setFieldValue('userId', undefined);
+            }
           }}
           onFinish={(values) => {
             if (record && record.status !== values.status) setStatusValues(values);
@@ -113,14 +117,25 @@ export function ArchiveDrawer({
             />
           )}
           <div className={styles.drawerGrid}>
-            <Form.Item
-              name="name"
-              label={kind === 'port-officers' ? '姓名' : '名称'}
-              rules={nameRule}
-              className={styles.full}
-            >
-              <Input placeholder="请输入" maxLength={120} autoFocus />
-            </Form.Item>
+            {kind !== 'port-officers' && (
+              <Form.Item name="name" label="名称" rules={nameRule} className={styles.full}>
+                <Input placeholder="请输入" maxLength={120} autoFocus />
+              </Form.Item>
+            )}
+            {kind === 'police-stations' && (
+              <Form.Item
+                name="unitCode"
+                label="所属单位"
+                rules={[{ required: true, message: '请选择所属支队或大队' }]}
+                className={styles.full}
+              >
+                <UnitTreeSelect
+                  placeholder="请选择所属支队或大队"
+                  currentCode={record?.unitCode}
+                  allowedLevels={[2, 3]}
+                />
+              </Form.Item>
+            )}
             {kind !== 'port-officers' && (
               <>
                 <Form.Item
@@ -223,6 +238,29 @@ export function ArchiveDrawer({
             )}
             {kind === 'port-officers' && (
               <>
+                <Form.Item
+                  name="userId"
+                  label="民警"
+                  rules={[{ required: true, message: '请选择民警' }]}
+                  className={styles.full}
+                  extra={
+                    record
+                      ? '人员身份由用户管理维护。'
+                      : '只显示同单位的启用用户；已有派出所归属的用户不可重复添加。'
+                  }
+                >
+                  {record ? (
+                    <Select
+                      placeholder="请选择"
+                      disabled
+                      options={[
+                        { value: record.userId, label: `${record.name} · ${record.loginName}` },
+                      ]}
+                    />
+                  ) : (
+                    <OfficerUserSelect key={stationId ?? 'none'} stationId={stationId} />
+                  )}
+                </Form.Item>
                 <Form.Item name="duty" label="职务">
                   <Input placeholder="请输入" maxLength={120} />
                 </Form.Item>

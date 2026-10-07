@@ -443,13 +443,17 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
                 {"archive_wharf", "port_id", "archive_port"},
                 {"archive_wharf", "police_station_id", "archive_police_station"},
                 {"archive_wharf", "responsible_officer_id", "archive_port_officer"},
-                {"archive_port_officer", "police_station_id", "archive_police_station"}
+                {"archive_port_officer", "police_station_id", "archive_police_station"},
+                {"archive_port_officer", "user_id", "sys_user"},
+                {"archive_police_station", "unit_id", "sys_unit"}
         };
         for (String[] relation : maritimeReferences) {
             checks.put(relation[0] + "." + relation[1], "SELECT COUNT(*) FROM " + relation[0]
                     + " c LEFT JOIN " + relation[2] + " p ON p.id=c." + relation[1]
                     + " WHERE c." + relation[1] + " IS NOT NULL AND p.id IS NULL");
         }
+        checks.put("station owner is brigade or battalion", "SELECT COUNT(*) FROM archive_police_station s JOIN sys_unit u ON u.id=s.unit_id WHERE u.unit_level NOT IN (2,3)");
+        checks.put("member and station share unit", "SELECT COUNT(*) FROM archive_port_officer o JOIN sys_user u ON u.id=o.user_id JOIN archive_police_station s ON s.id=o.police_station_id WHERE u.unit_id<>s.unit_id");
         checks.put("archive_wharf officer belongs to station", "SELECT COUNT(*) FROM archive_wharf w JOIN archive_port_officer o ON o.id=w.responsible_officer_id WHERE w.police_station_id IS NULL OR w.police_station_id<>o.police_station_id");
         return checks;
     }

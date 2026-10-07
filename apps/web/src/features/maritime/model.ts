@@ -37,7 +37,7 @@ export type ArchiveRecord = Pick<
   PortView,
   'id' | 'name' | 'region' | 'status' | 'version' | 'createdAt' | 'updatedAt' | 'fixtureKey'
 > &
-  Partial<WharfView & IslandView & Omit<PortOfficerView, 'policeStationId'>>;
+  Partial<WharfView & IslandView & Omit<PortOfficerView, 'policeStationId'> & PoliceStationView>;
 export const archives = {
   ports: {
     label: '港口',
@@ -122,7 +122,9 @@ export function writeInput(
   };
   if (kind === 'port-officers')
     return {
-      ...common,
+      version,
+      status: values.status ?? 'ENABLED',
+      userId: values.userId ?? '',
       policeStationId: values.policeStationId ?? '',
       duty: values.duty || null,
     };
@@ -141,6 +143,6 @@ export function writeInput(
     };
   if (kind === 'islands')
     return { ...located, inhabitationType: values.inhabitationType ?? 'INHABITED' };
-  if (kind === 'police-stations') return located;
+  if (kind === 'police-stations') return { ...located, unitCode: values.unitCode ?? '' };
   return { ...located, purpose: values.purpose || null };
 }

@@ -6,6 +6,9 @@ import java.time.Instant;
 public record PoliceStationView(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String id,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String unitCode,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String unitName,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) int unitLevel,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String region,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = true) String location,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String status,

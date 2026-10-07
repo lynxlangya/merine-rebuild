@@ -4,7 +4,7 @@
 START TRANSACTION;
 SELECT id FROM sys_role WHERE role_code='SYSTEM_ADMIN' FOR UPDATE;
 INSERT INTO sys_role (role_code,role_name,description)
-SELECT 'INFORMATION_FLOW_DEMO','信息流转演示员','本地合成账号的独立信息共享功能权限'
+SELECT 'INFORMATION_FLOW_DEMO','信息流转员','本地合成账号的独立信息共享功能权限'
 WHERE NOT EXISTS (SELECT 1 FROM sys_role WHERE role_code='INFORMATION_FLOW_DEMO');
 -- 新操作权限加入既有演示角色前，使持有者旧会话失效；重复执行没有缺失权限时不再更新。
 UPDATE sys_user u JOIN sys_user_role ur ON ur.user_id=u.id

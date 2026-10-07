@@ -7,6 +7,7 @@ import jakarta.validation.constraints.*;
 public record WritePoliceStation(
         @PositiveOrZero @Schema(nullable = true, description = "新建不传；编辑必填，缺失返回400，旧版本返回409") Integer version,
         @NotBlank @Size(max = 120) @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = false) String name,
+        @NotBlank @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "所属支队或大队的单位编码") String unitCode,
         @NotBlank @Size(max = 120) @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = false) String region,
         @Size(max = 200) @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, nullable = true) String location,
         @NotBlank @Pattern(regexp = "ENABLED|DISABLED") @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = false) String status

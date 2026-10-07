@@ -22,3 +22,4 @@ export type PortOfficerView = components['schemas']['PortOfficerView'];
 export type WritePortOfficer = components['schemas']['WritePortOfficer'];
 export type PageResultPortOfficerView = components['schemas']['PageResultPortOfficerView'];
 export type WharfRelationView = components['schemas']['WharfRelationView'];
+export type OfficerUserOption = components['schemas']['OfficerUserOption'];

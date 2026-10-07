@@ -6,6 +6,11 @@ import java.time.Instant;
 public record PortOfficerView(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String id,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String userId,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String loginName,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String userStatus,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String unitCode,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String unitName,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String status,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String policeStationId,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, nullable = true) String duty,

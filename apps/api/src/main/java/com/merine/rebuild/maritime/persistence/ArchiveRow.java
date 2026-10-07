@@ -4,6 +4,13 @@ package com.merine.rebuild.maritime.persistence;
 public class ArchiveRow {
     public Long id;
     public String name;
+    public Long unitId;
+    public String unitCode;
+    public String unitName;
+    public Integer unitLevel;
+    public Long userId;
+    public String loginName;
+    public String userStatus;
     public String region;
     public String location;
     public String purpose;

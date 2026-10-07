@@ -61,6 +61,7 @@ export function PoliceResourcesPage() {
           : currentUrl
       }
       returnTo={params.get('returnTo')}
+      showBack={detailKind !== 'police-stations'}
       onEdit={
         hasPermission(codes, archives[detailKind].update)
           ? (row) => maintenance.edit(detailKind, row)
@@ -86,7 +87,7 @@ export function PoliceResourcesPage() {
                         maintenance.create('port-officers', { policeStationId: row.id })
                       }
                     >
-                      新增所属民警
+                      添加民警
                     </Button>
                   )}
               </div>
@@ -124,7 +125,7 @@ export function PoliceResourcesPage() {
             )}
             {hasPermission(codes, PERMISSIONS.maritimePortOfficerCreate) && (
               <Button type="primary" onClick={() => maintenance.create('port-officers')}>
-                新建民警
+                添加民警
               </Button>
             )}
           </Space>

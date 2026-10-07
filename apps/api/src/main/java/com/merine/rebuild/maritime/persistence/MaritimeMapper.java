@@ -51,9 +51,17 @@ public interface MaritimeMapper {
     ArchiveRow findPortOfficerFixture(@Param("key") String key);
     List<ArchiveRow> listPortOfficer(ArchiveQuery query);
     long countPortOfficer(ArchiveQuery query);
+    List<ArchiveRow> listOfficerOptions(ArchiveQuery query);
+    long countOfficerOptions(ArchiveQuery query);
     int insertPortOfficer(ArchiveRow row);
     int updatePortOfficer(ArchiveRow row);
     int deletePortOfficer(@Param("id") long id, @Param("version") int version);
+    List<com.merine.rebuild.maritime.dto.UnitPoliceStation> unitStations(@Param("unitCode") String unitCode, @Param("offset") long offset, @Param("limit") int limit);
+    long countUnitStations(@Param("unitCode") String unitCode);
+    List<Long> lockUnitStations(@Param("unitId") long unitId);
+    List<Long> lockUserOfficers(@Param("userId") long userId);
+    List<com.merine.rebuild.maritime.dto.OfficerUserOption> userCandidates(@Param("unitId") long unitId, @Param("keyword") String keyword, @Param("offset") long offset, @Param("limit") int limit);
+    long countUserCandidates(@Param("unitId") long unitId, @Param("keyword") String keyword);
     List<Long> lockStationOfficers(@Param("id") long id);
     List<Long> lockStationWharfs(@Param("id") long id);
     List<Long> lockOfficerWharfs(@Param("id") long id);

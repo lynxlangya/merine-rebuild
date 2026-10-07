@@ -51,6 +51,21 @@ public class UnitLookup {
         return locked == null || !found.code().equals(locked.code()) ? null : toSummary(locked);
     }
 
+    public record Reference(long id, String code, String name, String status, int level) {}
+    @Transactional(readOnly = true)
+    public Reference referenceByCode(String code) {
+        UnitRow row = mapper.findByCode(code);
+        return row == null ? null : reference(row);
+    }
+    @Transactional
+    public Reference lockReference(long id) {
+        UnitRow row = mapper.findByIdForShare(id);
+        return row == null ? null : reference(row);
+    }
+    private static Reference reference(UnitRow row) {
+        return new Reference(row.id(), row.code(), row.name(), row.status(), row.level());
+    }
+
     private static UnitSummary toSummary(UnitRow row) {
         return new UnitSummary(row.code(), row.name(), row.status(), row.parentCode(), row.level());
     }

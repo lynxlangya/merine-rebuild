@@ -15,6 +15,7 @@ export function ArchiveDetail({
   id,
   currentUrl,
   returnTo,
+  showBack = true,
   onEdit,
   onDelete,
   children,
@@ -23,6 +24,7 @@ export function ArchiveDetail({
   id: string;
   currentUrl: string;
   returnTo: string | null;
+  showBack?: boolean;
   onEdit?: (row: ArchiveRecord) => void;
   onDelete?: (row: ArchiveRecord) => void;
   children?: (record: ArchiveRecord) => React.ReactNode;
@@ -64,6 +66,24 @@ export function ArchiveDetail({
     );
   }
   const items = [
+    ...(kind === 'police-stations'
+      ? [{ key: 'unit', label: '所属单位', children: row.unitName }]
+      : []),
+    ...(kind === 'port-officers'
+      ? [
+          {
+            key: 'account',
+            label: '关联账号',
+            children: (
+              <Space>
+                {row.loginName}
+                {row.userStatus === 'DISABLED' && <Tag>账号已停用</Tag>}
+              </Space>
+            ),
+          },
+          { key: 'unit', label: '所属单位', children: row.unitName },
+        ]
+      : []),
     { key: 'region', label: '所在区域', children: row.region },
     {
       key: 'status',
@@ -138,15 +158,17 @@ export function ArchiveDetail({
   ];
   return (
     <div className={styles.detail}>
-      <DetailBackLink to={safeReturn(returnTo, archives[kind].path + '?type=' + kind)}>
-        {returnTo &&
-        new URL(
-          safeReturn(returnTo, archives[kind].path),
-          'https://local.invalid',
-        ).searchParams.has('id')
-          ? '返回上一步'
-          : `返回${archives[kind].label}列表`}
-      </DetailBackLink>
+      {showBack && (
+        <DetailBackLink to={safeReturn(returnTo, archives[kind].path + '?type=' + kind)}>
+          {returnTo &&
+          new URL(
+            safeReturn(returnTo, archives[kind].path),
+            'https://local.invalid',
+          ).searchParams.has('id')
+            ? '返回上一步'
+            : `返回${archives[kind].label}列表`}
+        </DetailBackLink>
+      )}
       <PageHeader
         title={row.name}
         demo={false}

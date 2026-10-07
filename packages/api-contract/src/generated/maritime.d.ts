@@ -73,6 +73,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/maritime/options/officer-users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['maritimeOptionsOfficerUsers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/maritime/options/police-stations': {
     parameters: {
       query?: never;
@@ -344,6 +360,14 @@ export interface components {
       message: string;
       requestId: string;
     };
+    ApiResponsePageResultOfficerUserOption: {
+      code: string;
+      data: components['schemas']['PageResultOfficerUserOption'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
     ApiResponsePageResultPoliceStationView: {
       code: string;
       data: components['schemas']['PageResultPoliceStationView'];
@@ -449,6 +473,11 @@ export interface components {
       /** Format: int32 */
       version: number;
     };
+    OfficerUserOption: {
+      id: string;
+      loginName: string;
+      name: string;
+    };
     PageResultAnchorageView: {
       items: components['schemas']['AnchorageView'][];
       /** Format: int32 */
@@ -469,6 +498,15 @@ export interface components {
     };
     PageResultIslandView: {
       items: components['schemas']['IslandView'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      pageSize: number;
+      /** Format: int64 */
+      total: number;
+    };
+    PageResultOfficerUserOption: {
+      items: components['schemas']['OfficerUserOption'][];
       /** Format: int32 */
       page: number;
       /** Format: int32 */
@@ -530,6 +568,10 @@ export interface components {
       name: string;
       region: string;
       status: string;
+      unitCode: string;
+      /** Format: int32 */
+      unitLevel: number;
+      unitName: string;
       /** Format: date-time */
       updatedAt: string;
       /** Format: int32 */
@@ -541,14 +583,19 @@ export interface components {
       duty: string | null;
       fixtureKey: string | null;
       id: string;
+      loginName: string;
       name: string;
       policeStationId: string;
       policeStationName: string | null;
       policeStationStatus: string | null;
       region: string;
       status: string;
+      unitCode: string;
+      unitName: string;
       /** Format: date-time */
       updatedAt: string;
+      userId: string;
+      userStatus: string;
       /** Format: int32 */
       version: number;
     };
@@ -627,6 +674,8 @@ export interface components {
       name: string;
       region: string;
       status: string;
+      /** @description 所属支队或大队的单位编码 */
+      unitCode: string;
       /**
        * Format: int32
        * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
@@ -647,9 +696,10 @@ export interface components {
     };
     WritePortOfficer: {
       duty?: string | null;
-      name: string;
       policeStationId: string;
       status: string;
+      /** @description 关联用户 ID；编辑不可更换身份 */
+      userId: string;
       /**
        * Format: int32
        * @description 新建不传；编辑必填，缺失返回400，旧版本返回409
@@ -921,6 +971,31 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseVoid'];
+        };
+      };
+    };
+  };
+  maritimeOptionsOfficerUsers: {
+    parameters: {
+      query: {
+        policeStationId: number;
+        keyword?: string;
+        page?: number;
+        pageSize?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePageResultOfficerUserOption'];
         };
       };
     };

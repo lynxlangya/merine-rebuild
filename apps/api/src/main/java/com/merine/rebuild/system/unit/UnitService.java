@@ -3,6 +3,7 @@ package com.merine.rebuild.system.unit;
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.system.user.usage.UserUnitUsageLookup;
 import com.merine.rebuild.task.TaskUnitUsageLookup;
+import com.merine.rebuild.maritime.MaritimeResourceLookup;
 import com.merine.rebuild.intelligence.IntelligenceUnitUsageLookup;
 import com.merine.rebuild.system.unit.dto.UnitRequests;
 import com.merine.rebuild.system.unit.dto.UnitTreeNode;
@@ -32,12 +33,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class UnitService {
     private static final int MAX_LEVEL = 3;
 
+    private final MaritimeResourceLookup maritime;
     private final UnitMapper mapper;
     private final UserUnitUsageLookup userUsage;
     private final TaskUnitUsageLookup taskUsage;
     private final IntelligenceUnitUsageLookup intelligenceUsage;
 
-    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage, TaskUnitUsageLookup taskUsage, IntelligenceUnitUsageLookup intelligenceUsage) {
+    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage, TaskUnitUsageLookup taskUsage, IntelligenceUnitUsageLookup intelligenceUsage, MaritimeResourceLookup maritime) {
+        this.maritime = maritime;
         this.mapper = mapper;
         this.userUsage = userUsage;
         this.taskUsage = taskUsage;
@@ -95,6 +98,9 @@ public class UnitService {
             throw levelLimit("调整上级后会产生第四级单位");
         }
 
+        if (parent.level() < 2 && maritime.unitHasStations(current.id())) {
+            throw new ApiException(HttpStatus.CONFLICT,"UNIT_HAS_STATIONS","该单位仍有所属派出所，不能改为总队层级");
+        }
         int updated = mapper.update(current.id(), name, parent.id(), parent.level(), areaCode,
                 request.version());
         if (updated == 0) {
@@ -119,6 +125,9 @@ public class UnitService {
         if (directChildCount(rows, target.id()) > 0) {
             throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_CHILDREN",
                     "该单位还有下级单位，不能删除");
+        }
+        if (maritime.unitHasStations(target.id())) {
+            throw new ApiException(HttpStatus.CONFLICT,"UNIT_HAS_STATIONS","该单位还有所属派出所，不能删除");
         }
         long userCount = userCountsForWrite(rows).getOrDefault(target.id(), 0L);
         if (userCount > 0) {

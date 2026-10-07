@@ -55,3 +55,21 @@ export function fetchWharfRelations(filters: ArchiveFilters, signal?: AbortSigna
     { signal },
   );
 }
+
+export function fetchOfficerUsers(
+  stationId: string,
+  keyword: string,
+  page: number,
+  signal?: AbortSignal,
+) {
+  return request<ArchivePage<import('@merine/api-contract').OfficerUserOption>>(
+    `/api/maritime/options/officer-users?${query({ policeStationId: stationId, keyword, page, pageSize: 50 })}`,
+    { signal },
+  );
+}
+export function fetchUnitPoliceStations(unitCode: string, page: number, signal?: AbortSignal) {
+  return request<import('@merine/api-contract').PageResultUnitPoliceStation>(
+    `/api/system/units/${encodeURIComponent(unitCode)}/police-stations?page=${page}&pageSize=10`,
+    { signal },
+  );
+}

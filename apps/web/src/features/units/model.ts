@@ -31,6 +31,7 @@ export interface UnitSelectNode {
 export function buildUnitSelectTree(
   units: readonly UnitSummary[],
   currentCode?: string,
+  allowedLevels?: readonly number[],
 ): UnitSelectNode[] {
   const byCode = new Map(units.map((unit) => [unit.code, unit]));
   const children = new Map<string, UnitSummary[]>();
@@ -50,7 +51,9 @@ export function buildUnitSelectTree(
     [...list].sort((left, right) => left.code.localeCompare(right.code));
 
   const build = (unit: UnitSummary): UnitSelectNode => {
-    const disabled = unit.status !== 'ENABLED' && unit.code !== currentCode;
+    const disabled =
+      (unit.status !== 'ENABLED' && unit.code !== currentCode) ||
+      Boolean(allowedLevels && !allowedLevels.includes(unit.level));
     return {
       value: unit.code,
       title: unit.name,

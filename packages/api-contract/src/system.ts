@@ -36,3 +36,5 @@ export type CreateDictionary = components['schemas']['CreateDictionary'];
 export type UpdateDictionary = components['schemas']['UpdateDictionary'];
 export type CreateDictionaryItem = components['schemas']['CreateDictionaryItem'];
 export type UpdateDictionaryItem = components['schemas']['UpdateDictionaryItem'];
+export type UnitPoliceStation = components['schemas']['UnitPoliceStation'];
+export type PageResultUnitPoliceStation = components['schemas']['PageResultUnitPoliceStation'];

@@ -1,6 +1,9 @@
 package com.merine.rebuild.system.unit;
 
 import com.merine.rebuild.common.ApiResponse;
+import com.merine.rebuild.common.PageResult;
+import com.merine.rebuild.maritime.MaritimeResourceLookup;
+import com.merine.rebuild.maritime.dto.UnitPoliceStation;
 import com.merine.rebuild.system.security.PermissionCodes;
 import com.merine.rebuild.system.security.PermissionGuard;
 import com.merine.rebuild.system.unit.dto.UnitRequests;
@@ -34,11 +37,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/system/units")
 @Tag(name = "单位管理", description = "组织树查询、新增、编辑与删除")
 public class UnitController {
+    private final MaritimeResourceLookup maritime;
     private final UnitLookup units;
     private final UnitService admin;
     private final PermissionGuard guard;
 
-    public UnitController(UnitLookup units, UnitService admin, PermissionGuard guard) {
+    public UnitController(UnitLookup units, UnitService admin, PermissionGuard guard, MaritimeResourceLookup maritime) {
+        this.maritime = maritime;
         this.units = units;
         this.admin = admin;
         this.guard = guard;
@@ -51,7 +56,7 @@ public class UnitController {
         // 单位选项同时服务单位管理页与用户表单：拥有任一相关权限即可读取，
         // 否则只做用户管理的人会因为没有单位管理权限而选不了单位。
         guard.requireAny(authentication,
-                List.of(PermissionCodes.UNIT_READ, PermissionCodes.USER_READ),
+                List.of(PermissionCodes.UNIT_READ, PermissionCodes.USER_READ, PermissionCodes.MARITIME__POLICE_STATION_CREATE, PermissionCodes.MARITIME__POLICE_STATION_UPDATE),
                 "没有查看单位选项的权限");
         return ApiResponse.success(units.listAll(), request);
     }
@@ -62,6 +67,16 @@ public class UnitController {
                                                 HttpServletRequest request) {
         guard.require(authentication, PermissionCodes.UNIT_READ, "没有查看单位的权限");
         return ApiResponse.success(admin.tree(), request);
+    }
+
+    @GetMapping("/{code}/police-stations")
+    @Operation(summary = "查询单位直属派出所摘要")
+    public ApiResponse<PageResult<UnitPoliceStation>> policeStations(@PathVariable String code,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue="1") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue="20") int pageSize,
+            Authentication authentication, HttpServletRequest request) {
+        guard.require(authentication,PermissionCodes.UNIT_READ,"没有查看单位的权限");
+        return ApiResponse.success(maritime.unitStations(code,page,pageSize),request);
     }
 
     @PostMapping

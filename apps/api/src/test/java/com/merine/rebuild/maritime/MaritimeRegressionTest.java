@@ -17,6 +17,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /** 隔离 MySQL：六类协议、版本、权限、责任不变量、幂等填充与真实事务竞争。 */
 class MaritimeRegressionTest extends SystemAdminRegressionSupport {
+    @Autowired com.merine.rebuild.system.unit.UnitService unitAdmin;
+    @Autowired com.merine.rebuild.system.user.admin.UserAdminService userAdmin;
     @Autowired MaritimeService service;
     @Autowired MaritimeFixtureInitializer fixtures;
     @Autowired DataSource dataSource;
@@ -34,8 +36,17 @@ class MaritimeRegressionTest extends SystemAdminRegressionSupport {
         for (String table : List.of("archive_wharf", "archive_port_officer", "archive_island", "archive_anchorage", "archive_port", "archive_police_station")) jdbcTemplate.update("DELETE FROM " + table);
     }
     private WritePort portInput(Integer version, String status) { return new WritePort(version,"回归港口","回归区域",null,status,null); }
-    private WritePoliceStation stationInput(Integer version, String status) { return new WritePoliceStation(version,"回归派出所","回归区域",null,status); }
-    private WritePortOfficer officerInput(Integer version, String station, String status) { return new WritePortOfficer(version,"测试民警",status,station,"责任民警"); }
+    private WritePoliceStation stationInput(Integer version, String status) { return new WritePoliceStation(version,"回归派出所","ORG_003","回归区域",null,status); }
+    private final java.util.concurrent.atomic.AtomicInteger memberSerial = new java.util.concurrent.atomic.AtomicInteger();
+    private String lastMemberUser;
+    private WritePortOfficer officerInput(Integer version, String station, String status) {
+        if (version == null) {
+            String login="regr.maritime.member"+memberSerial.incrementAndGet();
+            jdbcTemplate.update("INSERT INTO sys_user(login_name,display_name,password_hash,unit_id) SELECT ?,?,?,id FROM sys_unit WHERE unit_code='ORG_003'",login,"测试民警",passwordEncoder.encode(ADMIN_PASSWORD));
+            lastMemberUser=jdbcTemplate.queryForObject("SELECT CAST(id AS CHAR) FROM sys_user WHERE login_name=?",String.class,login);
+        }
+        return new WritePortOfficer(version,lastMemberUser,status,station,"责任民警");
+    }
     private WriteWharf wharfInput(Integer version, String port, String station, String officer, String status) { return new WriteWharf(version,"回归码头","回归区域",null,status,null,port,station,officer); }
     private String body(Object input) throws Exception { return objectMapper.writeValueAsString(input); }
 
@@ -110,16 +121,17 @@ class MaritimeRegressionTest extends SystemAdminRegressionSupport {
         assertError(getJson("/api/maritime/options/wharf-relations",session),400,"INVALID_ARCHIVE");
     }
 
-    @Test void seedAddsExactly31AndDoesNotOverwriteManualChangesOrUnrelatedData() {
+    @Test void seedAddsExactly43AndDoesNotOverwriteManualChangesOrUnrelatedData() {
         var manual=service.createPort(portInput(null,"ENABLED"),null);
-        assertThat(fixtures.initializeForTest()).isEqualTo(31);
+        assertThat(fixtures.initializeForTest()).isEqualTo(43);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM archive_police_station s JOIN sys_unit u ON u.id=s.unit_id WHERE s.fixture_key='station.tz.jk' AND u.unit_code='331003' AND u.unit_level=3",Integer.class)).isEqualTo(1);
         Long id=jdbcTemplate.queryForObject("SELECT id FROM archive_port WHERE fixture_key='port.nbzs'",Long.class);
         service.updatePort(id,new WritePort(0,"人工修改名称","自定义区域",null,"DISABLED",null));
         assertThat(fixtures.initializeForTest()).isZero();
         assertThat(service.getPort(id).name()).isEqualTo("人工修改名称");
         assertThat(service.getPort(id).status()).isEqualTo("DISABLED");
         assertThat(service.getPort(Long.parseLong(manual.id())).name()).isEqualTo(manual.name());
-        assertThat(jdbcTemplate.queryForList("SELECT name FROM archive_port_officer ORDER BY id",String.class)).containsExactly("陈浩","周明远","林嘉诚","吴志航","徐立新","沈亦凡");
+        assertThat(jdbcTemplate.queryForList("SELECT u.display_name FROM archive_port_officer o JOIN sys_user u ON u.id=o.user_id ORDER BY o.id",String.class)).contains("陈浩","周明远","林嘉诚","吴志航","徐立新","沈亦凡");
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM archive_wharf WHERE location IS NULL OR purpose IS NULL",Integer.class)).isZero();
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('archive_port','archive_wharf','archive_anchorage','archive_island','archive_police_station','archive_port_officer') AND column_name IN ('source_url','source_date','checked_date','jurisdiction_basis','jurisdiction_source_url','is_mock')",Integer.class)).isZero();
         assertThatThrownBy(() -> fixtures.initialize()).hasMessageContaining("只允许");
@@ -176,6 +188,89 @@ class MaritimeRegressionTest extends SystemAdminRegressionSupport {
         var officer=service.createPortOfficer(officerInput(null,station.id(),"ENABLED"),null);
         race(() -> service.createWharf(wharfInput(null,null,station.id(),officer.id(),"ENABLED"),null), () -> service.deletePortOfficer(Long.parseLong(officer.id()),0), "负责码头");
     }
+    @Test void stationMembershipUsesSameEnabledUnitAndUniqueUserIdentity() throws Exception {
+        var session=adminSession();
+        assertThatThrownBy(() -> service.createPoliceStation(new WritePoliceStation(null,"错误归属","ORG_001","区域",null,"ENABLED"),null)).hasMessageContaining("支队或大队");
+        var station=service.createPoliceStation(stationInput(null,"ENABLED"),null);
+        var input=officerInput(null,station.id(),"ENABLED");
+        var candidate=service.officerUserOptions(Long.parseLong(station.id()),"测试民警",1,20);
+        assertThat(candidate.items()).extracting(OfficerUserOption::id).contains(input.userId());
+        var officer=service.createPortOfficer(input,null);
+        assertThat(service.officerUserOptions(Long.parseLong(station.id()),"测试民警",1,20).items()).extracting(OfficerUserOption::id).doesNotContain(input.userId());
+        assertThatThrownBy(() -> service.createPortOfficer(input,null)).hasMessageContaining("重复添加");
+        var other=service.createPoliceStation(new WritePoliceStation(null,"另一单位所","ORG_004","区域",null,"ENABLED"),null);
+        assertThatThrownBy(() -> service.createPortOfficer(new WritePortOfficer(null,input.userId(),"ENABLED",other.id(),null),null)).hasMessageContaining("所属单位");
+        var different=officerInput(null,station.id(),"ENABLED");
+        jdbcTemplate.update("UPDATE sys_user SET status='DISABLED' WHERE id=?",Long.parseLong(different.userId()));
+        assertThatThrownBy(() -> service.createPortOfficer(different,null)).hasMessageContaining("已停用");
+        assertThat(service.getPortOfficer(Long.parseLong(officer.id())).userId()).isEqualTo(input.userId());
+        var policing=restrictedSession("candidate",List.of("maritime:policing:read","maritime:port-officer:create"));
+        assertThat(getJson("/api/maritime/options/officer-users?policeStationId="+station.id(),policing).getResponse().getStatus()).isEqualTo(200);
+        assertForbidden(getJson("/api/system/users",policing));
+        var unitReader=restrictedSession("unitreader",List.of("system:unit:read"));
+        var summary=getJson("/api/system/units/ORG_003/police-stations",unitReader);
+        assertThat(summary.getResponse().getStatus()).isEqualTo(200);
+        assertThat(bodyOf(summary)).contains(station.name()).doesNotContain("userId","loginName","location");
+        assertForbidden(getJson("/api/maritime/police-stations/"+station.id(),unitReader));
+        assertForbidden(getJson("/api/maritime/options/officer-users?policeStationId="+station.id(),unitReader));
+    }
+
+    @Test void userRenamePropagatesButOrganizationChangesAreProtected() throws Exception {
+        adminSession();
+        var station=service.createPoliceStation(stationInput(null,"ENABLED"),null);
+        var input=officerInput(null,station.id(),"ENABLED");
+        var officer=service.createPortOfficer(input,null);
+        var wharf=service.createWharf(wharfInput(null,null,station.id(),officer.id(),"ENABLED"),null);
+        var user=userAdmin.get(Long.parseLong(input.userId()));
+        userAdmin.update(Long.parseLong(input.userId()),new com.merine.rebuild.system.user.admin.dto.UserRequests.UpdateUser(user.version(),"陈景行","ORG_003",List.of("SYSTEM_ADMIN")));
+        assertThat(service.getPortOfficer(Long.parseLong(officer.id())).name()).isEqualTo("陈景行");
+        assertThat(service.getWharf(Long.parseLong(wharf.id())).responsibleOfficerName()).isEqualTo("陈景行");
+        var changed=userAdmin.get(Long.parseLong(input.userId()));
+        assertThatThrownBy(() -> userAdmin.update(Long.parseLong(input.userId()),new com.merine.rebuild.system.user.admin.dto.UserRequests.UpdateUser(changed.version(),"陈景行","ORG_004",List.of("SYSTEM_ADMIN")))).hasMessageContaining("解除成员");
+        assertThatThrownBy(() -> service.updatePoliceStation(Long.parseLong(station.id()),new WritePoliceStation(0,station.name(),"ORG_004",station.region(),null,"ENABLED"))).hasMessageContaining("成员归属");
+        userAdmin.changeStatus(List.of(input.userId()),false);
+        assertThat(service.getPortOfficer(Long.parseLong(officer.id())).userStatus()).isEqualTo("DISABLED");
+        assertThat(service.officerOptions(MaritimeService.query(null,null,"ENABLED",null,Long.parseLong(station.id()),null,null,1,20)).total()).isZero();
+        assertThatThrownBy(() -> service.createWharf(wharfInput(null,null,station.id(),officer.id(),"ENABLED"),null)).hasMessageContaining("账号已停用");
+        service.updateWharf(Long.parseLong(wharf.id()),wharfInput(0,null,station.id(),officer.id(),"DISABLED"));
+    }
+
+    @Test void stationReferencesPreventUnitDeletionIncludingConcurrentCreation() throws Exception {
+        adminSession();
+        var unit=unitAdmin.create(new com.merine.rebuild.system.unit.dto.UnitRequests.CreateUnit("REGR.MARITIME.UNIT","测试大队","ORG_003","330206"));
+        try {
+            var station=service.createPoliceStation(new WritePoliceStation(null,"测试下属所",unit.code(),"区域",null,"ENABLED"),null);
+            assertThatThrownBy(() -> unitAdmin.delete(unit.code())).hasMessageContaining("所属派出所");
+            service.deletePoliceStation(Long.parseLong(station.id()),0);
+            race(() -> service.createPoliceStation(new WritePoliceStation(null,"并发所",unit.code(),"区域",null,"ENABLED"),null),()->unitAdmin.delete(unit.code()),"所属派出所");
+        } finally {
+            jdbcTemplate.update("DELETE FROM archive_police_station WHERE unit_id=(SELECT id FROM sys_unit WHERE unit_code=?)",unit.code());
+            unitAdmin.delete(unit.code());
+        }
+    }
+
+    @Test void userTransferAndNewMembershipCannotCommitIncompatibleFacts() throws Exception {
+        adminSession();
+        var station=service.createPoliceStation(stationInput(null,"ENABLED"),null);
+        var input=officerInput(null,station.id(),"ENABLED");
+        long userId=Long.parseLong(input.userId());
+        var user=userAdmin.get(userId);
+        race(() -> userAdmin.update(userId,new com.merine.rebuild.system.user.admin.dto.UserRequests.UpdateUser(user.version(),user.displayName(),"ORG_004",List.of("SYSTEM_ADMIN"))),()->service.createPortOfficer(input,null),"归属已调整");
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM archive_port_officer WHERE user_id=?",Integer.class,userId)).isZero();
+        var otherInput=officerInput(null,station.id(),"ENABLED");
+        long otherId=Long.parseLong(otherInput.userId());
+        var otherUser=userAdmin.get(otherId);
+        race(() -> service.createPortOfficer(otherInput,null),()->userAdmin.update(otherId,new com.merine.rebuild.system.user.admin.dto.UserRequests.UpdateUser(otherUser.version(),otherUser.displayName(),"ORG_004",List.of("SYSTEM_ADMIN"))),"关联派出所");
+        assertThat(userAdmin.get(otherId).unitCode()).isEqualTo("ORG_003");
+    }
+
+    @Test void concurrentDuplicateMembersHaveOneWinner() throws Exception {
+        var station=service.createPoliceStation(stationInput(null,"ENABLED"),null);
+        var input=officerInput(null,station.id(),"ENABLED");
+        race(() -> service.createPortOfficer(input,null),()->service.createPortOfficer(input,null),"重复添加");
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM archive_port_officer WHERE user_id=?",Integer.class,Long.parseLong(input.userId()))).isEqualTo(1);
+    }
+
     private void race(Runnable first, Runnable second, String message) throws Exception {
         var locked=new CountDownLatch(1); var commit=new CountDownLatch(1); var started=new CountDownLatch(1);
         try(var executor=Executors.newVirtualThreadPerTaskExecutor()) {

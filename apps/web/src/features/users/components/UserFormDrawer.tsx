@@ -1,3 +1,4 @@
+import { maritimeKeys } from '../../maritime/public';
 import { Alert, Button, Checkbox, Drawer, Form, Input, Skeleton, Tag } from 'antd';
 import type { InputRef } from 'antd';
 import type { CreateUser, RoleSummary, UpdateUser, UserSummary } from '@merine/api-contract';
@@ -152,6 +153,7 @@ export function UserFormDrawer({
         : createUser(toCreateInput(values)),
     onSuccess: async (saved, values) => {
       await queryClient.invalidateQueries({ queryKey: userKeys.lists });
+      await queryClient.invalidateQueries({ queryKey: maritimeKeys.all });
       if (editingUser) {
         const permissionsChanged =
           !sameCodes(editingUser.roleCodes, values.roleCodes) ||
@@ -349,7 +351,7 @@ export function UserFormDrawer({
               autoComplete="off"
               spellCheck={false}
               autoCapitalize="off"
-              placeholder="例如 demo.yanpan.i"
+              placeholder="请输入登录账号，如 zhang.ming"
             />
           </Form.Item>
 

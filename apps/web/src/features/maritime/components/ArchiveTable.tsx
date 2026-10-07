@@ -43,6 +43,7 @@ export function ArchiveTable({
       render: (_, row) => (
         <Space direction="vertical" size={4}>
           <RecordTitleLink to={archiveHref(kind, row.id, returnTo)}>{row.name}</RecordTitleLink>
+          {kind === 'port-officers' && row.userStatus === 'DISABLED' && <Tag>账号已停用</Tag>}
         </Space>
       ),
     },

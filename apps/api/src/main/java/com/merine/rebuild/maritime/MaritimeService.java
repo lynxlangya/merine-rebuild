@@ -5,15 +5,66 @@ import com.merine.rebuild.common.PageResult;
 import com.merine.rebuild.maritime.dto.*;
 import com.merine.rebuild.maritime.persistence.*;
 import java.util.*;
+import com.merine.rebuild.system.unit.UnitLookup;
+import com.merine.rebuild.system.user.usage.UserDirectoryLookup;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 基础档案统一可见；独立于账号组织模型。关联写入锁顺序：所 → 民警 → 港口 → 码头。 */
+/** 功能权限下统一可见。关联写入锁顺序：单位 → 用户 → 所 → 民警 → 港口 → 码头，同类按主键升序。 */
 @Service
 public class MaritimeService {
     private final MaritimeMapper mapper;
-    public MaritimeService(MaritimeMapper mapper) { this.mapper = mapper; }
+    private final UnitLookup units;
+    private final UserDirectoryLookup users;
+    public MaritimeService(MaritimeMapper mapper, UnitLookup units, UserDirectoryLookup users) {
+        this.mapper = mapper; this.units = units; this.users = users;
+    }
+
+    /** 快照仅定位锁；全部引用在取锁后用最新事实重新核对，变更归属则返回冲突。 */
+    private void lockOwners(Collection<Long> stationIds, Collection<Long> userIds, Long extraUnit) {
+        Map<Long,Long> stationUnits = new TreeMap<>();
+        Map<Long,Long> userUnits = new TreeMap<>();
+        SortedSet<Long> unitIds = new TreeSet<>();
+        if (extraUnit != null) unitIds.add(extraUnit);
+        for (Long id : stationIds) if (id != null) {
+            ArchiveRow row = required(mapper.findPoliceStation(id));
+            stationUnits.put(id,row.unitId); unitIds.add(row.unitId);
+        }
+        for (Long id : userIds) if (id != null) {
+            var person = users.find(id);
+            if (person == null) invalid("所选用户不存在");
+            userUnits.put(id,person.unitId()); unitIds.add(person.unitId());
+        }
+        for (long id : unitIds) if (units.lockReference(id) == null) invalid("所属单位不存在");
+        for (var entry : userUnits.entrySet()) {
+            var person = users.lock(entry.getKey());
+            if (person == null || person.unitId() != entry.getValue()) conflict("用户归属已调整，请刷新后重新选择");
+        }
+        for (var entry : stationUnits.entrySet()) {
+            ArchiveRow row = required(mapper.lockPoliceStation(entry.getKey()));
+            if (!Objects.equals(row.unitId,entry.getValue())) conflict("派出所归属已调整，请刷新后重新选择");
+        }
+    }
+    private UnitLookup.Reference stationUnit(String code) {
+        var snapshot = units.referenceByCode(code);
+        if (snapshot == null) invalid("所选单位不存在");
+        return snapshot;
+    }
+    private void validateStationUnit(UnitLookup.Reference unit, boolean changed) {
+        if (unit == null) invalid("所属单位不存在");
+        if (unit.level() < 2 || unit.level() > 3) invalid("派出所必须属于支队或大队");
+        if (changed && !"ENABLED".equals(unit.status())) invalid("所属单位已停用，不能新增关联");
+    }
+    private void validateMember(ArchiveRow row, ArchiveRow before) {
+        ArchiveRow station = relation(mapper.lockPoliceStation(row.policeStationId), before == null ? null : before.policeStationId, row.policeStationId, "所属派出所");
+        var person = users.lock(row.userId);
+        if (person == null || person.unitId() != station.unitId) invalid("只能选择派出所所属单位的用户");
+        boolean newAssociation = before == null || !Objects.equals(before.policeStationId,row.policeStationId) || !Objects.equals(before.status,row.status) && "ENABLED".equals(row.status);
+        if (newAssociation && !"ENABLED".equals(person.status())) invalid("账号已停用，不能新增或启用成员关联");
+        if (newAssociation && !"ENABLED".equals(units.lockReference(station.unitId).status())) invalid("所属单位已停用");
+    }
 
     public static ArchiveQuery query(String keyword, String region, String status, Long portId,
             Long policeStationId, Long responsibleOfficerId, String inhabitationType, int page, int pageSize) {
@@ -57,12 +108,15 @@ public class MaritimeService {
         for (Long value : values) if (value != null) result.add(value);
         return result;
     }
-    private void lockStations(Long... values) { for (long id : ids(values)) mapper.lockPoliceStation(id); }
     private void lockOfficers(Long... values) { for (long id : ids(values)) mapper.lockPortOfficer(id); }
     private void lockPorts(Long... values) { for (long id : ids(values)) mapper.lockPort(id); }
 
     private void lockWharfReferences(ArchiveRow before, ArchiveRow next) {
-        lockStations(before == null ? null : before.policeStationId, next.policeStationId);
+        List<Long> stationIds = Arrays.asList(before == null ? null : before.policeStationId,next.policeStationId);
+        List<Long> userIds = new ArrayList<>();
+        for (long officerId : ids(before == null ? null : before.responsibleOfficerId,next.responsibleOfficerId))
+            userIds.add(required(mapper.findPortOfficer(officerId)).userId);
+        lockOwners(stationIds,userIds,null);
         lockOfficers(before == null ? null : before.responsibleOfficerId, next.responsibleOfficerId);
         lockPorts(before == null ? null : before.portId, next.portId);
     }
@@ -72,6 +126,7 @@ public class MaritimeService {
         if (next.responsibleOfficerId != null) {
             if (next.policeStationId == null) invalid("选择责任民警前须选择管辖派出所");
             ArchiveRow officer = relation(mapper.lockPortOfficer(next.responsibleOfficerId), before == null ? null : before.responsibleOfficerId, next.responsibleOfficerId, "责任民警");
+            if ((before == null || !Objects.equals(before.responsibleOfficerId,next.responsibleOfficerId)) && !"ENABLED".equals(users.lock(officer.userId).status())) invalid("责任民警账号已停用，不能新增责任关联");
             if (!Objects.equals(officer.policeStationId, next.policeStationId)) invalid("责任民警必须属于管辖派出所；更换派出所后请清除或重新选择民警");
         }
     }
@@ -307,6 +362,9 @@ public class MaritimeService {
         return new PoliceStationView(
                 id(row.id),
                 row.name,
+                row.unitCode,
+                row.unitName,
+                row.unitLevel,
                 row.region,
                 row.location,
                 row.status,
@@ -332,6 +390,9 @@ public class MaritimeService {
     @Transactional
     public PoliceStationView createPoliceStation(WritePoliceStation input, String fixtureKey) {
         ArchiveRow row = rowPoliceStation(input);
+        var unit = stationUnit(input.unitCode());
+        validateStationUnit(units.lockReference(unit.id()),true);
+        row.unitId = unit.id();
         row.fixtureKey = fixtureKey;
         mapper.insertPoliceStation(row);
         return viewPoliceStation(mapper.findPoliceStation(row.id));
@@ -339,14 +400,20 @@ public class MaritimeService {
     @Transactional
     public PoliceStationView updatePoliceStation(long id, WritePoliceStation input) {
         ArchiveRow row = rowPoliceStation(input);
+        var unit = stationUnit(input.unitCode());
+        lockOwners(List.of(id),List.of(),unit.id());
         ArchiveRow before = required(mapper.lockPoliceStation(id));
         version(before, input.version());
+        validateStationUnit(units.lockReference(unit.id()), !Objects.equals(before.unitId,unit.id()));
+        if (!Objects.equals(before.unitId,unit.id()) && !mapper.lockStationOfficers(id).isEmpty()) conflict("派出所仍有所属民警，请先处理成员归属再更换所属单位");
+        row.unitId = unit.id();
         row.id = id; row.version = input.version();
         if (mapper.updatePoliceStation(row) != 1) conflict("档案已被修改，请刷新后重试");
         return viewPoliceStation(mapper.findPoliceStation(id));
     }
     @Transactional
     public void deletePoliceStation(long id, int inputVersion) {
+        lockOwners(List.of(id),List.of(),null);
         ArchiveRow row = required(mapper.lockPoliceStation(id));
         version(row, inputVersion);
         if (!mapper.lockStationOfficers(id).isEmpty()) conflict("该派出所仍有所属民警，不能删除；可先解除关联或停用");
@@ -359,6 +426,11 @@ public class MaritimeService {
         return new PortOfficerView(
                 id(row.id),
                 row.name,
+                id(row.userId),
+                row.loginName,
+                row.userStatus,
+                row.unitCode,
+                row.unitName,
                 row.status,
                 id(row.policeStationId),
                 row.duty,
@@ -372,7 +444,7 @@ public class MaritimeService {
     }
     private static ArchiveRow rowPortOfficer(WritePortOfficer input) {
         ArchiveRow row = new ArchiveRow();
-        row.name = text(input.name());
+        row.userId = reference(input.userId());
         row.status = text(input.status());
         row.policeStationId = reference(input.policeStationId());
         row.duty = text(input.duty());
@@ -388,18 +460,21 @@ public class MaritimeService {
     public PortOfficerView createPortOfficer(WritePortOfficer input, String fixtureKey) {
         ArchiveRow row = rowPortOfficer(input);
         row.fixtureKey = fixtureKey;
-        relation(mapper.lockPoliceStation(row.policeStationId), null, row.policeStationId, "所属派出所");
-        mapper.insertPortOfficer(row);
+        lockOwners(List.of(row.policeStationId),List.of(row.userId),null);
+        validateMember(row,null);
+        try { mapper.insertPortOfficer(row); }
+        catch (DuplicateKeyException error) { conflict("该用户已关联派出所，请勿重复添加"); }
         return viewPortOfficer(mapper.findPortOfficer(row.id));
     }
     @Transactional
     public PortOfficerView updatePortOfficer(long id, WritePortOfficer input) {
         ArchiveRow row = rowPortOfficer(input);
         ArchiveRow snapshot = required(mapper.findPortOfficer(id));
-        lockStations(snapshot.policeStationId, row.policeStationId);
+        lockOwners(Arrays.asList(snapshot.policeStationId,row.policeStationId),List.of(snapshot.userId,row.userId),null);
         ArchiveRow before = required(mapper.lockPortOfficer(id));
         version(before, input.version());
-        relation(mapper.lockPoliceStation(row.policeStationId), before.policeStationId, row.policeStationId, "所属派出所");
+        if (!Objects.equals(before.userId,row.userId)) invalid("已建立的民警档案不能更换人员身份，请解除关联后重新添加");
+        validateMember(row,before);
         if (!Objects.equals(before.policeStationId, row.policeStationId) && !mapper.lockOfficerWharfs(id).isEmpty()) conflict("该民警仍负责码头，请先解除码头责任关联再更换所属派出所");
         row.id = id; row.version = input.version();
         if (mapper.updatePortOfficer(row) != 1) conflict("档案已被修改，请刷新后重试");
@@ -408,7 +483,7 @@ public class MaritimeService {
     @Transactional
     public void deletePortOfficer(long id, int inputVersion) {
         ArchiveRow snapshot = required(mapper.findPortOfficer(id));
-        lockStations(snapshot.policeStationId);
+        lockOwners(List.of(snapshot.policeStationId),List.of(snapshot.userId),null);
         ArchiveRow row = required(mapper.lockPortOfficer(id));
         version(row, inputVersion);
         if (!mapper.lockOfficerWharfs(id).isEmpty()) conflict("该民警仍负责码头，不能删除；可先解除责任关联或停用");
@@ -425,7 +500,7 @@ public class MaritimeService {
     }
     @Transactional(readOnly = true)
     public PageResult<ArchiveOption> officerOptions(ArchiveQuery query) {
-        return new PageResult<>(mapper.listPortOfficer(query).stream().map(MaritimeService::option).toList(), mapper.countPortOfficer(query), query.page(), query.pageSize());
+        return new PageResult<>(mapper.listOfficerOptions(query).stream().map(MaritimeService::option).toList(), mapper.countOfficerOptions(query), query.page(), query.pageSize());
     }
     @Transactional(readOnly = true)
     public PageResult<WharfRelationView> wharfRelations(ArchiveQuery query) {
@@ -433,6 +508,13 @@ public class MaritimeService {
         return new PageResult<>(mapper.listWharf(query).stream().map(row -> new WharfRelationView(
                 id(row.id), row.name, row.status, id(row.responsibleOfficerId),
                 row.responsibleOfficerName)).toList(), mapper.countWharf(query), query.page(), query.pageSize());
+    }
+    @Transactional(readOnly = true)
+    public PageResult<OfficerUserOption> officerUserOptions(long stationId, String keyword, int page, int size) {
+        var query = query(keyword,null,null,null,null,null,null,page,size);
+        ArchiveRow station = required(mapper.findPoliceStation(stationId));
+        if (!"ENABLED".equals(station.status) || !"ENABLED".equals(units.referenceByCode(station.unitCode).status())) return new PageResult<>(List.of(),0,page,size);
+        return new PageResult<>(mapper.userCandidates(station.unitId,query.keyword(),query.offset(),size),mapper.countUserCandidates(station.unitId,query.keyword()),page,size);
     }
     private static ArchiveOption option(ArchiveRow row) {
         return new ArchiveOption(id(row.id), row.name, row.status, id(row.policeStationId));

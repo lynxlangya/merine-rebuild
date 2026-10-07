@@ -382,6 +382,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/system/units/{code}/police-stations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 查询单位直属派出所摘要 */
+    get: operations['unitPoliceStations'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/system/users': {
     parameters: {
       query?: never;
@@ -604,6 +621,14 @@ export interface components {
     ApiResponsePageResultRoleMember: {
       code: string;
       data: components['schemas']['PageResultRoleMember'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
+    ApiResponsePageResultUnitPoliceStation: {
+      code: string;
+      data: components['schemas']['PageResultUnitPoliceStation'];
       /** @description 字段级校验错误；无字段错误时为 null */
       fieldErrors?: components['schemas']['FieldError'][];
       message: string;
@@ -867,6 +892,15 @@ export interface components {
       /** Format: int64 */
       total: number;
     };
+    PageResultUnitPoliceStation: {
+      items: components['schemas']['UnitPoliceStation'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      pageSize: number;
+      /** Format: int64 */
+      total: number;
+    };
     PageResultUserSummary: {
       items: components['schemas']['UserSummary'][];
       /** Format: int32 */
@@ -975,6 +1009,11 @@ export interface components {
       key: string;
       /** @description 页面名称，便于选择 */
       label: string;
+    };
+    UnitPoliceStation: {
+      id: string;
+      name: string;
+      status: string;
     };
     UnitSummary: {
       /** @description 单位业务编码，区分大小写，全局唯一 */
@@ -1861,6 +1900,31 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseVoid'];
+        };
+      };
+    };
+  };
+  unitPoliceStations: {
+    parameters: {
+      query?: {
+        page?: number;
+        pageSize?: number;
+      };
+      header?: never;
+      path: {
+        code: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePageResultUnitPoliceStation'];
         };
       };
     };

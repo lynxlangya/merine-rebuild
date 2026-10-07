@@ -51,6 +51,7 @@ export function UnitDetailPanel({
   onAddChild,
   onEdit,
   onDelete,
+  policeStations,
 }: {
   node: UnitTreeNode | null;
   parentName: string | null;
@@ -62,6 +63,7 @@ export function UnitDetailPanel({
   onAddChild: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  policeStations?: ReactNode;
 }) {
   const levelDictionary = useDictionary(DICTIONARY_CODES.unitLevel).data;
 
@@ -139,7 +141,7 @@ export function UnitDetailPanel({
 
       <div className={styles.children}>
         <div className={styles.childrenHead}>
-          <b>直属下级</b>
+          <b>直属下级单位</b>
           <Tag className={styles.countTag}>{node.children.length}</Tag>
         </div>
         {node.children.length === 0 ? (
@@ -173,6 +175,7 @@ export function UnitDetailPanel({
           </div>
         )}
       </div>
+      {policeStations}
     </section>
   );
 }

@@ -43,6 +43,13 @@ public class MaritimeOptionsController {
         guard.require(authentication, PermissionCodes.MARITIME_POLICING_READ, "没有读取警务责任关系的权限");
         return ApiResponse.success(service.wharfRelations(MaritimeService.query(null,null,null,null,policeStationId,responsibleOfficerId,null,page,pageSize)), request);
     }
+    @GetMapping("/officer-users")
+    public ApiResponse<PageResult<com.merine.rebuild.maritime.dto.OfficerUserOption>> officerUsers(Authentication authentication,
+            @RequestParam long policeStationId, @RequestParam(required=false) String keyword,
+            @RequestParam(defaultValue="1") int page, @RequestParam(defaultValue="20") int pageSize, HttpServletRequest request) {
+        guard.requireAny(authentication,List.of(PermissionCodes.MARITIME__PORT_OFFICER_CREATE,PermissionCodes.MARITIME__PORT_OFFICER_UPDATE),"没有维护派出所民警的权限");
+        return ApiResponse.success(service.officerUserOptions(policeStationId,keyword,page,pageSize),request);
+    }
     private void allowed(Authentication authentication) {
         guard.requireAny(authentication, List.of(PermissionCodes.MARITIME_HARBOR_READ,PermissionCodes.MARITIME_POLICING_READ), "没有读取关联候选项的权限");
     }

@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PageHeader } from '../../shared/ui/PageHeader';
 import { useAuth } from '../auth/public';
 import { deleteUnit } from './api';
+import { UnitPoliceStations } from '../maritime/public';
 import { UnitDetailPanel } from './components/UnitDetailPanel';
 import { UnitFormDrawer } from './components/UnitFormDrawer';
 import { findUnitName, findUnitTreeNode } from './model';
@@ -109,7 +110,7 @@ export function UnitListPage() {
       <PageHeader
         demo={false}
         title="单位管理"
-        description="维护总队、支队、大队三级组织树；单位编码稳定唯一，删除只允许无下级且无用户的空单位。"
+        description="维护总队、支队、大队三级组织树；单位编码稳定唯一，派出所在单位详情维护归属。"
         actions={
           canCreate && (
             <Button
@@ -163,6 +164,11 @@ export function UnitListPage() {
           />
           <UnitDetailPanel
             node={selected}
+            policeStations={
+              selected && selected.level >= 2 ? (
+                <UnitPoliceStations key={selected.code} unitCode={selected.code} />
+              ) : undefined
+            }
             parentName={parentName}
             canCreate={canCreate}
             canUpdate={canUpdate}

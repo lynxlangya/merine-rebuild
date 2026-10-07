@@ -259,6 +259,21 @@
         "required": ["code", "data", "message", "requestId"],
         "type": "object"
       },
+      "ApiResponsePageResultUnitPoliceStation": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultUnitPoliceStation" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
       "ApiResponsePageResultUserSummary": {
         "properties": {
           "code": { "type": "string" },
@@ -693,6 +708,19 @@
         "required": ["items", "page", "pageSize", "total"],
         "type": "object"
       },
+      "PageResultUnitPoliceStation": {
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/UnitPoliceStation" },
+            "type": "array"
+          },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
       "PageResultUserSummary": {
         "properties": {
           "items": { "items": { "$ref": "#/components/schemas/UserSummary" }, "type": "array" },
@@ -849,6 +877,15 @@
           "label": { "description": "页面名称，便于选择", "type": "string" }
         },
         "required": ["key", "label"],
+        "type": "object"
+      },
+      "UnitPoliceStation": {
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "status": { "type": "string" }
+        },
+        "required": ["id", "name", "status"],
         "type": "object"
       },
       "UnitSummary": {
@@ -1729,6 +1766,38 @@
           }
         },
         "summary": "编辑单位名称、上级或行政区划",
+        "tags": ["单位管理"]
+      }
+    },
+    "/api/system/units/{code}/police-stations": {
+      "get": {
+        "operationId": "unitPoliceStations",
+        "parameters": [
+          { "in": "path", "name": "code", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": { "default": 20, "format": "int32", "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultUnitPoliceStation" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "查询单位直属派出所摘要",
         "tags": ["单位管理"]
       }
     },

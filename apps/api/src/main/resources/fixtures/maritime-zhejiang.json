@@ -54,7 +54,8 @@
         "name": "宁波市公安局北仑分局梅山派出所",
         "status": "ENABLED",
         "region": "宁波市北仑区",
-        "location": "宁波市北仑区梅山街道"
+        "location": "宁波市北仑区梅山街道",
+        "unitCode": "330206"
       }
     },
     {
@@ -64,7 +65,8 @@
         "name": "舟山市公安局普陀区分局沈家门派出所",
         "status": "ENABLED",
         "region": "舟山市普陀区",
-        "location": "舟山市普陀区沈家门街道"
+        "location": "舟山市普陀区沈家门街道",
+        "unitCode": "330903"
       }
     },
     {
@@ -74,7 +76,8 @@
         "name": "舟山市公安局定海区分局金塘派出所",
         "status": "ENABLED",
         "region": "舟山市定海区",
-        "location": "舟山市定海区金塘镇"
+        "location": "舟山市定海区金塘镇",
+        "unitCode": "330902"
       }
     },
     {
@@ -84,7 +87,8 @@
         "name": "温州市公安局洞头区分局北岙派出所",
         "status": "ENABLED",
         "region": "温州市洞头区",
-        "location": "温州市洞头区北岙街道"
+        "location": "温州市洞头区北岙街道",
+        "unitCode": "330305"
       }
     },
     {
@@ -94,7 +98,8 @@
         "name": "玉环市公安局大麦屿派出所",
         "status": "ENABLED",
         "region": "台州市玉环市",
-        "location": "台州市玉环市大麦屿街道"
+        "location": "台州市玉环市大麦屿街道",
+        "unitCode": "331021"
       }
     },
     {
@@ -104,67 +109,218 @@
         "name": "嘉兴市公安局港区分局乍浦派出所",
         "status": "ENABLED",
         "region": "嘉兴市港区",
-        "location": "嘉兴市平湖市乍浦镇"
+        "location": "嘉兴市平湖市乍浦镇",
+        "unitCode": "330498"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.jx.water",
+      "input": {
+        "name": "嘉兴水上派出所",
+        "unitCode": "ORG_005",
+        "region": "嘉兴市",
+        "location": "嘉兴市南湖区水上警务片区",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.hz.qj",
+      "input": {
+        "name": "杭州市公安局交通（水上）治安分局钱江水上派出所",
+        "unitCode": "330114",
+        "region": "杭州市钱塘区",
+        "location": "钱塘江沿线水上警务片区",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.sx.yc",
+      "input": {
+        "name": "绍兴市公安局越城区分局水上派出所",
+        "unitCode": "330602",
+        "region": "绍兴市越城区",
+        "location": "越城区河道与水上警务片区",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.sx.kq",
+      "input": {
+        "name": "绍兴市公安局柯桥区分局水上派出所",
+        "unitCode": "330603",
+        "region": "绍兴市柯桥区",
+        "location": "柯桥区河道与水上警务片区",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.sx.sy",
+      "input": {
+        "name": "绍兴市公安局上虞区分局水上派出所",
+        "unitCode": "330604",
+        "region": "绍兴市上虞区",
+        "location": "曹娥江上虞段水上警务片区",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PoliceStation",
+      "key": "station.tz.jk",
+      "input": {
+        "name": "台州市公安局黄岩分局江口派出所",
+        "unitCode": "331003",
+        "region": "台州市黄岩区",
+        "location": "黄岩区江口街道",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.jx.water",
+      "input": {
+        "userName": "林泽宇",
+        "userLoginName": "demo.jx.task",
+        "userUnitCode": "ORG_005",
+        "policeStationKey": "station.jx.water",
+        "status": "ENABLED",
+        "duty": "水上责任民警"
       }
     },
     {
       "kind": "PortOfficer",
       "key": "officer.ms",
       "input": {
-        "name": "陈浩",
         "status": "ENABLED",
         "policeStationKey": "station.ms",
-        "duty": "港区责任民警"
+        "duty": "港区责任民警",
+        "userName": "陈浩",
+        "userLoginName": "demo.330206",
+        "userUnitCode": "330206"
       }
     },
     {
       "kind": "PortOfficer",
       "key": "officer.sjm",
       "input": {
-        "name": "周明远",
         "status": "ENABLED",
         "policeStationKey": "station.sjm",
-        "duty": "港区责任民警"
+        "duty": "港区责任民警",
+        "userName": "周明远",
+        "userLoginName": "demo.330903",
+        "userUnitCode": "330903"
       }
     },
     {
       "kind": "PortOfficer",
       "key": "officer.jt",
       "input": {
-        "name": "林嘉诚",
         "status": "ENABLED",
         "policeStationKey": "station.jt",
-        "duty": "港区责任民警"
+        "duty": "港区责任民警",
+        "userName": "林嘉诚",
+        "userLoginName": "demo.330902",
+        "userUnitCode": "330902"
       }
     },
     {
       "kind": "PortOfficer",
       "key": "officer.ba",
       "input": {
-        "name": "吴志航",
         "status": "ENABLED",
         "policeStationKey": "station.ba",
-        "duty": "港区责任民警"
+        "duty": "港区责任民警",
+        "userName": "吴志航",
+        "userLoginName": "demo.330305",
+        "userUnitCode": "330305"
       }
     },
     {
       "kind": "PortOfficer",
       "key": "officer.dmy",
       "input": {
-        "name": "徐立新",
         "status": "ENABLED",
         "policeStationKey": "station.dmy",
-        "duty": "港区责任民警"
+        "duty": "港区责任民警",
+        "userName": "徐立新",
+        "userLoginName": "demo.331021",
+        "userUnitCode": "331021"
       }
     },
     {
       "kind": "PortOfficer",
       "key": "officer.zp",
       "input": {
-        "name": "沈亦凡",
         "status": "ENABLED",
         "policeStationKey": "station.zp",
-        "duty": "港区责任民警"
+        "duty": "港区责任民警",
+        "userName": "沈亦凡",
+        "userLoginName": "demo.330498",
+        "userUnitCode": "330498"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.hz.qj",
+      "input": {
+        "userLoginName": "demo.330114",
+        "userUnitCode": "330114",
+        "userName": "程子墨",
+        "policeStationKey": "station.hz.qj",
+        "duty": "水上责任民警",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.sx.yc",
+      "input": {
+        "userLoginName": "demo.330602",
+        "userUnitCode": "330602",
+        "userName": "许晋安",
+        "policeStationKey": "station.sx.yc",
+        "duty": "水上责任民警",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.sx.kq",
+      "input": {
+        "userLoginName": "demo.330603",
+        "userUnitCode": "330603",
+        "userName": "丁思远",
+        "policeStationKey": "station.sx.kq",
+        "duty": "水上责任民警",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.sx.sy",
+      "input": {
+        "userLoginName": "demo.330604",
+        "userUnitCode": "330604",
+        "userName": "余景川",
+        "policeStationKey": "station.sx.sy",
+        "duty": "水上责任民警",
+        "status": "ENABLED"
+      }
+    },
+    {
+      "kind": "PortOfficer",
+      "key": "officer.tz.jk",
+      "input": {
+        "userLoginName": "demo.331003",
+        "userUnitCode": "331003",
+        "userName": "陶志诚",
+        "policeStationKey": "station.tz.jk",
+        "duty": "海防责任民警",
+        "status": "ENABLED"
       }
     },
     {

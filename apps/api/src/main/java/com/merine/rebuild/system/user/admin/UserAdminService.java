@@ -1,6 +1,8 @@
 package com.merine.rebuild.system.user.admin;
 
 import com.merine.rebuild.common.ApiException;
+import com.merine.rebuild.maritime.MaritimeResourceLookup;
+import com.merine.rebuild.system.user.usage.UserDirectoryLookup;
 import com.merine.rebuild.common.PageResult;
 import com.merine.rebuild.system.user.authorization.AdminCoverageGuard;
 import com.merine.rebuild.system.user.account.PasswordLimits;
@@ -38,6 +40,8 @@ public class UserAdminService {
     static final int DEFAULT_PAGE_SIZE = 20;
     static final int MAX_PAGE_SIZE = 100;
 
+    private final MaritimeResourceLookup maritime;
+    private final UserDirectoryLookup directory;
     private final UserAdminMapper mapper;
     private final UnitLookup units;
     private final RoleLookup roles;
@@ -45,7 +49,8 @@ public class UserAdminService {
     private final PasswordEncoder passwordEncoder;
 
     public UserAdminService(UserAdminMapper mapper, UnitLookup units, RoleLookup roles,
-                            AdminCoverageGuard coverage, PasswordEncoder passwordEncoder) {
+                            AdminCoverageGuard coverage, PasswordEncoder passwordEncoder, MaritimeResourceLookup maritime, UserDirectoryLookup directory) {
+        this.maritime = maritime; this.directory = directory;
         this.mapper = mapper;
         this.units = units;
         this.roles = roles;
@@ -115,6 +120,10 @@ public class UserAdminService {
             throw editConflict();
         }
         requireEnabledUnit(request.unitCode());
+        directory.lock(id);
+        if (!current.unitCode().equals(request.unitCode()) && maritime.userHasMembership(id)) {
+            throw new ApiException(HttpStatus.CONFLICT,"USER_HAS_POLICING_MEMBERSHIP","该用户仍关联派出所，请先解除成员及码头责任关联再调整所属单位");
+        }
         List<String> roleCodes = requireEnabledRoles(request.roleCodes());
 
         // WHERE version 也覆盖读取之后的竞态；冲突时整个用例回滚，不替换角色或密码。
