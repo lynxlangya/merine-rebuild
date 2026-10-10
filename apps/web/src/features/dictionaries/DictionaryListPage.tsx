@@ -85,26 +85,6 @@ export function DictionaryListPage() {
     triggerRef.current = null;
   };
 
-  const typeColumns: TableColumnsType<DictionaryListItem> = [
-    {
-      title: '字典',
-      dataIndex: 'name',
-      render: (value: string, row) => (
-        <span className={styles.typeCell}>
-          <span className={styles.typeName}>{value}</span>
-          <span className={styles.mono}>{row.code}</span>
-        </span>
-      ),
-    },
-    { title: '项数', dataIndex: 'itemCount', width: 64, align: 'right' },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      width: 84,
-      render: (value: string) => <DictTag dictionary={statusDictionary} value={value} />,
-    },
-  ];
-
   const itemColumns: TableColumnsType<DictionaryItemView> = [
     {
       title: '取值',
@@ -156,7 +136,7 @@ export function DictionaryListPage() {
       <PageHeader
         demo={false}
         title="字典管理"
-        description="字典类型与字典项都在这里维护，状态、菜单类型、单位层级三本枚举同样可以改；使用侧登录后一次加载并缓存。"
+        description="选择字典类型，维护对应的标签、排序与启停状态。"
         actions={
           <>
             <Button
@@ -213,26 +193,30 @@ export function DictionaryListPage() {
                 <div className={styles.skeleton}>
                   <Skeleton active paragraph={{ rows: 6 }} />
                 </div>
+              ) : rows.length === 0 ? (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有字典类型" />
               ) : (
-                <Table<DictionaryListItem>
-                  rowKey="code"
-                  size="small"
-                  showHeader={false}
-                  pagination={false}
-                  dataSource={rows}
-                  columns={typeColumns}
-                  rowSelection={{
-                    type: 'radio',
-                    selectedRowKeys: selectedCode ? [selectedCode] : [],
-                    onChange: (keys) => setSelectedCode(String(keys[0] ?? '')),
-                  }}
-                  onRow={(row) => ({ onClick: () => setSelectedCode(row.code) })}
-                  locale={{
-                    emptyText: (
-                      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="还没有字典类型" />
-                    ),
-                  }}
-                />
+                <ul className={styles.typeList}>
+                  {rows.map((row) => (
+                    <li key={row.code}>
+                      <button
+                        type="button"
+                        className={styles.typeButton}
+                        aria-pressed={row.code === selectedCode}
+                        onClick={() => setSelectedCode(row.code)}
+                      >
+                        <span className={styles.typeName}>{row.name}</span>
+                        <span className={styles.typeStatus}>
+                          <DictTag dictionary={statusDictionary} value={row.status} />
+                        </span>
+                        <span className={styles.typeCode} title={row.code}>
+                          {row.code}
+                        </span>
+                        <span className={styles.itemCount}>{row.itemCount} 项</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
 
@@ -352,6 +336,7 @@ function DictionaryDetail({
           rowKey="value"
           size="small"
           tableLayout="fixed"
+          scroll={{ x: 760 }}
           pagination={false}
           dataSource={items}
           columns={columns}

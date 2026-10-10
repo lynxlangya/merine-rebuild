@@ -55,22 +55,63 @@
   flex-direction: column;
   gap: 8px;
 }
+
+.stationSidebar {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.stationSidebarHead {
+  padding: var(--sp-3);
+}
+
+.stationSidebarHead h2 {
+  margin: 0 0 var(--sp-3);
+  color: var(--fg);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+}
+
+.stationSidebar .stations {
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+
+.stationSidebar > :global(.ant-alert) {
+  margin: 0 var(--sp-3) var(--sp-3);
+}
+
 .stationLink {
   display: block;
-  color: var(--text);
-  padding: 14px;
+  color: var(--fg);
+  padding: var(--sp-3);
   border: 1px solid var(--border);
   border-radius: var(--r-3);
-  line-height: 1.6;
+  font-size: var(--fs-13);
+  line-height: var(--lh-ui);
+  overflow-wrap: anywhere;
 }
-.stationLink:hover,
+
+.stationLink:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
 .activeStation {
   background: var(--surface-selected);
-  border-color: var(--primary);
+  border-color: var(--accent-soft-border);
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+.activeStation:hover {
+  background: var(--surface-selected);
 }
 .stationLink small {
   display: block;
+  margin-top: var(--sp-1);
   color: var(--muted);
+  font-size: var(--fs-11);
+  line-height: var(--lh-ui);
 }
 .detail {
   display: flex;

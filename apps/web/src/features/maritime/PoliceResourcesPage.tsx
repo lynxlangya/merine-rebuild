@@ -153,23 +153,25 @@ export function PoliceResourcesPage() {
           )
         ) : (
           <div className={styles.policing}>
-            <aside className={styles.panel}>
-              <Input.Search
-                key={params.get('stationKeyword') || ''}
-                defaultValue={params.get('stationKeyword') || ''}
-                aria-label="搜索派出所"
-                placeholder="请输入派出所名称"
-                allowClear
-                onSearch={(keyword) => {
-                  const next = new URLSearchParams(params);
-                  if (keyword) next.set('stationKeyword', keyword);
-                  else next.delete('stationKeyword');
-                  for (const key of ['stationPage', 'id', 'officerPage', 'wharfPage', 'returnTo'])
-                    next.delete(key);
-                  setParams(next);
-                }}
-                style={{ marginBottom: 16 }}
-              />
+            <aside className={`${styles.panel} ${styles.stationSidebar}`} aria-label="派出所列表">
+              <div className={styles.stationSidebarHead}>
+                <h2>派出所</h2>
+                <Input.Search
+                  key={params.get('stationKeyword') || ''}
+                  defaultValue={params.get('stationKeyword') || ''}
+                  aria-label="搜索派出所"
+                  placeholder="请输入派出所名称"
+                  allowClear
+                  onSearch={(keyword) => {
+                    const next = new URLSearchParams(params);
+                    if (keyword) next.set('stationKeyword', keyword);
+                    else next.delete('stationKeyword');
+                    for (const key of ['stationPage', 'id', 'officerPage', 'wharfPage', 'returnTo'])
+                      next.delete(key);
+                    setParams(next);
+                  }}
+                />
+              </div>
               {stations.isError ? (
                 <Alert
                   type="error"
@@ -200,6 +202,7 @@ export function PoliceResourcesPage() {
                 </div>
               )}
               <TablePager
+                compact
                 total={stations.data?.total ?? 0}
                 page={stations.data?.page ?? 1}
                 pageSize={10}
@@ -207,7 +210,8 @@ export function PoliceResourcesPage() {
                 onPageChange={(page) => {
                   const next = new URLSearchParams(params);
                   next.set('stationPage', String(page));
-                  next.delete('id');
+                  for (const key of ['id', 'officerPage', 'wharfPage', 'returnTo'])
+                    next.delete(key);
                   setParams(next);
                 }}
               />

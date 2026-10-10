@@ -1,4 +1,5 @@
 .messagesWrap {
+  --font-chat: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', var(--font-body);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -47,6 +48,10 @@
 
 .userText {
   margin: 0;
+  font-family: var(--font-chat);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-read);
+  line-height: var(--lh-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -65,14 +70,56 @@
 
 /* ---------- Markdown 文本 ---------- */
 
-.markdown {
-  font-size: var(--fs-14);
+.markdown:global(.x-markdown) {
+  --font-size: var(--fs-16);
+  --margin-block: 0 0 1em;
+  --margin-ul-ol: 0 0 1em;
+  --padding-ul-ol: 0 0 0 1.5em;
+  --margin-li: 0.375em 0;
+  font-family: var(--font-chat);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-read);
   line-height: var(--lh-body);
   overflow-wrap: anywhere;
 }
 
 .markdown :is(p, ul, ol, blockquote, table, pre) {
-  margin: 0 0 var(--sp-2);
+  margin: 0 0 var(--sp-4);
+}
+
+.markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: var(--sp-6) 0 var(--sp-3);
+  font-family: var(--font-chat);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-title);
+}
+
+.markdown h1 {
+  font-size: var(--fs-24);
+}
+
+.markdown h2 {
+  font-size: var(--fs-20);
+}
+
+.markdown :is(h3, h4, h5, h6) {
+  font-size: var(--fs-18);
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown :is(strong, b) {
+  font-weight: var(--fw-strong);
+}
+
+.markdown :is(pre, code) {
+  font-family: var(--font-mono);
+}
+
+.markdown pre {
+  font-size: var(--fs-14);
 }
 
 .markdown :is(table) {

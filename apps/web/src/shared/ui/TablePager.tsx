@@ -25,6 +25,7 @@ export function TablePager({
   page,
   pageSize,
   itemCount,
+  compact = false,
   onPageChange,
 }: {
   total: number;
@@ -32,6 +33,8 @@ export function TablePager({
   pageSize: number;
   /** 当前页实际返回的行数：用于显示区间，不能按 pageSize 推断最后一页 */
   itemCount: number;
+  /** 窄栏只显示总数、上一页/下一页和当前页，避免说明与页码挤在一起。 */
+  compact?: boolean;
   onPageChange: (page: number) => void;
 }) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -39,11 +42,13 @@ export function TablePager({
   const to = itemCount === 0 ? 0 : from + itemCount - 1;
 
   return (
-    <div className={styles.pager}>
-      <span>
-        共 {total} 条 · 每页 {pageSize} 条 · {total === 0 ? '本页 0 条' : `本页 ${from}–${to}`}
+    <div className={`${styles.pager} ${compact ? styles.compact : ''}`}>
+      <span className={compact ? styles.compactTotal : undefined}>
+        {compact
+          ? `共 ${total} 条`
+          : `共 ${total} 条 · 每页 ${pageSize} 条 · ${total === 0 ? '本页 0 条' : `本页 ${from}–${to}`}`}
       </span>
-      <div className={styles.pagerPages}>
+      <div className={styles.pagerPages} role="navigation" aria-label="分页">
         <button
           type="button"
           className={styles.pagerBtn}
@@ -53,22 +58,30 @@ export function TablePager({
         >
           ‹
         </button>
-        {pageItems(page, pageCount).map((item, index) =>
-          item === 'gap' ? (
-            <span key={`gap-${index}`} className={styles.pagerGap}>
-              …
-            </span>
-          ) : (
-            <button
-              key={item}
-              type="button"
-              className={styles.pagerBtn}
-              aria-current={item === page ? 'page' : undefined}
-              onClick={() => onPageChange(item)}
-            >
-              {item}
-            </button>
-          ),
+        {compact ? (
+          <span className={styles.pagePosition} aria-live="polite" aria-atomic="true">
+            <span className={styles.currentPage}>{page}</span>
+            <span aria-hidden="true"> / </span>
+            <span>{pageCount}</span>
+          </span>
+        ) : (
+          pageItems(page, pageCount).map((item, index) =>
+            item === 'gap' ? (
+              <span key={`gap-${index}`} className={styles.pagerGap}>
+                …
+              </span>
+            ) : (
+              <button
+                key={item}
+                type="button"
+                className={styles.pagerBtn}
+                aria-current={item === page ? 'page' : undefined}
+                onClick={() => onPageChange(item)}
+              >
+                {item}
+              </button>
+            ),
+          )
         )}
         <button
           type="button"

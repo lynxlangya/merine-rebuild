@@ -52,3 +52,32 @@
   font-family: var(--font-mono);
   font-size: var(--fs-12);
 }
+
+.compact {
+  justify-content: space-between;
+  padding: var(--sp-3);
+  font-size: var(--fs-12);
+}
+
+.compactTotal {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.compact .pagerPages {
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.pagePosition {
+  min-width: 44px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  white-space: nowrap;
+}
+
+.currentPage {
+  color: var(--fg);
+  font-weight: var(--fw-strong);
+}
