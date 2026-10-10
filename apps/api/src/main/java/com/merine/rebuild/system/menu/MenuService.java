@@ -11,6 +11,8 @@ import com.merine.rebuild.system.menu.dto.RouteKeyOption;
 import com.merine.rebuild.system.menu.persistence.MenuMapper;
 import com.merine.rebuild.system.menu.persistence.MenuRow;
 import com.merine.rebuild.system.permission.PermissionCommands;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import com.merine.rebuild.system.permission.PermissionLookup;
 import com.merine.rebuild.system.permission.PermissionSummary;
 import com.merine.rebuild.system.role.RolePermissionCommands;
@@ -39,6 +41,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class MenuService {
 
     private static final String DIRECTORY = "DIRECTORY";
+
+    /** 审计摘要用的中文节点类型；与字典里的「菜单类型」标签保持一致。 */
+    private static String typeLabel(String type) {
+        return switch (type) {
+            case "DIRECTORY" -> "目录";
+            case "PAGE" -> "页面";
+            case "TAB" -> "页签";
+            case "BUTTON" -> "按钮";
+            default -> "节点";
+        };
+    }
     private static final String PAGE = "PAGE";
     private static final String TAB = "TAB";
     private static final String BUTTON = "BUTTON";
@@ -49,13 +62,14 @@ public class MenuService {
     private final PermissionCommands permissionCommands;
     private final RolePermissionCommands rolePermissions;
     private final UserAuthorizationCommands authorization;
+    private final AuditTrail audit;
     private final AdminCoverageGuard coverage;
     private final MenuBootstrap bootstrap;
 
     public MenuService(MenuMapper mapper, PermissionLookup permissions,
                        PermissionCommands permissionCommands, RolePermissionCommands rolePermissions,
                        UserAuthorizationCommands authorization, AdminCoverageGuard coverage,
-                       MenuBootstrap bootstrap) {
+                       MenuBootstrap bootstrap, AuditTrail audit) {
         this.mapper = mapper;
         this.permissions = permissions;
         this.permissionCommands = permissionCommands;
@@ -63,6 +77,7 @@ public class MenuService {
         this.authorization = authorization;
         this.coverage = coverage;
         this.bootstrap = bootstrap;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -138,7 +153,10 @@ public class MenuService {
         mapper.insert(parentId, type, request.name().strip(), routeKey, iconName, permissionId,
                 request.sortOrder() == null ? 0 : request.sortOrder(), ENABLED,
                 blankToNull(request.description()));
-        return requireNode(Long.toString(mapper.lastInsertId()));
+        MenuNode created = requireNode(Long.toString(mapper.lastInsertId()));
+        audit.recordCurrent(AuditEvent.succeeded("system", "menu:create", "MENU", created.id(),
+                created.name(), "新建%s「%s」".formatted(typeLabel(created.type()), created.name())));
+        return created;
     }
 
     @Transactional
@@ -182,7 +200,10 @@ public class MenuService {
         if (current.permissionId() != null) {
             permissionCommands.rename(current.permissionId(), name, description);
         }
-        return requireNode(rawId);
+        MenuNode updated = requireNode(rawId);
+        audit.recordCurrent(AuditEvent.succeeded("system", "menu:update", "MENU", updated.id(),
+                updated.name(), "修改%s「%s」".formatted(typeLabel(updated.type()), updated.name())));
+        return updated;
     }
 
     /**
@@ -216,7 +237,12 @@ public class MenuService {
         permissionCommands.deleteByIds(permissionIds);
 
         coverage.requireUsableAdminRemains("不能删除最后一个可用管理员的权限");
-        return new MenuDeleteImpact(subtree.size(), affectedRoles.size());
+        MenuDeleteImpact impact = new MenuDeleteImpact(subtree.size(), affectedRoles.size());
+        audit.recordCurrent(AuditEvent.succeeded("system", "menu:delete", "MENU",
+                Long.toString(root.id()), root.name(),
+                "删除%s「%s」及其 %d 个子节点、%d 个角色因此失去权限".formatted(typeLabel(root.type()),
+                        root.name(), impact.deletedNodes(), impact.affectedRoles())));
+        return impact;
     }
 
     /**
@@ -272,7 +298,11 @@ public class MenuService {
             idByKey.put(entry.key(), mapper.lastInsertId());
             createdMenus++;
         }
-        return new RestoreMenusResult(createdMenus, createdPermissions);
+        RestoreMenusResult restored = new RestoreMenusResult(createdMenus, createdPermissions);
+        audit.recordCurrent(AuditEvent.succeeded("system", "menu:restore", "MENU", "",
+                "默认菜单", "恢复默认菜单：新增 %d 个节点、%d 个权限码".formatted(createdMenus,
+                        createdPermissions)));
+        return restored;
     }
 
     /** 找到权限码；不存在就建一个。created 标记这次是不是新建，恢复接口据此统计数量。 */

@@ -9,3 +9,9 @@ spring:
     url: ${TEST_DB_URL}
     username: ${TEST_DB_APP_USER}
     password: ${TEST_DB_APP_PASSWORD}
+
+merine:
+  audit:
+    retention:
+      # 测试不跑定时清理：AuditRetentionRegressionTest 直接触发清理方法并断言保留窗口。
+      enabled: false

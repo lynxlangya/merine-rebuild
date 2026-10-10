@@ -63,6 +63,8 @@ public class MenuBootstrap {
                     PermissionCodes.UNIT_READ, 40, "三级组织树维护"),
             new Entry("page:dictionaries", "dir:system", Type.PAGE, "字典管理",
                     "system.dictionaries", PermissionCodes.DICT_READ, 50, "字典类型与字典项维护"),
+            new Entry("page:audit", "dir:system", Type.PAGE, "审计日志",
+                    "system.audit", PermissionCodes.AUDIT_READ, 60, "操作审计流水：谁在什么时候对什么对象做了什么"),
             new Entry("page:diagnostics", "dir:dev", Type.PAGE, "工程诊断", "dev.diagnostics",
                     PermissionCodes.DIAGNOSTICS_READ, 10, "页面 → API → MySQL 的最小链路"),
             new Entry("page:tasks", "dir:collaboration", Type.PAGE, "任务处置",

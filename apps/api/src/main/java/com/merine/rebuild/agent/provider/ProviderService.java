@@ -19,6 +19,8 @@ import com.merine.rebuild.agent.provider.persistence.ProviderSecretRow;
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.common.ApiResponse;
 import com.merine.rebuild.common.PageResult;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -41,12 +43,14 @@ public class ProviderService implements ProviderTargetLookup {
     private final ProviderMapper mapper;
     private final ProviderKeyCipher cipher;
     private final ProviderCatalogClient catalog;
+    private final AuditTrail audit;
 
     public ProviderService(ProviderMapper mapper, ProviderKeyCipher cipher,
-                           ProviderCatalogClient catalog) {
+                           ProviderCatalogClient catalog, AuditTrail audit) {
         this.mapper = mapper;
         this.cipher = cipher;
         this.catalog = catalog;
+        this.audit = audit;
     }
 
     /**
@@ -87,7 +91,17 @@ public class ProviderService implements ProviderTargetLookup {
         if (apiKey == null) {
             throw invalid("apiKey", "请先填写 API Key 再获取模型列表");
         }
-        return catalog.fetch(vendor, baseUrl, apiKey);
+        ModelCatalog catalogResult = catalog.fetch(vendor, baseUrl, apiKey);
+        // 已保存的连接才拿得到名字；表单里刚填的密钥属于「还没保存就先看看有哪些模型」的场景。
+        ProviderRow saved = input.providerId() == null ? null : mapper.find(input.providerId());
+        int discovered = catalogResult.models().size();
+        String label = saved == null ? "" : saved.name();
+        String summary = saved == null
+                ? "未保存的连接读取上游模型清单：返回 %d 个模型".formatted(discovered)
+                : "「%s」读取上游模型清单：返回 %d 个模型".formatted(label, discovered);
+        audit.recordCurrent(AuditEvent.succeeded("agent", "provider:discover-models", "PROVIDER",
+                input.providerId() == null ? "" : input.providerId(), label, summary));
+        return catalogResult;
     }
 
     /** 取已保存连接的密钥；连接不存在时按未找到处理，密钥解密失败按密钥不可用处理。 */
@@ -194,7 +208,11 @@ public class ProviderService implements ProviderTargetLookup {
         }
         replaceModels(id, input.models());
         log.info("Provider created: id={} vendor={} models={}", id, input.vendor(), input.models().size());
-        return find(id);
+        ProviderView created = find(id);
+        audit.recordCurrent(AuditEvent.succeeded("agent", "provider:create", "PROVIDER", id,
+                created.name(), "新建连接「%s」（%s，%d 个模型，%s）".formatted(created.name(),
+                        created.vendor(), created.models().size(), created.baseUrl())));
+        return created;
     }
 
     @Transactional
@@ -213,17 +231,39 @@ public class ProviderService implements ProviderTargetLookup {
             throw duplicateName();
         }
         // 模型集合随连接一起保存：先锁连接行（上面已完成），再按 modelId 对账增删改。
+        int modelsBefore = modelsOf(id).size();
         replaceModels(id, input.models());
         log.info("Provider updated: id={} vendor={} models={}", id, input.vendor(), input.models().size());
-        return find(id);
+        ProviderView updated = find(id);
+        List<String> changes = new ArrayList<>();
+        changes.add("模型 %d → %d".formatted(modelsBefore, updated.models().size()));
+        if (!current.baseUrl().equals(updated.baseUrl())) {
+            changes.add("请求地址改为 %s".formatted(updated.baseUrl()));
+        }
+        if (input.apiKey() != null) {
+            changes.add("更换密钥");
+        }
+        if (current.status() != updated.status()) {
+            changes.add("状态改为 %s".formatted(updated.status()));
+        }
+        if (current.vendor() != updated.vendor()) {
+            changes.add("供应商标识改为 %s".formatted(updated.vendor()));
+        }
+        audit.recordCurrent(AuditEvent.succeeded("agent", "provider:update", "PROVIDER", id,
+                updated.name(), "修改连接「%s」：%s".formatted(updated.name(),
+                        String.join("；", changes))));
+        return updated;
     }
 
     @Transactional
     public void delete(String id, int version) {
-        requireVersion(mapper.lock(id), version);
+        ProviderRow current = mapper.lock(id);
+        requireVersion(current, version);
         mapper.deleteModelsOfProvider(id);
         if (mapper.delete(id, version) != 1) throw conflict();
         log.info("Provider deleted: id={}", id);
+        audit.recordCurrent(AuditEvent.succeeded("agent", "provider:delete", "PROVIDER", id,
+                current.name(), "删除连接「%s」（%s）".formatted(current.name(), current.baseUrl())));
     }
 
     /** 列表页只发一次模型查询，再按 providerId 分组；不逐条连接查询。 */

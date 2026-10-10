@@ -1,6 +1,8 @@
 package com.merine.rebuild.system.user.admin;
 
 import com.merine.rebuild.common.ApiException;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import com.merine.rebuild.maritime.MaritimeResourceLookup;
 import com.merine.rebuild.system.user.usage.UserDirectoryLookup;
 import com.merine.rebuild.common.PageResult;
@@ -47,15 +49,17 @@ public class UserAdminService {
     private final RoleLookup roles;
     private final AdminCoverageGuard coverage;
     private final PasswordEncoder passwordEncoder;
+    private final AuditTrail audit;
 
     public UserAdminService(UserAdminMapper mapper, UnitLookup units, RoleLookup roles,
-                            AdminCoverageGuard coverage, PasswordEncoder passwordEncoder, MaritimeResourceLookup maritime, UserDirectoryLookup directory) {
+                            AdminCoverageGuard coverage, PasswordEncoder passwordEncoder, MaritimeResourceLookup maritime, UserDirectoryLookup directory, AuditTrail audit) {
         this.maritime = maritime; this.directory = directory;
         this.mapper = mapper;
         this.units = units;
         this.roles = roles;
         this.coverage = coverage;
         this.passwordEncoder = passwordEncoder;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -107,7 +111,12 @@ public class UserAdminService {
         }
         long createdId = mapper.findByLoginName(loginName).id();
         replaceRoles(createdId, roleCodes);
-        return UserSummary.from(requireUser(createdId));
+        UserSummary created = UserSummary.from(requireUser(createdId));
+        audit.recordCurrent(AuditEvent.succeeded("system", "user:create", "USER",
+                Long.toString(createdId), created.displayName(),
+                "新建用户「%s」（%s，%s）".formatted(created.displayName(), loginName,
+                        created.unitName())));
+        return created;
     }
 
     @Transactional
@@ -145,7 +154,18 @@ public class UserAdminService {
         if (rolesChanged || unitChanged) {
             coverage.requireUsableAdminRemains("不能移除最后一个可用管理员的角色");
         }
-        return UserSummary.from(requireUser(id));
+        UserSummary updated = UserSummary.from(requireUser(id));
+        audit.recordCurrent(AuditEvent.succeeded("system", "user:update", "USER",
+                Long.toString(id), updated.displayName(),
+                "修改用户「%s」的%s".formatted(updated.displayName(),
+                        unitChanged ? "姓名与所属单位" : "姓名")));
+        if (rolesChanged) {
+            audit.recordCurrent(AuditEvent.succeeded("system", "user:assign-roles", "USER",
+                    Long.toString(id), updated.displayName(),
+                    "角色由 [%s] 改为 [%s]".formatted(String.join("、", current.roleCodes()),
+                            String.join("、", roleCodes))));
+        }
+        return updated;
     }
 
     /**
@@ -163,7 +183,11 @@ public class UserAdminService {
         }
         mapper.updatePassword(id, passwordEncoder.encode(request.newPassword()));
         mapper.bumpAuthorizationVersion(id);
-        return UserSummary.from(requireUser(id));
+        UserSummary updated = UserSummary.from(requireUser(id));
+        audit.recordCurrent(AuditEvent.succeeded("system", "user:reset-password", "USER",
+                Long.toString(id), updated.displayName(),
+                "重置用户「%s」的密码（不记录密码内容）".formatted(updated.displayName())));
+        return updated;
     }
 
     /**
@@ -186,6 +210,10 @@ public class UserAdminService {
         if (!enable) {
             coverage.requireUsableAdminRemains("不能停用最后一个可用管理员的账号");
         }
+        updated.forEach(user -> audit.recordCurrent(AuditEvent.succeeded("system",
+                "user:toggle-status", "USER", user.id(), user.displayName(),
+                "%s用户「%s」（%s）".formatted(enable ? "启用" : "停用", user.displayName(),
+                        user.loginName()))));
         return updated;
     }
 

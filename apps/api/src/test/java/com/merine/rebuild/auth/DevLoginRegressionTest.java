@@ -53,6 +53,27 @@ class DevLoginRegressionTest extends AuthSessionRegressionSupport {
         assertUnauthenticatedJson(currentSession(session));
     }
 
+    /** 免密登录同样要留痕：它是开发环境的捷径，但仍然是建立会话的登录（S2 埋点）。 */
+    @Test
+    void developmentLoginWritesAuditTrail() throws Exception {
+        jdbcTemplate.update("DELETE FROM sys_audit_log");
+        MockHttpSession session = new MockHttpSession();
+        Cookie csrf = issueCsrfToken(session);
+        MvcResult result = mockMvc.perform(withCsrf(post("/api/auth/dev/session")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"loginName\":\"" + LOGIN_NAME + "\"}"), csrf)
+                .session(session)).andReturn();
+        assertThat(result.getResponse().getStatus()).isEqualTo(200);
+
+        var rows = jdbcTemplate.queryForList(
+                "SELECT result, actor_login, actor_name, summary FROM sys_audit_log WHERE action = 'auth:login'");
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst()).containsEntry("result", "SUCCEEDED")
+                .containsEntry("actor_login", LOGIN_NAME)
+                .containsEntry("actor_name", DISPLAY_NAME);
+        assertThat((String) rows.getFirst().get("summary")).contains("本地开发免密登录");
+    }
+
     @Test
     void csrfAndCurrentAccountStatusStillApply() throws Exception {
         String body = "{\"loginName\":\"" + LOGIN_NAME + "\"}";

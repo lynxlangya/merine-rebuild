@@ -40,6 +40,8 @@ public final class PermissionCodes {
     public static final String DIAGNOSTICS_WRITE = "system:diagnostics:write";
 
     public static final String DICT_READ = "system:dict:read";
+    /** 审计日志：只读流水，与其它系统管理页一致一个读码。 */
+    public static final String AUDIT_READ = "system:audit:read";
     public static final String DICT_CREATE = "system:dict:create";
     public static final String DICT_UPDATE = "system:dict:update";
 
@@ -115,6 +117,7 @@ public final class PermissionCodes {
                 UNIT_READ, UNIT_CREATE, UNIT_UPDATE, UNIT_DELETE,
                 DIAGNOSTICS_READ, DIAGNOSTICS_WRITE,
                 DICT_READ, DICT_CREATE, DICT_UPDATE,
+                AUDIT_READ,
                 TASK_READ, TASK_CREATE, TASK_ACCEPT, TASK_PROGRESS, TASK_DISPATCH,
                 TASK_RETURN, TASK_SUBMIT_RESULT, TASK_TRANSFER_REQUEST,
                 TASK_TRANSFER_RESPOND, TASK_TRANSFER_DECIDE,

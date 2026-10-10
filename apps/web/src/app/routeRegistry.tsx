@@ -1,5 +1,6 @@
 import {
   ApartmentOutlined,
+  AuditOutlined,
   GlobalOutlined,
   EnvironmentOutlined,
   BookOutlined,
@@ -32,6 +33,9 @@ const DictionaryListPage = lazy(() =>
   import('../features/dictionaries/DictionaryListPage').then((module) => ({
     default: module.DictionaryListPage,
   })),
+);
+const AuditLogPage = lazy(() =>
+  import('../features/audit/AuditLogPage').then((module) => ({ default: module.AuditLogPage })),
 );
 const DiagnosticsPage = lazy(() =>
   import('../features/diagnostics/DiagnosticsPage').then((module) => ({
@@ -125,6 +129,12 @@ export const appRoutes: RegisteredRoute[] = [
     path: '/system/dictionaries',
     element: <DictionaryListPage />,
     icon: <BookOutlined />,
+  },
+  {
+    key: 'system.audit',
+    path: '/system/audit',
+    element: <AuditLogPage />,
+    icon: <AuditOutlined />,
   },
   {
     key: 'collaboration.tasks',

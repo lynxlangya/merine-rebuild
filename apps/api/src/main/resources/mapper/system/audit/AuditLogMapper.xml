@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.system.audit.persistence.AuditLogMapper">
+
+  <!-- 筛选条件集中一份：列表与计数共用，避免两处写法漂移导致分页总数与内容不一致。 -->
+  <sql id="auditFilters">
+    <if test="from != null">AND occurred_at &gt;= #{from}</if>
+    <if test="to != null">AND occurred_at &lt; #{to}</if>
+    <if test="actor != null and actor != ''">
+      AND (actor_login LIKE CONCAT('%', #{actor}, '%') OR actor_name LIKE CONCAT('%', #{actor}, '%'))
+    </if>
+    <if test="module != null and module != ''">AND module = #{module}</if>
+    <if test="action != null and action != ''">AND action = #{action}</if>
+    <if test="result != null and result != ''">AND result = #{result}</if>
+    <if test="targetType != null and targetType != ''">AND target_type = #{targetType}</if>
+    <if test="targetId != null and targetId != ''">AND target_id = #{targetId}</if>
+  </sql>
+
+  <select id="list" resultType="com.merine.rebuild.system.audit.persistence.AuditLogRow">
+    SELECT id, occurred_at AS occurredAt, actor_user_id AS actorUserId, actor_login AS actorLogin,
+           actor_name AS actorName, actor_unit_name AS actorUnitName,
+           module, action, result, target_type AS targetType, target_id AS targetId,
+           target_label AS targetLabel, summary, request_id AS requestId, client_ip AS clientIp
+      FROM sys_audit_log
+     WHERE 1 = 1
+    <include refid="auditFilters"/>
+     ORDER BY occurred_at DESC, id DESC
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM sys_audit_log WHERE 1 = 1
+    <include refid="auditFilters"/>
+  </select>
+</mapper>

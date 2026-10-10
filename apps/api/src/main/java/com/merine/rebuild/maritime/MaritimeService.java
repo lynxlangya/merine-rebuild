@@ -1,6 +1,8 @@
 package com.merine.rebuild.maritime;
 
 import com.merine.rebuild.common.ApiException;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import com.merine.rebuild.common.PageResult;
 import com.merine.rebuild.maritime.dto.*;
 import com.merine.rebuild.maritime.persistence.*;
@@ -18,8 +20,36 @@ public class MaritimeService {
     private final MaritimeMapper mapper;
     private final UnitLookup units;
     private final UserDirectoryLookup users;
-    public MaritimeService(MaritimeMapper mapper, UnitLookup units, UserDirectoryLookup users) {
-        this.mapper = mapper; this.units = units; this.users = users;
+    private final AuditTrail audit;
+    public MaritimeService(MaritimeMapper mapper, UnitLookup units, UserDirectoryLookup users,
+                           AuditTrail audit) {
+        this.mapper = mapper; this.units = units; this.users = users; this.audit = audit;
+    }
+
+    /**
+     * 档案类操作统一留痕：模块 maritime，动作 `<资源>:<增改删>`，对象带类型与名称快照。
+     * 涉海档案没有历史表，审计是唯一的追溯依据，所以删除要在删除前先取名称。
+     */
+    private void auditArchive(String resource, String targetType, String verb, String id, String name) {
+        String action = resource + ":" + switch (verb) {
+            case "新增" -> "create";
+            case "修改" -> "update";
+            default -> "delete";
+        };
+        audit.recordCurrent(AuditEvent.succeeded("maritime", action, targetType, id, name,
+                "%s%s「%s」".formatted(verb, typeLabel(targetType), name)));
+    }
+
+    private static String typeLabel(String targetType) {
+        return switch (targetType) {
+            case "PORT" -> "港口";
+            case "WHARF" -> "码头";
+            case "ANCHORAGE" -> "锚地";
+            case "ISLAND" -> "海岛";
+            case "POLICE_STATION" -> "派出所";
+            case "PORT_OFFICER" -> "民警";
+            default -> "档案";
+        };
     }
 
     /** 快照仅定位锁；全部引用在取锁后用最新事实重新核对，变更归属则返回冲突。 */
@@ -165,7 +195,9 @@ public class MaritimeService {
         ArchiveRow row = rowPort(input);
         row.fixtureKey = fixtureKey;
         mapper.insertPort(row);
-        return viewPort(mapper.findPort(row.id));
+        var created = viewPort(mapper.findPort(row.id));
+        auditArchive("port", "PORT", "新增", created.id(), created.name());
+        return created;
     }
     @Transactional
     public PortView updatePort(long id, WritePort input) {
@@ -174,7 +206,9 @@ public class MaritimeService {
         version(before, input.version());
         row.id = id; row.version = input.version();
         if (mapper.updatePort(row) != 1) conflict("档案已被修改，请刷新后重试");
-        return viewPort(mapper.findPort(id));
+        var updated = viewPort(mapper.findPort(id));
+        auditArchive("port", "PORT", "修改", updated.id(), updated.name());
+        return updated;
     }
     @Transactional
     public void deletePort(long id, int inputVersion) {
@@ -182,6 +216,7 @@ public class MaritimeService {
         version(row, inputVersion);
         if (!mapper.lockPortWharfs(id).isEmpty()) conflict("该港口仍有下属码头，不能删除；可先解除关联或停用");
         if (mapper.deletePort(id, inputVersion) != 1) conflict("档案已被修改，请刷新后重试");
+        auditArchive("port", "PORT", "删除", id(row.id), row.name);
     }
 
     private static WharfView viewWharf(ArchiveRow row) {
@@ -232,7 +267,9 @@ public class MaritimeService {
         lockWharfReferences(null, row);
         validateWharf(null, row);
         mapper.insertWharf(row);
-        return viewWharf(mapper.findWharf(row.id));
+        var created = viewWharf(mapper.findWharf(row.id));
+        auditArchive("wharf", "WHARF", "新增", created.id(), created.name());
+        return created;
     }
     @Transactional
     public WharfView updateWharf(long id, WriteWharf input) {
@@ -244,13 +281,16 @@ public class MaritimeService {
         validateWharf(before, row);
         row.id = id; row.version = input.version();
         if (mapper.updateWharf(row) != 1) conflict("档案已被修改，请刷新后重试");
-        return viewWharf(mapper.findWharf(id));
+        var updated = viewWharf(mapper.findWharf(id));
+        auditArchive("wharf", "WHARF", "修改", updated.id(), updated.name());
+        return updated;
     }
     @Transactional
     public void deleteWharf(long id, int inputVersion) {
         ArchiveRow row = required(mapper.lockWharf(id));
         version(row, inputVersion);
         if (mapper.deleteWharf(id, inputVersion) != 1) conflict("档案已被修改，请刷新后重试");
+        auditArchive("wharf", "WHARF", "删除", id(row.id), row.name);
     }
 
     private static AnchorageView viewAnchorage(ArchiveRow row) {
@@ -287,7 +327,9 @@ public class MaritimeService {
         ArchiveRow row = rowAnchorage(input);
         row.fixtureKey = fixtureKey;
         mapper.insertAnchorage(row);
-        return viewAnchorage(mapper.findAnchorage(row.id));
+        var created = viewAnchorage(mapper.findAnchorage(row.id));
+        auditArchive("anchorage", "ANCHORAGE", "新增", created.id(), created.name());
+        return created;
     }
     @Transactional
     public AnchorageView updateAnchorage(long id, WriteAnchorage input) {
@@ -296,13 +338,16 @@ public class MaritimeService {
         version(before, input.version());
         row.id = id; row.version = input.version();
         if (mapper.updateAnchorage(row) != 1) conflict("档案已被修改，请刷新后重试");
-        return viewAnchorage(mapper.findAnchorage(id));
+        var updated = viewAnchorage(mapper.findAnchorage(id));
+        auditArchive("anchorage", "ANCHORAGE", "修改", updated.id(), updated.name());
+        return updated;
     }
     @Transactional
     public void deleteAnchorage(long id, int inputVersion) {
         ArchiveRow row = required(mapper.lockAnchorage(id));
         version(row, inputVersion);
         if (mapper.deleteAnchorage(id, inputVersion) != 1) conflict("档案已被修改，请刷新后重试");
+        auditArchive("anchorage", "ANCHORAGE", "删除", id(row.id), row.name);
     }
 
     private static IslandView viewIsland(ArchiveRow row) {
@@ -339,7 +384,9 @@ public class MaritimeService {
         ArchiveRow row = rowIsland(input);
         row.fixtureKey = fixtureKey;
         mapper.insertIsland(row);
-        return viewIsland(mapper.findIsland(row.id));
+        var created = viewIsland(mapper.findIsland(row.id));
+        auditArchive("island", "ISLAND", "新增", created.id(), created.name());
+        return created;
     }
     @Transactional
     public IslandView updateIsland(long id, WriteIsland input) {
@@ -348,13 +395,16 @@ public class MaritimeService {
         version(before, input.version());
         row.id = id; row.version = input.version();
         if (mapper.updateIsland(row) != 1) conflict("档案已被修改，请刷新后重试");
-        return viewIsland(mapper.findIsland(id));
+        var updated = viewIsland(mapper.findIsland(id));
+        auditArchive("island", "ISLAND", "修改", updated.id(), updated.name());
+        return updated;
     }
     @Transactional
     public void deleteIsland(long id, int inputVersion) {
         ArchiveRow row = required(mapper.lockIsland(id));
         version(row, inputVersion);
         if (mapper.deleteIsland(id, inputVersion) != 1) conflict("档案已被修改，请刷新后重试");
+        auditArchive("island", "ISLAND", "删除", id(row.id), row.name);
     }
 
     private static PoliceStationView viewPoliceStation(ArchiveRow row) {
@@ -395,7 +445,9 @@ public class MaritimeService {
         row.unitId = unit.id();
         row.fixtureKey = fixtureKey;
         mapper.insertPoliceStation(row);
-        return viewPoliceStation(mapper.findPoliceStation(row.id));
+        var created = viewPoliceStation(mapper.findPoliceStation(row.id));
+        auditArchive("police-station", "POLICE_STATION", "新增", created.id(), created.name());
+        return created;
     }
     @Transactional
     public PoliceStationView updatePoliceStation(long id, WritePoliceStation input) {
@@ -409,7 +461,9 @@ public class MaritimeService {
         row.unitId = unit.id();
         row.id = id; row.version = input.version();
         if (mapper.updatePoliceStation(row) != 1) conflict("档案已被修改，请刷新后重试");
-        return viewPoliceStation(mapper.findPoliceStation(id));
+        var updated = viewPoliceStation(mapper.findPoliceStation(id));
+        auditArchive("police-station", "POLICE_STATION", "修改", updated.id(), updated.name());
+        return updated;
     }
     @Transactional
     public void deletePoliceStation(long id, int inputVersion) {
@@ -419,6 +473,7 @@ public class MaritimeService {
         if (!mapper.lockStationOfficers(id).isEmpty()) conflict("该派出所仍有所属民警，不能删除；可先解除关联或停用");
         if (!mapper.lockStationWharfs(id).isEmpty()) conflict("该派出所仍有管辖码头，不能删除；可先解除关联或停用");
         if (mapper.deletePoliceStation(id, inputVersion) != 1) conflict("档案已被修改，请刷新后重试");
+        auditArchive("police-station", "POLICE_STATION", "删除", id(row.id), row.name);
     }
 
     private static PortOfficerView viewPortOfficer(ArchiveRow row) {
@@ -464,7 +519,9 @@ public class MaritimeService {
         validateMember(row,null);
         try { mapper.insertPortOfficer(row); }
         catch (DuplicateKeyException error) { conflict("该用户已关联派出所，请勿重复添加"); }
-        return viewPortOfficer(mapper.findPortOfficer(row.id));
+        var created = viewPortOfficer(mapper.findPortOfficer(row.id));
+        auditArchive("port-officer", "PORT_OFFICER", "新增", created.id(), created.name());
+        return created;
     }
     @Transactional
     public PortOfficerView updatePortOfficer(long id, WritePortOfficer input) {
@@ -478,7 +535,9 @@ public class MaritimeService {
         if (!Objects.equals(before.policeStationId, row.policeStationId) && !mapper.lockOfficerWharfs(id).isEmpty()) conflict("该民警仍负责码头，请先解除码头责任关联再更换所属派出所");
         row.id = id; row.version = input.version();
         if (mapper.updatePortOfficer(row) != 1) conflict("档案已被修改，请刷新后重试");
-        return viewPortOfficer(mapper.findPortOfficer(id));
+        var updated = viewPortOfficer(mapper.findPortOfficer(id));
+        auditArchive("port-officer", "PORT_OFFICER", "修改", updated.id(), updated.name());
+        return updated;
     }
     @Transactional
     public void deletePortOfficer(long id, int inputVersion) {
@@ -487,7 +546,10 @@ public class MaritimeService {
         ArchiveRow row = required(mapper.lockPortOfficer(id));
         version(row, inputVersion);
         if (!mapper.lockOfficerWharfs(id).isEmpty()) conflict("该民警仍负责码头，不能删除；可先解除责任关联或停用");
+        // 锁定行本身没有姓名（民警名在 sys_user），删除前先在同事务内取一次，留痕要的是姓名快照
+        String name = required(mapper.findPortOfficer(id)).name;
         if (mapper.deletePortOfficer(id, inputVersion) != 1) conflict("档案已被修改，请刷新后重试");
+        auditArchive("port-officer", "PORT_OFFICER", "删除", id(row.id), name);
     }
 
     @Transactional(readOnly = true)

@@ -2,6 +2,8 @@ package com.merine.rebuild.auth;
 
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.system.permission.PermissionLookup;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import com.merine.rebuild.system.security.BuiltinAdminRoles;
 import com.merine.rebuild.system.user.account.UserAccount;
 import com.merine.rebuild.system.user.account.UserAccountCommands;
@@ -49,6 +51,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository securityContextRepository;
     private final CsrfTokenRepository csrfTokenRepository;
+    private final AuditTrail audit;
 
     /**
      * 账号不存在时用来消耗一次同等的哈希比对，避免用响应时间判断账号是否存在。
@@ -60,7 +63,7 @@ public class AuthService {
                        BuiltinAdminRoles builtinAdminRoles, PermissionLookup permissions,
                        PasswordEncoder passwordEncoder,
                        SecurityContextRepository securityContextRepository,
-                       CsrfTokenRepository csrfTokenRepository) {
+                       CsrfTokenRepository csrfTokenRepository, AuditTrail audit) {
         this.accounts = accounts;
         this.accountCommands = accountCommands;
         this.builtinAdminRoles = builtinAdminRoles;
@@ -68,6 +71,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.securityContextRepository = securityContextRepository;
         this.csrfTokenRepository = csrfTokenRepository;
+        this.audit = audit;
         this.placeholderHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -77,18 +81,35 @@ public class AuthService {
         UserAccount account = accounts.findByLoginName(loginName);
         if (account == null) {
             passwordEncoder.matches(password, placeholderHash);
+            auditFailedLogin(loginName, request, "账号不存在");
             throw invalidCredentials();
         }
         // 先验密码再看状态：否则不知道密码的人也能通过错误码区分出“这个账号存在且被停用”
         if (!passwordEncoder.matches(password, account.passwordHash())) {
+            auditFailedLogin(loginName, request, "口令不正确");
             throw invalidCredentials();
         }
         if (!account.enabled()) {
+            auditFailedLogin(loginName, request, "账号已停用");
             throw new ApiException(HttpStatus.FORBIDDEN, "ACCOUNT_DISABLED",
                     "该账号已停用，请联系单位系统管理员");
         }
 
-        return establishSession(account, rememberMe, request, response);
+        AuthenticatedAccount principal = establishSession(account, rememberMe, request, response);
+        audit.recordCurrent(AuditEvent.succeeded("auth", "auth:login", "USER",
+                Long.toString(principal.userId()), principal.displayName(),
+                "登录成功「%s」（%s，%s）".formatted(principal.displayName(), principal.loginName(),
+                        principal.unitName())));
+        return principal;
+    }
+
+    /**
+     * 登录失败留痕：只记尝试的登录名、原因与客户端 IP，**不记口令**。
+     * 失败原因在审计里区分（账号不存在/口令不正确），但对外仍是同一个错误，避免泄漏账号是否存在。
+     */
+    private void auditFailedLogin(String attemptedLogin, HttpServletRequest request, String reason) {
+        audit.recordAnonymous(attemptedLogin, AuditEvent.failed("auth", "auth:login", "USER", "",
+                attemptedLogin, "登录失败：%s".formatted(reason)), request);
     }
 
     /** 只由 dev profile 中的控制器调用；不接受密码，也不扩大普通登录入口。 */
@@ -101,7 +122,13 @@ public class AuthService {
         if (!account.enabled()) {
             throw new ApiException(HttpStatus.FORBIDDEN, "ACCOUNT_DISABLED", "该账号已停用");
         }
-        return establishSession(account, rememberMe, request, response);
+        AuthenticatedAccount principal = establishSession(account, rememberMe, request, response);
+        // 免密登录也要留痕：它是开发环境的捷径，但仍然是一次建立会话的登录
+        audit.recordCurrent(AuditEvent.succeeded("auth", "auth:login", "USER",
+                Long.toString(principal.userId()), principal.displayName(),
+                "本地开发免密登录「%s」（%s）".formatted(principal.displayName(),
+                        principal.loginName())));
+        return principal;
     }
 
     private AuthenticatedAccount establishSession(UserAccount account, boolean rememberMe,
@@ -155,6 +182,9 @@ public class AuthService {
     }
 
     public void logout(HttpServletRequest request) {
+        // 先留痕再清上下文：退出之后就拿不到操作者了
+        audit.recordCurrent(AuditEvent.succeeded("auth", "auth:logout", "USER", "", "",
+                "退出登录"));
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();

@@ -33,6 +33,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/system/audit-logs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 查询审计流水（服务端筛选 + 分页，时间缺省最近 7 天） */
+    get: operations['auditLogList'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/system/audit-logs/modules': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 审计模块筛选项（代码侧注册表） */
+    get: operations['auditLogModules'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/system/audit-logs/purge': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 立即清理超过保留期的流水（默认 30 天，删除不可恢复） */
+    post: operations['auditLogPurge'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/system/dictionaries': {
     parameters: {
       query?: never;
@@ -490,6 +541,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    ApiResponseAuditPurgeResult: {
+      code: string;
+      data: components['schemas']['AuditPurgeResult'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
     ApiResponseDictionaryItemView: {
       code: string;
       data: components['schemas']['DictionaryItemView'];
@@ -501,6 +560,14 @@ export interface components {
     ApiResponseDictionaryView: {
       code: string;
       data: components['schemas']['DictionaryView'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
+    ApiResponseListAuditModuleOption: {
+      code: string;
+      data: components['schemas']['AuditModuleOption'][];
       /** @description 字段级校验错误；无字段错误时为 null */
       fieldErrors?: components['schemas']['FieldError'][];
       message: string;
@@ -610,6 +677,14 @@ export interface components {
       message: string;
       requestId: string;
     };
+    ApiResponsePageResultAuditLogEntry: {
+      code: string;
+      data: components['schemas']['PageResultAuditLogEntry'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
     ApiResponsePageResultRoleListItem: {
       code: string;
       data: components['schemas']['PageResultRoleListItem'];
@@ -681,6 +756,50 @@ export interface components {
       fieldErrors?: components['schemas']['FieldError'][];
       message: string;
       requestId: string;
+    };
+    AuditLogEntry: {
+      action: string;
+      actorLogin: string;
+      actorName: string;
+      actorUnitName: string;
+      clientIp: string;
+      id: string;
+      module: string;
+      moduleName: string;
+      /** Format: date-time */
+      occurredAt: string;
+      requestId: string;
+      result: string;
+      summary: string;
+      targetId: string;
+      targetLabel: string;
+      targetType: string;
+    };
+    AuditModuleOption: {
+      code: string;
+      name: string;
+    };
+    AuditPurgeResult: {
+      /**
+       * Format: int64
+       * @description 本次删除的条数；0 表示没有过期记录
+       */
+      deleted: number;
+      /**
+       * Format: date-time
+       * @description 被删记录中最早的发生时刻，UTC；没有删除时为 null
+       */
+      earliest?: string | null;
+      /**
+       * Format: date-time
+       * @description 被删记录中最晚的发生时刻，UTC；没有删除时为 null
+       */
+      latest?: string | null;
+      /**
+       * Format: int32
+       * @description 保留期（天），只删除早于这个窗口的记录
+       */
+      retentionDays: number;
     };
     ChangeRoleStatus: {
       /** @description 角色编码列表 */
@@ -873,6 +992,15 @@ export interface components {
       routeKey?: string | null;
       /** @description 节点类型：DIRECTORY 目录，PAGE 页面，TAB 页签，BUTTON 按钮 */
       type: string;
+    };
+    PageResultAuditLogEntry: {
+      items: components['schemas']['AuditLogEntry'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      pageSize: number;
+      /** Format: int64 */
+      total: number;
     };
     PageResultRoleListItem: {
       items: components['schemas']['RoleListItem'][];
@@ -1233,6 +1361,77 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseListNavigationNode'];
+        };
+      };
+    };
+  };
+  auditLogList: {
+    parameters: {
+      query?: {
+        from?: string;
+        to?: string;
+        actor?: string;
+        module?: string;
+        action?: string;
+        result?: string;
+        targetType?: string;
+        targetId?: string;
+        page?: number;
+        pageSize?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePageResultAuditLogEntry'];
+        };
+      };
+    };
+  };
+  auditLogModules: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseListAuditModuleOption'];
+        };
+      };
+    };
+  };
+  auditLogPurge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseAuditPurgeResult'];
         };
       };
     };

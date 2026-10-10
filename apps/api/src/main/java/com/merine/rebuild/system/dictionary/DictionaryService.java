@@ -1,6 +1,8 @@
 package com.merine.rebuild.system.dictionary;
 
 import com.merine.rebuild.common.ApiException;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import com.merine.rebuild.system.dictionary.dto.DictionaryItemView;
 import com.merine.rebuild.system.dictionary.dto.DictionaryListItem;
 import com.merine.rebuild.system.dictionary.dto.DictionaryRequests;
@@ -26,10 +28,12 @@ public class DictionaryService {
 
     private final DictionaryMapper mapper;
     private final DictionaryLookup lookup;
+    private final AuditTrail audit;
 
-    public DictionaryService(DictionaryMapper mapper, DictionaryLookup lookup) {
+    public DictionaryService(DictionaryMapper mapper, DictionaryLookup lookup, AuditTrail audit) {
         this.mapper = mapper;
         this.lookup = lookup;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -58,7 +62,10 @@ public class DictionaryService {
             throw new ApiException(HttpStatus.CONFLICT, "DICT_CODE_TAKEN",
                     "该字典编码已存在：" + code);
         }
-        return lookup.toViews(List.of(requireType(code))).getFirst();
+        DictionaryView created = lookup.toViews(List.of(requireType(code))).getFirst();
+        audit.recordCurrent(AuditEvent.succeeded("system", "dict-type:create", "DICT_TYPE", code,
+                created.name(), "新建字典「%s」（%s）".formatted(created.name(), code)));
+        return created;
     }
 
     @Transactional
@@ -72,7 +79,13 @@ public class DictionaryService {
                 blankToNull(request.description()), request.status(), request.version()) == 0) {
             throw versionConflict();
         }
-        return lookup.toViews(List.of(requireType(code))).getFirst();
+        DictionaryView updated = lookup.toViews(List.of(requireType(code))).getFirst();
+        boolean statusChanged = !current.status().equals(updated.status());
+        audit.recordCurrent(AuditEvent.succeeded("system", "dict-type:update", "DICT_TYPE", code,
+                updated.name(), "%s字典「%s」（%s）".formatted(statusChanged
+                        ? ("ENABLED".equals(updated.status()) ? "启用" : "停用") : "修改",
+                        updated.name(), code)));
+        return updated;
     }
 
     @Transactional
@@ -93,7 +106,11 @@ public class DictionaryService {
         if (created == null) {
             throw new IllegalStateException("新建字典项后未读到插入结果：" + value);
         }
-        return DictionaryLookup.toItemView(created);
+        DictionaryItemView view = DictionaryLookup.toItemView(created);
+        audit.recordCurrent(AuditEvent.succeeded("system", "dict-item:create", "DICT_ITEM",
+                code + ":" + value, view.label(),
+                "字典「%s」新增项「%s」（取值 %s）".formatted(code, view.label(), value)));
+        return view;
     }
 
     @Transactional
@@ -112,7 +129,14 @@ public class DictionaryService {
                         request.version()) == 0) {
             throw itemVersionConflict();
         }
-        return DictionaryLookup.toItemView(mapper.findItem(type.id(), value));
+        DictionaryItemView view = DictionaryLookup.toItemView(mapper.findItem(type.id(), value));
+        boolean statusChanged = !current.status().equals(view.status());
+        audit.recordCurrent(AuditEvent.succeeded("system", "dict-item:update", "DICT_ITEM",
+                code + ":" + value, view.label(),
+                "%s字典「%s」的项「%s」（取值 %s）".formatted(statusChanged
+                        ? ("ENABLED".equals(view.status()) ? "启用" : "停用") : "修改",
+                        code, view.label(), value)));
+        return view;
     }
 
     private DictionaryTypeRow requireType(String code) {

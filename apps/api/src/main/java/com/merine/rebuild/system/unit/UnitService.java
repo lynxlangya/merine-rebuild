@@ -1,6 +1,8 @@
 package com.merine.rebuild.system.unit;
 
 import com.merine.rebuild.common.ApiException;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import com.merine.rebuild.system.user.usage.UserUnitUsageLookup;
 import com.merine.rebuild.task.TaskUnitUsageLookup;
 import com.merine.rebuild.maritime.MaritimeResourceLookup;
@@ -34,13 +36,15 @@ public class UnitService {
     private static final int MAX_LEVEL = 3;
 
     private final MaritimeResourceLookup maritime;
+    private final AuditTrail audit;
     private final UnitMapper mapper;
     private final UserUnitUsageLookup userUsage;
     private final TaskUnitUsageLookup taskUsage;
     private final IntelligenceUnitUsageLookup intelligenceUsage;
 
-    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage, TaskUnitUsageLookup taskUsage, IntelligenceUnitUsageLookup intelligenceUsage, MaritimeResourceLookup maritime) {
+    public UnitService(UnitMapper mapper, UserUnitUsageLookup userUsage, TaskUnitUsageLookup taskUsage, IntelligenceUnitUsageLookup intelligenceUsage, MaritimeResourceLookup maritime, AuditTrail audit) {
         this.maritime = maritime;
+        this.audit = audit;
         this.mapper = mapper;
         this.userUsage = userUsage;
         this.taskUsage = taskUsage;
@@ -72,7 +76,10 @@ public class UnitService {
         if (created == null) {
             throw new IllegalStateException("新建单位后未读到插入结果");
         }
-        return toView(created, 0, 0);
+        UnitView view = toView(created, 0, 0);
+        audit.recordCurrent(AuditEvent.succeeded("system", "unit:create", "UNIT", code, name,
+                "新建单位「%s」（%s）".formatted(name, code)));
+        return view;
     }
 
     @Transactional
@@ -113,7 +120,10 @@ public class UnitService {
         }
         long childCount = directChildCount(rows, current.id());
         long userCount = userCountsForWrite(rows).getOrDefault(current.id(), 0L);
-        return toView(changed, childCount, userCount);
+        UnitView view = toView(changed, childCount, userCount);
+        audit.recordCurrent(AuditEvent.succeeded("system", "unit:update", "UNIT", code, view.name(),
+                "修改单位「%s」（%s）".formatted(view.name(), code)));
+        return view;
     }
 
     @Transactional
@@ -144,6 +154,9 @@ public class UnitService {
             throw new ApiException(HttpStatus.CONFLICT, "UNIT_HAS_INTELLIGENCE", "该单位已有情报或传播范围引用，不能删除");
         }
         mapper.deleteById(target.id());
+        audit.recordCurrent(AuditEvent.succeeded("system", "unit:delete", "UNIT",
+                target.code(), target.name(),
+                "删除单位「%s」（%s）".formatted(target.name(), target.code())));
     }
 
     private ParentChoice resolveParent(List<UnitRow> rows, String parentCode, Long movingId) {

@@ -2,6 +2,8 @@ package com.merine.rebuild.system.role;
 
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.common.PageResult;
+import com.merine.rebuild.system.audit.AuditEvent;
+import com.merine.rebuild.system.audit.AuditTrail;
 import com.merine.rebuild.system.permission.PermissionLookup;
 import com.merine.rebuild.system.role.dto.RoleDetail;
 import com.merine.rebuild.system.role.dto.RoleListItem;
@@ -60,10 +62,12 @@ public class RoleService {
     private final RoleUsageLookup roleUsage;
     private final UserAuthorizationCommands authorization;
     private final AdminCoverageGuard coverage;
+    private final AuditTrail audit;
 
     public RoleService(RoleMapper mapper, PermissionLookup permissions, MenuLookup menus,
                        BuiltinAdminRoles builtinRoles, RoleUsageLookup roleUsage,
-                       UserAuthorizationCommands authorization, AdminCoverageGuard coverage) {
+                       UserAuthorizationCommands authorization, AdminCoverageGuard coverage,
+                       AuditTrail audit) {
         this.mapper = mapper;
         this.permissions = permissions;
         this.menus = menus;
@@ -71,6 +75,7 @@ public class RoleService {
         this.roleUsage = roleUsage;
         this.authorization = authorization;
         this.coverage = coverage;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -122,7 +127,12 @@ public class RoleService {
             throw new IllegalStateException("新建角色后未读到插入结果");
         }
         replacePermissions(created.id(), permissionCodes);
-        return toDetail(requireRole(code));
+        RoleDetail createdDetail = toDetail(requireRole(code));
+        audit.recordCurrent(AuditEvent.succeeded("system", "role:create", "ROLE", code,
+                createdDetail.name(),
+                "新建角色「%s」（%s），权限 %d 项".formatted(createdDetail.name(), code,
+                        permissionCodes.size())));
+        return createdDetail;
     }
 
     @Transactional
@@ -153,7 +163,16 @@ public class RoleService {
             authorization.bumpVersionForRoleHolders(List.of(code));
             coverage.requireUsableAdminRemains("不能移除最后一个可用管理员的角色权限");
         }
-        return toDetail(requireRole(code));
+        RoleDetail updated = toDetail(requireRole(code));
+        audit.recordCurrent(AuditEvent.succeeded("system", "role:update", "ROLE", code,
+                updated.name(), "修改角色「%s」的名称或说明".formatted(updated.name())));
+        if (permissionsChanged) {
+            audit.recordCurrent(AuditEvent.succeeded("system", "role:grant-permissions", "ROLE", code,
+                    updated.name(),
+                    "角色「%s」权限由 %d 项改为 %d 项".formatted(updated.name(),
+                            currentPermissions(current).size(), requestedPermissions.size())));
+        }
+        return updated;
     }
 
     /**
@@ -184,7 +203,14 @@ public class RoleService {
                 coverage.requireUsableAdminRemains("不能停用最后一个可用管理员的角色");
             }
         }
-        return toListItems(mapper.findByCodes(codes));
+        List<RoleListItem> items = toListItems(mapper.findByCodes(codes));
+        // 只给状态确实变化的角色留痕：重复点同一个动作是幂等成功，不该产生审计噪音
+        items.stream()
+                .filter(role -> changed.contains(role.code()))
+                .forEach(role -> audit.recordCurrent(AuditEvent.succeeded("system",
+                        "role:toggle-status", "ROLE", role.code(), role.name(),
+                        "%s角色「%s」".formatted(enable ? "启用" : "停用", role.name()))));
+        return items;
     }
 
     /**
@@ -218,6 +244,8 @@ public class RoleService {
 
         mapper.deletePermissions(role.id());
         mapper.deleteById(role.id());
+        audit.recordCurrent(AuditEvent.succeeded("system", "role:delete", "ROLE", role.code(),
+                role.name(), "删除角色「%s」（%s）".formatted(role.name(), role.code())));
     }
 
     private void replacePermissions(long roleId, List<String> permissionCodes) {

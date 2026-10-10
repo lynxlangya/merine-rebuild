@@ -85,6 +85,14 @@ springdoc:
     path: /api/docs
 
 merine:
+  audit:
+    # 审计流水保留期（天）：定时清理只删除超过这个天数的行，窗口内永不动。
+    # 过期即永久删除，没有归档；需要更长的证据链时应先做导出，而不是把表一直留着。
+    retention:
+      days: 30
+      # 每日定时清理：默认开启（低峰时刻），测试与本地编排可关。
+      enabled: true
+      cron: '0 30 3 * * *'
   agent:
     provider-encryption-key: ${MODEL_PROVIDER_ENCRYPTION_KEY:}
     chat:
