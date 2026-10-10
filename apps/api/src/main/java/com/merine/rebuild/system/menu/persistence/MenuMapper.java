@@ -15,6 +15,14 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface MenuMapper {
 
+    /** 已被菜单节点引用的权限码：权限勾选树据此把「没挂在菜单上」的码单独分组。 */
+    @Select("""
+            SELECT DISTINCT p.permission_code
+              FROM sys_menu m
+              JOIN sys_permission p ON p.id = m.permission_id
+            """)
+    List<String> findBoundPermissionCodes();
+
     List<MenuRow> findAll();
 
     /**

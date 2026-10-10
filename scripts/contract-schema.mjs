@@ -14,12 +14,43 @@ export function sortKeys(value) {
   return value;
 }
 
+/**
+ * 拍平多态子类型里的父类型引用。
+ *
+ * springdoc 会为“实现判别联合接口的 record”同时生成父类型的 oneOf 和子类型的
+ * `allOf: [{$ref: 父}, {...}]`。openapi-typescript 遇到这种自引用会生成
+ * `Omit<父, 'type'>` 的循环类型，TypeScript 只能解析成 any，联合就不再能按 type 缩窄。
+ * 父类型在这里只是判别联合，子类型自带 type 字面量，去掉该引用不丢失字段。
+ * 只处理“子类型在父类型 oneOf 中”的组合，其它 allOf 原样保留。
+ */
+export function flattenPolymorphicParents(schema) {
+  const copy = structuredClone(schema);
+  const schemas = copy.components?.schemas;
+  if (!schemas) return copy;
+  const polymorphicParents = new Map();
+  for (const [name, definition] of Object.entries(schemas)) {
+    if (Array.isArray(definition?.oneOf)) polymorphicParents.set(name, definition.oneOf);
+  }
+  for (const [name, definition] of Object.entries(schemas)) {
+    if (!Array.isArray(definition?.allOf)) continue;
+    const kept = definition.allOf.filter((item) => {
+      if (!item || typeof item !== 'object' || typeof item.$ref !== 'string') return true;
+      const parent = item.$ref.split('/').pop();
+      const children = polymorphicParents.get(parent);
+      return !children?.some((child) => child?.$ref?.endsWith(`/${name}`));
+    });
+    definition.allOf = kept;
+  }
+  return copy;
+}
+
 export function normalizeSchema(schema) {
+  const flattened = flattenPolymorphicParents(schema);
   return sortKeys({
-    ...schema,
+    ...flattened,
     servers: [{ url: '/' }],
-    ...(schema.tags && {
-      tags: [...schema.tags].sort((a, b) => a.name.localeCompare(b.name, 'en')),
+    ...(flattened.tags && {
+      tags: [...flattened.tags].sort((a, b) => a.name.localeCompare(b.name, 'en')),
     }),
   });
 }

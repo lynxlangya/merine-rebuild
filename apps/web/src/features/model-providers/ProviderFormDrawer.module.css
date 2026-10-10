@@ -1,0 +1,201 @@
+.formIntro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.formIntro strong {
+  font-size: var(--fs-14);
+}
+.formIntro p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+.sectionTitle {
+  margin: 24px 0 16px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--fg);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+}
+.nameRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.hint {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+.endpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: -8px 0 20px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+.endpoint code {
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  overflow-wrap: anywhere;
+}
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.sectionHead .sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.modelCount {
+  color: var(--muted);
+  font-size: var(--fs-11);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.modelList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.modelCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 100px;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.modelCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+}
+.modelCardHead strong {
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-ui);
+}
+.modelCard :global(.ant-form-item) {
+  margin-bottom: 0;
+}
+.modelCard :global(.ant-form-item-label) {
+  padding-bottom: 5px;
+}
+.modelCard :global(.ant-form-item-label > label) {
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+.modelEfforts {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+.effortLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: var(--fs-12);
+  color: var(--muted);
+}
+.effortHelp {
+  font-size: 12px;
+  cursor: help;
+}
+.effortTags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.effortNote {
+  color: var(--muted);
+  font-size: var(--fs-11);
+  line-height: var(--lh-body);
+}
+.effortTags :global(.ant-tag) {
+  margin: 0;
+  padding-inline: 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: 22px;
+}
+.effortTags :global(.ant-tag-checkable:hover) {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.effortTags :global(.ant-tag-checkable-checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+.modelRemark {
+  grid-column: 1 / -1;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.footer > span {
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+.alert {
+  margin-bottom: 16px;
+}
+@media (max-width: 600px) {
+  .modelCard {
+    grid-template-columns: minmax(0, 1fr) 100px;
+  }
+  .modelCard > :global(.ant-form-item):nth-child(2) {
+    grid-column: 1 / -1;
+  }
+  .nameRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .footer > span {
+    display: none;
+  }
+  .footer {
+    justify-content: flex-end;
+  }
+  .sectionHead {
+    flex-wrap: wrap;
+  }
+}

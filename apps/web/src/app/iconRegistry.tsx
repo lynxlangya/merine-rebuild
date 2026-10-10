@@ -89,6 +89,7 @@ import {
   SyncOutlined,
   TableOutlined,
   TagOutlined,
+  RobotOutlined,
   TeamOutlined,
   ThunderboltOutlined,
   ToolOutlined,
@@ -116,6 +117,7 @@ export interface RegisteredIcon {
 }
 
 export const appIcons: RegisteredIcon[] = [
+  { name: 'RobotOutlined', label: '智能体', icon: <RobotOutlined /> },
   { name: 'TeamOutlined', label: '团队', icon: <TeamOutlined /> },
   { name: 'UserOutlined', label: '用户', icon: <UserOutlined /> },
   { name: 'UserAddOutlined', label: '新增用户', icon: <UserAddOutlined /> },

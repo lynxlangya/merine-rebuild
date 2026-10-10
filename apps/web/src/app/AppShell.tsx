@@ -5,6 +5,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   MoonOutlined,
+  RobotOutlined,
   SunOutlined,
 } from '@ant-design/icons';
 import {
@@ -15,7 +16,6 @@ import {
   Dropdown,
   Layout,
   Menu,
-  Segmented,
   Skeleton,
   Tooltip,
   Typography,
@@ -256,15 +256,38 @@ export function AppShell() {
             />
           )}
           <div className={styles.topbarRight}>
-            <Segmented
-              aria-label="主题模式"
-              value={mode}
-              onChange={(value) => setMode(value as 'light' | 'dark')}
-              options={[
-                { value: 'light', icon: <SunOutlined />, label: '亮色' },
-                { value: 'dark', icon: <MoonOutlined />, label: '暗黑' },
-              ]}
-            />
+            <div className={styles.themeSwitch} role="group" aria-label="主题模式">
+              <Tooltip title="亮色">
+                <Button
+                  type="text"
+                  className={styles.themeOption}
+                  aria-label="亮色"
+                  aria-pressed={mode === 'light'}
+                  icon={<SunOutlined />}
+                  onClick={() => setMode('light')}
+                />
+              </Tooltip>
+              <Tooltip title="暗黑">
+                <Button
+                  type="text"
+                  className={styles.themeOption}
+                  aria-label="暗黑"
+                  aria-pressed={mode === 'dark'}
+                  icon={<MoonOutlined />}
+                  onClick={() => setMode('dark')}
+                />
+              </Tooltip>
+            </div>
+            <Tooltip title="打开海防助手（新标签页）">
+              <Button
+                type="text"
+                aria-label="打开海防助手（新标签页）"
+                icon={<RobotOutlined />}
+                href="/agent"
+                target="_blank"
+                rel="noopener noreferrer"
+              />
+            </Tooltip>
             {user && (
               <Dropdown
                 trigger={['click']}

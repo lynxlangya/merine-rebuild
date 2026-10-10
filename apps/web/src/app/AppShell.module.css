@@ -105,6 +105,24 @@
   padding: 0 var(--sp-2);
 }
 
+.themeSwitch {
+  display: flex;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  border-radius: var(--r-4);
+  background: var(--surface-2);
+}
+
+.themeSwitch .themeOption {
+  color: var(--muted);
+}
+
+.themeSwitch .themeOption[aria-pressed='true'] {
+  color: var(--fg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
 .avatar {
   background: var(--accent-soft) !important;
   color: var(--accent) !important;

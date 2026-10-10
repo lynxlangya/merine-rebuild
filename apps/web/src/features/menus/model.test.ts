@@ -229,12 +229,8 @@ describe('菜单表格行与默认展开', () => {
     assert.equal(rows[0].children![0].children!.length, 2);
   });
 
-  it('默认展开每个一级节点，再展开第一个有下级的二级节点', () => {
-    assert.deepEqual(defaultMenuExpandedKeys(toMenuRows(tree)), [
-      'dir:system',
-      'page:users',
-      'dir:dev',
-    ]);
+  it('默认只展开第一个有下级的顶层菜单', () => {
+    assert.deepEqual(defaultMenuExpandedKeys(toMenuRows(tree)), ['dir:system']);
   });
 
   it('没有下级的树不产生任何展开项', () => {

@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   EMPTY_ROLE_FILTERS,
-  collectPermissionCodes,
   deriveCheckState,
   deleteBlockedReason,
   holdsRole,
   isPageOutOfRangeError,
   isRoleEnabled,
+  selectAllPermissions,
+  togglePermission,
   toPermissionNodes,
   toRoleFormFieldErrors,
   toRoleListQuery,
@@ -100,25 +101,82 @@ describe('权限勾选树', () => {
     },
   ] as never);
 
-  it('目录与页面按子树收集权限码，目录自己不带码', () => {
-    assert.deepEqual(collectPermissionCodes(tree[0]), ['system:user:read', 'system:user:create']);
+  it('目录仅作分组，不带权限码，点击目录不修改已有授权', () => {
     assert.equal(tree[0].code, null);
     assert.equal(tree[0].key, 'menu:1');
+    assert.deepEqual(togglePermission(tree[0], new Set(['system:user:read']), true), [
+      'system:user:read',
+    ]);
+    assert.deepEqual(togglePermission(tree[0], new Set(['system:user:read']), false), [
+      'system:user:read',
+    ]);
   });
 
-  it('全选时父行为勾选，只选页面时父行为半选——回显与保存的集合一致', () => {
+  it('只选页面仍完整勾选，按钮全选或全不选都不改变页面的回显', () => {
     const all = deriveCheckState(tree, new Set(['system:user:read', 'system:user:create']));
-    // 目录的 key 是菜单 id，页面与按钮的 key 就是各自的权限码
-    assert.deepEqual(all.checked, ['menu:1', 'system:user:read', 'system:user:create']);
+    assert.deepEqual(all.checked, ['system:user:read', 'system:user:create']);
     assert.deepEqual(all.halfChecked, []);
 
     const pageOnly = deriveCheckState(tree, new Set(['system:user:read']));
-    assert.deepEqual(pageOnly.checked, []);
-    assert.deepEqual(pageOnly.halfChecked.sort(), ['system:user:read', 'menu:1'].sort());
+    assert.deepEqual(pageOnly.checked, ['system:user:read']);
+    assert.deepEqual(pageOnly.halfChecked, []);
+
+    const buttonOnly = deriveCheckState(tree, new Set(['system:user:create']));
+    assert.deepEqual(buttonOnly.checked, ['system:user:create']);
+    assert.deepEqual(buttonOnly.halfChecked, []);
 
     const none = deriveCheckState(tree, new Set());
     assert.deepEqual(none.checked, []);
     assert.deepEqual(none.halfChecked, []);
+  });
+
+  const page = tree[0].children![0];
+  const button = page.children![0];
+
+  it('勾选和取消页面只改页面自身，不添加或删除按钮权限', () => {
+    assert.deepEqual(togglePermission(page, new Set(), true), ['system:user:read']);
+    assert.deepEqual(togglePermission(page, new Set(['system:user:create']), true), [
+      'system:user:create',
+      'system:user:read',
+    ]);
+    assert.deepEqual(
+      togglePermission(page, new Set(['system:user:read', 'system:user:create']), false),
+      ['system:user:create'],
+    );
+  });
+
+  it('只读角色添加再取消最后一个按钮，页面权限始终保留', () => {
+    const initial = new Set(['system:user:read']);
+    const withButton = togglePermission(button, initial, true);
+    const removed = togglePermission(button, new Set(withButton), false);
+    assert.deepEqual(removed, ['system:user:read']);
+    assert.deepEqual([...initial], ['system:user:read']);
+    assert.deepEqual(deriveCheckState(tree, new Set(removed)).checked, ['system:user:read']);
+  });
+
+  it('全选所有启用权限，重复执行不会产生重复，且保留树外权限', () => {
+    const initial = new Set(['agent:chat:use']);
+    const all = selectAllPermissions(tree, initial);
+    assert.deepEqual(all, ['agent:chat:use', 'system:user:create', 'system:user:read']);
+    assert.deepEqual(selectAllPermissions(tree, new Set(all)), all);
+    assert.deepEqual([...initial], ['agent:chat:use']);
+  });
+
+  it('全选不新增停用权限，不抹掉已有停用授权；单项可明确移除', () => {
+    const stopped = { ...button, status: 'DISABLED' };
+    const stoppedTree = [{ ...page, children: [stopped] }];
+    assert.deepEqual(selectAllPermissions(stoppedTree, new Set()), ['system:user:read']);
+    assert.deepEqual(selectAllPermissions(stoppedTree, new Set(['system:user:create'])), [
+      'system:user:create',
+      'system:user:read',
+    ]);
+    assert.deepEqual(togglePermission(stopped, new Set(), true), []);
+    assert.deepEqual(togglePermission(stopped, new Set(['system:user:create']), false), []);
+  });
+
+  it('清空后所有权限均取消，不产生目录勾选或半选；空树全选保留原集合', () => {
+    assert.deepEqual(deriveCheckState(tree, new Set()), { checked: [], halfChecked: [] });
+    assert.deepEqual(selectAllPermissions([], new Set(['agent:chat:use'])), ['agent:chat:use']);
   });
 });
 

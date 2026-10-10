@@ -1,0 +1,24 @@
+/* 官方标识自带颜色：统一放在浅色徽牌里，暗色主题下也不会糊进背景。 */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.glyph {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.glyphLarge {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}

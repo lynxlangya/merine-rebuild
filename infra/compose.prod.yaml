@@ -70,6 +70,7 @@ services:
       dockerfile: infra/docker/api.prod.Dockerfile
     environment:
       DB_URL: *db-url
+      MODEL_PROVIDER_ENCRYPTION_KEY: ${MODEL_PROVIDER_ENCRYPTION_KEY:-}
       DB_APP_USER: merine_app
       DB_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
       # HTTPS 终结后把 COOKIE_SECURE 设成 true（在 .env 里配置即可）

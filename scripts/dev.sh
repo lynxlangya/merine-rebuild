@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DB_URL_TEST='jdbc:mysql://mysql:3306/merine_rebuild_test?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true'
 
 setup() {
-  if [[ -f "$ROOT/.env" ]]; then return; fi
+  if [[ -f "$ROOT/.env" ]]; then ensure_env_key MODEL_PROVIDER_ENCRYPTION_KEY 32; return; fi
   command -v openssl >/dev/null || { printf 'Setup requires openssl.\n' >&2; exit 1; }
   (
     umask 077
@@ -15,6 +15,7 @@ setup() {
       printf '%s=%s\n' "$key" "$(openssl rand -hex 24)"
     done > "$ROOT/.env"
   )
+  ensure_env_key MODEL_PROVIDER_ENCRYPTION_KEY 32
   printf 'Created private local .env; existing credentials are never overwritten.\n'
 }
 
@@ -39,7 +40,7 @@ ensure_env_key() {
   command -v openssl >/dev/null || { printf 'Setup requires openssl.\n' >&2; exit 1; }
   (
     umask 077
-    printf '%s=%s\n' "$key" "$(openssl rand -hex 24)" >> "$ROOT/.env"
+    printf '%s=%s\n' "$key" "$(openssl rand -hex "${2:-24}")" >> "$ROOT/.env"
   )
   printf 'Appended %s to the local .env; existing credentials are unchanged.\n' "$key"
 }
@@ -47,6 +48,7 @@ ensure_env_key() {
 # .env 只由本脚本生成（KEY=hex），因此可以安全地读入当前 shell
 load_env() {
   require_env
+  ensure_env_key MODEL_PROVIDER_ENCRYPTION_KEY 32
   set -a
   # shellcheck disable=SC1091
   . "$ROOT/.env"
@@ -90,6 +92,7 @@ case "${1:-help}" in
     ;;
   migrate)
     require_env
+    ensure_env_key MODEL_PROVIDER_ENCRYPTION_KEY 32
     compose build api
     compose up -d --wait --wait-timeout 180 mysql
     compose run --rm --no-deps migrate

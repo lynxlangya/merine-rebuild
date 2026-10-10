@@ -74,9 +74,40 @@ export function isAbortError(error: unknown): boolean {
 }
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await sendRequest(path, options);
+  return readEnvelope<T>(response);
+}
+
+/**
+ * 流式请求：与 request() 相同的 Cookie、CSRF、401 与网络错误约定，但不等待响应结束。
+ * 调用方负责检查状态与 Content-Type、读取 body，并在取消时 abort。
+ */
+export async function requestStream(path: string, options: RequestInit = {}): Promise<Response> {
+  return sendRequest(path, options);
+}
+
+/** 把 ApiResponse 封套转为数据或带请求编号的 ApiError；流式响应的调用方按需使用。 */
+export async function readEnvelope<T>(response: Response): Promise<T> {
+  if (!response.headers.get('content-type')?.includes('application/json')) {
+    throw new ApiError('服务暂不可用，请稍后重试', response.status, 'UNEXPECTED_RESPONSE');
+  }
+  const result = (await response.json()) as ApiEnvelope<T>;
+  if (!response.ok || result.code !== 'OK') {
+    throw new ApiError(
+      result.message || '请求失败',
+      response.status,
+      result.code || 'UNKNOWN',
+      result.requestId,
+      result.fieldErrors ?? [],
+    );
+  }
+  return result.data;
+}
+
+async function sendRequest(path: string, options: RequestInit): Promise<Response> {
   const method = (options.method ?? 'GET').toUpperCase();
   const headers = new Headers(options.headers);
-  headers.set('Accept', 'application/json');
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json');
   if (options.body) headers.set('Content-Type', 'application/json');
   if (UNSAFE_METHODS.has(method)) {
     await ensureCsrfToken();
@@ -95,20 +126,5 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   if (response.status === 401) {
     for (const listener of unauthorizedListeners) listener();
   }
-
-  if (!response.headers.get('content-type')?.includes('application/json')) {
-    throw new ApiError('服务暂不可用，请稍后重试', response.status, 'UNEXPECTED_RESPONSE');
-  }
-
-  const result = (await response.json()) as ApiEnvelope<T>;
-  if (!response.ok || result.code !== 'OK') {
-    throw new ApiError(
-      result.message || '请求失败',
-      response.status,
-      result.code || 'UNKNOWN',
-      result.requestId,
-      result.fieldErrors ?? [],
-    );
-  }
-  return result.data;
+  return response;
 }

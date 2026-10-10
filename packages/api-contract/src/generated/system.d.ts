@@ -283,7 +283,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** 查询权限勾选树（菜单资源树） */
+    /** 查询权限勾选树（菜单资源树 + 未挂在菜单上的权限码） */
     get: operations['rolePermissionTree'];
     put?: never;
     post?: never;

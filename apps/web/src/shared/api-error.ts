@@ -1,4 +1,4 @@
-import { ApiError } from './http';
+import { ApiError } from './http.ts';
 
 /** 403 统一分类：页面据此切到无权限状态，而不是把它当普通保存失败。 */
 export function isForbiddenError(error: unknown): boolean {

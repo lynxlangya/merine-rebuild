@@ -1,0 +1,270 @@
+.messagesWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.historyLoading {
+  margin: var(--sp-4) 0;
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
+.messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 0;
+  padding: var(--sp-4) var(--sp-4) var(--sp-2);
+  overflow-y: auto;
+  /* 对话区隐藏滚动条（滚轮/键盘仍可滚动），避免右侧多出一条竖向轨道。 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.messages::-webkit-scrollbar {
+  display: none;
+}
+
+.statusLine {
+  min-height: 20px;
+  padding: 0 var(--sp-4);
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.jump {
+  position: absolute;
+  right: var(--sp-4);
+  bottom: var(--sp-8);
+}
+
+.userText {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.assistantBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.thinking {
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
+/* ---------- Markdown 文本 ---------- */
+
+.markdown {
+  font-size: var(--fs-14);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.markdown :is(p, ul, ol, blockquote, table, pre) {
+  margin: 0 0 var(--sp-2);
+}
+
+.markdown :is(table) {
+  border-collapse: collapse;
+  font-size: var(--fs-13);
+}
+
+.markdown :is(th, td) {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--border);
+}
+
+.plainLink {
+  color: inherit;
+  text-decoration: underline dotted;
+}
+
+/* ---------- 结构化部件 ---------- */
+
+.partTitle {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-strong);
+  color: var(--fg);
+}
+
+.partNote {
+  margin-top: var(--sp-2);
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.tableWrap {
+  min-width: 0;
+}
+
+.notice {
+  font-size: var(--fs-13);
+}
+
+.chart {
+  margin: 0;
+  min-width: 0;
+}
+
+.chartSvg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: var(--sp-2);
+  overflow: visible;
+}
+
+.axisLine {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.valueLabel {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.axisLabel {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.bar {
+  fill: var(--accent);
+  opacity: 0.85;
+}
+
+.chartData {
+  margin-top: var(--sp-2);
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.chartData summary {
+  cursor: pointer;
+}
+
+.sources {
+  min-width: 0;
+}
+
+.sources ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sources li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.sourceLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--fs-13);
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sourceSnippet,
+.sourceHint {
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.stepDone {
+  color: var(--success);
+}
+
+.stepFailed {
+  color: var(--danger);
+}
+
+/* ---------- 追问 ---------- */
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--accent-soft-border);
+  border-radius: var(--r-4);
+  background: var(--accent-soft);
+}
+
+.questionPrompt {
+  margin: 0;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-ui);
+}
+
+.optionList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.questionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.questionError {
+  color: var(--danger);
+  font-size: var(--fs-12);
+}
+
+.questionAnswered {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
+.questionAnswered strong {
+  color: var(--fg);
+}

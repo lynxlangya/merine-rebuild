@@ -76,6 +76,7 @@ export interface PermissionNode {
   key: string;
   name: string;
   code: string | null;
+  type: MenuNode['type'];
   status: string;
   children?: PermissionNode[];
 }
@@ -85,41 +86,52 @@ export function toPermissionNodes(nodes: readonly MenuNode[]): PermissionNode[] 
     key: node.permissionCode ?? `menu:${node.id}`,
     name: node.name,
     code: node.permissionCode ?? null,
+    type: node.type,
     status: node.status,
     children: node.children.length > 0 ? toPermissionNodes(node.children) : undefined,
   }));
 }
 
-/** 节点子树里的全部权限码（含节点自身）。勾选目录或页面时用它一次性选中整棵子树。 */
-export function collectPermissionCodes(node: PermissionNode): string[] {
-  const codes = node.code ? [node.code] : [];
-  for (const child of node.children ?? []) codes.push(...collectPermissionCodes(child));
-  return codes;
+/** 单项操作只修改当前权限；目录不参与勾选，停用权限只允许移除已有授权。 */
+export function togglePermission(
+  node: PermissionNode,
+  selected: ReadonlySet<string>,
+  checked: boolean,
+): string[] {
+  const next = new Set(selected);
+  if (node.code) {
+    if (!checked) next.delete(node.code);
+    else if (node.status === 'ENABLED') next.add(node.code);
+  }
+  return [...next].sort();
 }
 
-/**
- * 由「已选权限码集合」推导每个节点的勾选状态：全选 → checked，部分选中 → halfChecked。
- *
- * 这样「只给页面查看权限」会显示成父行半选，而不是被父子联动误显示成整页全选——
- * 回显与保存的集合必须一致，否则管理员会按错误的显示做决定。
- */
+/** 显式全选只新增启用权限；保留已有停用权限和未出现在当前树中的授权。 */
+export function selectAllPermissions(
+  nodes: readonly PermissionNode[],
+  selected: ReadonlySet<string>,
+): string[] {
+  const next = new Set(selected);
+  const visit = (node: PermissionNode) => {
+    if (node.code && node.status === 'ENABLED') next.add(node.code);
+    node.children?.forEach(visit);
+  };
+  nodes.forEach(visit);
+  return [...next].sort();
+}
+
+/** 每个勾选框只回显自身权限码，父节点不会因子节点变化而变成半选或取消。 */
 export function deriveCheckState(
   nodes: readonly PermissionNode[],
   selected: ReadonlySet<string>,
 ): { checked: string[]; halfChecked: string[] } {
   const checked: string[] = [];
-  const halfChecked: string[] = [];
   const visit = (node: PermissionNode) => {
-    const codes = collectPermissionCodes(node);
-    const chosen = codes.filter((code) => selected.has(code)).length;
-    if (codes.length > 0) {
-      if (chosen === codes.length) checked.push(node.key);
-      else if (chosen > 0) halfChecked.push(node.key);
-    }
+    if (node.code && selected.has(node.code)) checked.push(node.key);
     node.children?.forEach(visit);
   };
   nodes.forEach(visit);
-  return { checked, halfChecked };
+  return { checked, halfChecked: [] };
 }
 
 /* ============================== 字段错误 ============================== */

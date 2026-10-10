@@ -416,6 +416,20 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
                     + " c LEFT JOIN " + r[2] + " p ON p.id = c." + r[1]
                     + " WHERE c." + r[1] + " IS NOT NULL AND p.id IS NULL");
         }
+        // 助手会话：会话归用户，消息归会话与执行，执行记录归用户与会话
+        String[][] chatReferences = {
+                {"ai_conversation", "user_id", "sys_user"},
+                {"ai_conversation_message", "conversation_id", "ai_conversation"},
+                {"ai_conversation_message", "run_id", "ai_chat_run"},
+                {"ai_chat_run", "user_id", "sys_user"},
+                {"ai_chat_run", "conversation_id", "ai_conversation"}
+        };
+        for (String[] relation : chatReferences) {
+            checks.put(relation[0] + "." + relation[1] + " → " + relation[2],
+                    "SELECT COUNT(*) FROM " + relation[0] + " c LEFT JOIN " + relation[2]
+                            + " p ON p.id = c." + relation[1]
+                            + " WHERE c." + relation[1] + " IS NOT NULL AND p.id IS NULL");
+        }
         checks.put("intel_command committed result", "SELECT COUNT(*) FROM intel_command WHERE topic_id IS NULL");
         checks.put("intel_send parent same topic and sender", "SELECT COUNT(*) FROM intel_send s JOIN intel_receipt r ON r.id=s.parent_receipt_id JOIN intel_send p ON p.id=r.send_id WHERE s.topic_id<>p.topic_id OR s.from_unit_id<>r.to_unit_id OR r.signed_at IS NULL OR s.id<=p.id");
         checks.put("intel_receipt within frozen scope", "SELECT COUNT(*) FROM intel_receipt r JOIN intel_send s ON s.id=r.send_id LEFT JOIN intel_scope_unit c ON c.topic_id=s.topic_id AND c.unit_id=r.to_unit_id WHERE c.unit_id IS NULL");

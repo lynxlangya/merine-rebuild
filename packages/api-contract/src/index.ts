@@ -5,3 +5,4 @@ export type * from './system';
 export type * from './tasks';
 export type * from './intelligence';
 export type * from './maritime';
+export type * from './agent';

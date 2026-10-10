@@ -5,8 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
+import com.merine.rebuild.system.permission.PermissionModules;
 import com.merine.rebuild.system.security.PermissionCodes;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +29,56 @@ import org.springframework.test.web.servlet.MvcResult;
  */
 @DisplayName("角色管理回归")
 class RoleAdminRegressionTest extends RoleAdminRegressionSupport {
+
+    /**
+     * 权限勾选树要覆盖「没有菜单节点」的权限码，并且**按模块分组**：
+     * 智能体有自己的外壳、不进后台菜单，它的权限码不该和别的模块混在一个「其他权限」分组里。
+     */
+    @Test
+    void permissionTreeGroupsUnboundPermissionsByModule() throws Exception {
+        var session = managerSession();
+        var result = getJson(PERMISSION_TREE_PATH, session);
+        assertThat(result.getResponse().getStatus()).isEqualTo(200);
+        String body = bodyOf(result);
+
+        // 「智能体」分组：组名取模块显示名，组内是 5 个 agent 权限码
+        assertThat(body).contains("智能体", "agent:chat:use", "agent:provider:read",
+                "agent:provider:update");
+        List<String> groupNames = jsonOf(body, "$.data[*].name");
+        assertThat(groupNames).contains("智能体");
+        assertThat(groupNames).as("不再有跨模块合并的「其他权限」分组")
+                .noneMatch(name -> name.startsWith("其他权限"));
+        String groupId = "module:agent";
+        List<String> codes = jsonOf(body,
+                "$.data[?(@.id == '" + groupId + "')].children[*].permissionCode");
+        assertThat(codes).containsExactlyInAnyOrder("agent:chat:use", "agent:provider:create",
+                "agent:provider:delete", "agent:provider:read", "agent:provider:update");
+        // 分组本身不是权限：界面只把它当父节点渲染
+        List<String> groupCodes = jsonOf(body, "$.data[?(@.id == '" + groupId + "')].permissionCode");
+        assertThat(groupCodes).containsOnlyNulls();
+        // V49 已清理旧骨架页的死码：它们不该再出现在任何授权界面里
+        assertThat(body).doesNotContain("collaboration:task:read", "collaboration:flow:read");
+    }
+
+    /**
+     * 护栏：库里出现的权限模块前缀必须都已登记（{@code PermissionModules}）。
+     * 没登记的模块在勾选树里会显示成「未登记模块（xxx）」，说明少了一次登记——
+     * 与其在界面上露出来，不如让回归直接拦下。
+     */
+    @Test
+    void everyPermissionModuleIsRegistered() {
+        List<String> codes = jdbcTemplate.queryForList(
+                "SELECT permission_code FROM sys_permission", String.class);
+        assertThat(codes).isNotEmpty();
+        Set<String> unregistered = new TreeSet<>();
+        for (String code : codes) {
+            String module = PermissionModules.codeOf(code);
+            if (!PermissionModules.isRegistered(module)) {
+                unregistered.add(module + "（例如 " + code + "）");
+            }
+        }
+        assertThat(unregistered).as("权限模块都在 PermissionModules 里登记").isEmpty();
+    }
 
     @Test
     @DisplayName("未登录调用角色管理接口一律 401 JSON，且不产生任何写入")

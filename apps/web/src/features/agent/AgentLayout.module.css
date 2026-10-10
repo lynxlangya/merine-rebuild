@@ -1,0 +1,170 @@
+.layout {
+  display: flex;
+  height: 100dvh;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.rail {
+  display: flex;
+  flex: 0 0 56px;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-2);
+  border-right: 1px solid var(--border);
+  background: var(--nav-bg);
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-4);
+  color: var(--muted);
+  font-size: var(--fs-20);
+}
+
+.navItem:hover {
+  color: var(--fg);
+  background: var(--nav-hover);
+}
+
+.navItem.active {
+  color: var(--fg);
+  background: var(--surface-active);
+}
+
+.account {
+  margin-top: auto;
+}
+
+.workspace {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  /* 滚动条隐藏（滚轮/键盘仍可用），避免页面右侧多出一条轨道。 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.workspace::-webkit-scrollbar {
+  display: none;
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0 var(--sp-6);
+}
+
+.pageLoading {
+  padding: var(--sp-6);
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  min-height: var(--topbar-h);
+  color: var(--muted);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-ui);
+  gap: var(--sp-3);
+}
+
+.conversationTitle {
+  min-width: 0;
+  max-width: 440px;
+  padding-left: var(--sp-3);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-13);
+  font-weight: 400;
+}
+
+.start {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  min-height: 0;
+  padding: 32px 0 clamp(32px, 10vh, 100px);
+}
+
+.greeting {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 16px;
+  text-align: center;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.greeting h1 {
+  margin: 12px 0 0;
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: var(--fw-ui);
+  line-height: 1.5;
+  letter-spacing: -0.4px;
+  overflow-wrap: anywhere;
+}
+
+.greeting p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-13);
+}
+
+.welcome {
+  display: grid;
+  flex: 1;
+  min-height: 200px;
+  place-items: center;
+  padding: var(--sp-8) 0;
+}
+
+.welcome h1 {
+  font-size: var(--fs-24);
+  font-weight: var(--fw-ui);
+  line-height: var(--lh-display);
+}
+
+.library {
+  padding: var(--sp-6);
+}
+
+.libraryTitle {
+  font-size: var(--fs-20);
+}
+
+@media (max-width: 600px) {
+  .home {
+    padding-inline: var(--sp-4);
+    padding-bottom: var(--sp-4);
+  }
+
+  .welcome h1 {
+    font-size: var(--fs-20);
+  }
+
+  .start {
+    padding-bottom: 32px;
+  }
+
+  .greeting {
+    padding-inline: 0;
+  }
+}

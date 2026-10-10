@@ -1,16 +1,15 @@
 import type { CreateRole, MenuNode, RoleListItem, UpdateRole } from '@merine/api-contract';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Drawer, Form, Input, Skeleton, Tag, Tree } from 'antd';
+import { Alert, App, Button, Drawer, Form, Input, Skeleton, Tag, Tooltip, Tree } from 'antd';
 import type { InputRef } from 'antd';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { errorText, isForbiddenError } from '../../../shared/api-error';
 import { ApiError } from '../../../shared/http';
-import { useAuth } from '../../auth/public';
 import { createRole, updateRole } from '../api';
 import {
-  collectPermissionCodes,
   deriveCheckState,
-  holdsRole,
+  selectAllPermissions,
+  togglePermission,
   toPermissionNodes,
   toRoleFormFieldErrors,
   type PermissionNode,
@@ -36,21 +35,20 @@ function sameCodes(left: readonly string[], right: readonly string[]): boolean {
 }
 
 /**
- * 紧凑树形权限勾选（独立勾选 + 自行推导父行状态）。
- *
- * 为什么不用 Ant Design 默认的父子联动：默认联动下「勾页面」会把子按钮一起勾上，
- * 于是「只给页面查看、不给按钮」这种最常见的只读角色无法表达，保存后回显也会骗人。
- * 这里改成每个权限码独立勾选：勾一个页面（或目录）会把它的后代一起勾上，方便批量；
- * 取消某个按钮后，父行按「部分选中」显示半选，回显与保存的集合始终一致。
+ * 权限码独立勾选；目录只作分组。批量操作显式触发，展开状态不影响授权。
  */
 function PermissionTreeSelect({
   nodes,
   disabled,
+  readonly,
+  defaultExpandAll,
   value = [],
   onChange,
 }: {
   nodes: readonly MenuNode[];
   disabled?: boolean;
+  readonly?: boolean;
+  defaultExpandAll: boolean;
   // Form.Item 注入的受控属性
   value?: string[];
   onChange?: (next: string[]) => void;
@@ -72,18 +70,40 @@ function PermissionTreeSelect({
     () => deriveCheckState(permissionNodes, selected),
     [permissionNodes, selected],
   );
+  const branchKeys = useMemo(
+    () => [...nodeByKey.values()].filter((node) => node.children?.length).map((node) => node.key),
+    [nodeByKey],
+  );
+  const [expandedKeys, setExpandedKeys] = useState<string[]>(() =>
+    defaultExpandAll ? branchKeys : [],
+  );
+  const allSelected = selectAllPermissions(permissionNodes, selected);
+  const canSelectMore = allSelected.some((code) => !selected.has(code));
+  const allExpanded =
+    branchKeys.length > 0 && branchKeys.every((key) => expandedKeys.includes(key));
 
   const treeData = useMemo(() => {
     const toNode = (node: PermissionNode): Record<string, unknown> => ({
       key: node.key,
       title: (
         <span className={styles.treeRow}>
-          <span className={styles.treeName}>{node.name}</span>
-          {node.code && <span className={styles.treeCode}>{node.code}</span>}
+          <Tooltip title={node.code}>
+            <span
+              className={`${styles.treeName} ${node.children?.length ? styles.treeBranch : ''}`}
+            >
+              {node.name}
+            </span>
+          </Tooltip>
+          {node.code && (node.type === 'PAGE' || node.type === 'TAB') && (
+            <span className={styles.treeKind}>
+              {node.type === 'PAGE' ? '查看页面' : '查看页签'}
+            </span>
+          )}
           {node.status !== 'ENABLED' && <Tag className={styles.treeTag}>已停用</Tag>}
         </span>
       ),
-      // 停用节点不能再新勾选，但已勾选的保留，否则会把历史授权悄悄抹掉
+      checkable: node.code !== null,
+      // 已有停用权限允许明确取消，禁止新增停用权限；目录没有勾选框。
       disableCheckbox:
         disabled || (node.status !== 'ENABLED' && node.code !== null && !selected.has(node.code)),
       children: node.children?.map(toNode),
@@ -92,24 +112,65 @@ function PermissionTreeSelect({
   }, [permissionNodes, selected, disabled]);
 
   return (
-    <Tree
-      checkable
-      checkStrictly
-      selectable={false}
-      defaultExpandAll
-      treeData={treeData}
-      checkedKeys={checkState}
-      onCheck={(_checked, info) => {
-        const node = nodeByKey.get(String(info.node.key));
-        if (!node) return;
-        const next = new Set(selected);
-        for (const code of collectPermissionCodes(node)) {
-          if (info.checked) next.add(code);
-          else next.delete(code);
-        }
-        onChange?.([...next].sort());
-      }}
-    />
+    <div className={styles.permissionPanel}>
+      <div className={styles.treeToolbar}>
+        {!readonly && (
+          <div className={styles.treeActions}>
+            <Tooltip title="全选启用权限，不新增停用权限">
+              <Button
+                type="text"
+                size="small"
+                autoInsertSpace={false}
+                className={styles.selectAll}
+                disabled={disabled || !canSelectMore}
+                onClick={() => onChange?.(allSelected)}
+              >
+                全选
+              </Button>
+            </Tooltip>
+            <Button
+              type="text"
+              size="small"
+              autoInsertSpace={false}
+              disabled={disabled || value.length === 0}
+              onClick={() => onChange?.([])}
+            >
+              清空
+            </Button>
+          </div>
+        )}
+        <div className={styles.expandActions}>
+          <Button
+            type="text"
+            size="small"
+            disabled={branchKeys.length === 0}
+            onClick={() => setExpandedKeys(allExpanded ? [] : branchKeys)}
+          >
+            {allExpanded ? '收起全部' : '展开全部'}
+          </Button>
+        </div>
+      </div>
+      <p className={styles.treeHint}>
+        {readonly ? '内置角色权限只读，可展开查看。' : '页面与按钮权限分别选择。'}
+      </p>
+      <Tree
+        className={styles.permissionTree}
+        blockNode
+        checkable
+        checkStrictly
+        selectable={false}
+        expandedKeys={expandedKeys}
+        autoExpandParent={false}
+        onExpand={(keys) => setExpandedKeys(keys.map(String))}
+        treeData={treeData}
+        checkedKeys={checkState}
+        onCheck={(_checked, info) => {
+          const node = nodeByKey.get(String(info.node.key));
+          if (!node || disabled) return;
+          onChange?.(togglePermission(node, selected, info.checked));
+        }}
+      />
+    </div>
   );
 }
 
@@ -138,8 +199,6 @@ export function RoleFormDrawer({
 }) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
-  const { state } = useAuth();
-  const me = state.status === 'authenticated' ? state.user : null;
   const [form] = Form.useForm<RoleFormValues>();
   const nameRef = useRef<InputRef>(null);
 
@@ -242,22 +301,7 @@ export function RoleFormDrawer({
   }, [open, target, detail.data, form]);
 
   const treeNodes = permissionTree.data ?? [];
-  const permissionNames = useMemo(() => {
-    const map = new Map<string, string>();
-    const walk = (list: readonly MenuNode[]) => {
-      for (const node of list) {
-        if (node.permissionCode) map.set(node.permissionCode, node.name);
-        walk(node.children);
-      }
-    };
-    walk(treeNodes);
-    return map;
-  }, [treeNodes]);
-
   const selectedCodes = Form.useWatch('permissionCodes', form) ?? [];
-  const nameValue = Form.useWatch('name', form);
-  const selectedNames = selectedCodes.map((code) => permissionNames.get(code) ?? code);
-  const selfAffected = editing && holdsRole(me?.roleCodes, target.code);
 
   const failureText = (() => {
     if (!save.isError || isForbiddenError(save.error)) return null;
@@ -407,37 +451,14 @@ export function RoleFormDrawer({
             <Skeleton active paragraph={{ rows: 4 }} />
           ) : (
             <Form.Item name="permissionCodes" noStyle>
-              <PermissionTreeSelect nodes={treeNodes} disabled={builtin || save.isPending} />
+              <PermissionTreeSelect
+                nodes={treeNodes}
+                disabled={builtin || save.isPending || (editing && !detail.data)}
+                readonly={builtin}
+                defaultExpandAll={!editing}
+              />
             </Form.Item>
           )}
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.sectionTitle}>授权摘要</div>
-          <dl className={styles.summary}>
-            <dt className={styles.term}>角色</dt>
-            <dd className={styles.detail}>
-              {nameValue || '未命名'}
-              {builtin && (
-                <Tag className={styles.builtinTag}>内置管理员角色，恒拥有全部权限、不可删除</Tag>
-              )}
-            </dd>
-            <dt className={styles.term}>功能权限</dt>
-            <dd className={styles.detail}>
-              {selectedNames.length > 0 ? selectedNames.join('、') : '未勾选任何权限'}
-            </dd>
-            <dt className={styles.term}>变更影响</dt>
-            <dd className={styles.detail}>
-              {builtin
-                ? '内置角色的权限不可修改；停用后持有它的账号将失去管理系统功能，服务端会保证仍有其它可用管理员。'
-                : '权限集合变化后，持有该角色的账号现有会话立即失效，须重新登录；只改名称与说明不影响在线会话。'}
-              {selfAffected && (
-                <span className={styles.selfNote}>
-                  你自己也持有这个角色：保存后你需要重新登录。
-                </span>
-              )}
-            </dd>
-          </dl>
         </section>
       </Form>
     </Drawer>

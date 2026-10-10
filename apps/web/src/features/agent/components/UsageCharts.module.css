@@ -1,0 +1,179 @@
+.trend {
+  width: calc(100% - var(--sp-6));
+  margin: 0 var(--sp-3);
+}
+.svg {
+  display: block;
+  width: 100%;
+  height: 164px;
+  overflow: visible;
+}
+.grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+.axisLabel {
+  fill: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.inputBar {
+  fill: var(--accent-soft-border);
+}
+.outputBar {
+  fill: var(--accent);
+}
+.highlight {
+  fill: var(--surface-2);
+}
+.hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+.hit:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+}
+.empty {
+  margin: var(--sp-4) 0;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+.stateBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.bar {
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+}
+.segment {
+  height: 100%;
+}
+.segment[hidden] {
+  display: none;
+}
+.succeeded {
+  background: var(--success);
+}
+.failed {
+  background: var(--danger);
+}
+.aborted {
+  background: var(--border-control);
+}
+.legend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.legend li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.legendLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: var(--fs-11);
+  white-space: nowrap;
+}
+.swatch {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.legend strong {
+  font-size: var(--fs-18);
+  font-weight: var(--fw-ui);
+}
+.legend strong span {
+  font-size: var(--fs-11);
+  color: var(--muted);
+  font-weight: var(--fw-read);
+}
+.legendValue {
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+.modelBars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.modelHead,
+.modelSub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.modelHead {
+  font-size: var(--fs-12);
+}
+.modelName {
+  overflow-wrap: anywhere;
+  font-weight: var(--fw-ui);
+}
+.modelValue {
+  font-weight: var(--fw-ui);
+  white-space: nowrap;
+}
+.modelValue span {
+  color: var(--muted);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-read);
+}
+.modelSub {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+.modelSub > span:last-child {
+  white-space: nowrap;
+}
+.modelFailed {
+  color: var(--danger);
+}
+.track {
+  margin-top: 7px;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+}
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+}
+.modelBars li:nth-child(3n + 2) .fill {
+  background: var(--entity-person);
+}
+.modelBars li:nth-child(3n + 3) .fill {
+  background: var(--entity-vessel);
+}

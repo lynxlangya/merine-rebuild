@@ -1,0 +1,95 @@
+.composer {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 8px 16px 12px;
+}
+.sender:global(.ant-sender) {
+  border: 1px solid var(--border-control);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.sender:global(.ant-sender):focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.inputContent {
+  padding: 16px 18px 8px;
+}
+.input {
+  font-size: var(--fs-14);
+  line-height: var(--lh-body);
+  color: var(--fg);
+}
+.senderFooter {
+  padding: 4px 12px 12px;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.controls {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 14px;
+}
+.shortcut {
+  font-size: var(--fs-11);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.hint {
+  padding-left: 6px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+.modeTag {
+  margin: 0;
+  color: var(--muted);
+  background: var(--surface-2);
+}
+.action {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+}
+.actionWrap {
+  display: inline-flex;
+}
+.stopSquare {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--on-accent);
+}
+.footnote {
+  margin: 10px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+.error {
+  margin-bottom: 12px;
+}
+@media (max-width: 1100px) {
+  .shortcut {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .composer {
+    padding-inline: 0;
+  }
+}

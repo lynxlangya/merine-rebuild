@@ -1,0 +1,138 @@
+.sessions {
+  display: flex;
+  flex: 0 0 var(--session-w);
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  background: var(--nav-bg);
+}
+
+.head {
+  padding: var(--sp-4) var(--sp-3) var(--sp-3);
+}
+
+/* 新聊天是列表式入口，用原生按钮做整行可点区域，避免组件库按钮的居中与内边距。 */
+.newChat {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  height: 38px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--accent-soft-border);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--fs-14);
+  text-align: left;
+  cursor: pointer;
+}
+
+.newChat:hover {
+  background: var(--surface-selected);
+}
+
+.listTitle {
+  margin: 4px 0 0;
+  padding: 0 20px 8px;
+  color: var(--muted);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-ui);
+}
+
+.list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-height: 0;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  list-style: none;
+  overflow-y: auto;
+  /* 透明轨道 + 内缩圆形滑块：滚动条几乎透明地浮在右侧，不出现深色底框 */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--border-control) 30%, transparent) transparent;
+}
+
+.list::-webkit-scrollbar {
+  width: 10px;
+  background: transparent;
+}
+
+.list::-webkit-scrollbar-track,
+.list::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.list::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: var(--r-pill);
+  background-color: color-mix(in srgb, var(--border-control) 30%, transparent);
+  background-clip: padding-box;
+}
+
+.list::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--border-strong) 60%, transparent);
+  background-clip: padding-box;
+}
+
+/* 一行 = 会话标题 + 悬停出现的操作菜单；操作按钮绝对定位，不挤压标题宽度。 */
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rowAction {
+  position: absolute;
+  right: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.row:hover .rowAction,
+.row:focus-within .rowAction {
+  opacity: 1;
+}
+
+.session {
+  display: block;
+  width: 100%;
+  /* 右侧留出操作按钮的位置，标题过长时先省略 */
+  padding: var(--sp-2) calc(var(--sp-2) + 22px) var(--sp-2) var(--sp-2);
+  border: 0;
+  border-radius: var(--r-3);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--fs-13);
+  line-height: var(--lh-ui);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.session:hover {
+  background: var(--surface-hover);
+}
+
+.session.active {
+  background: var(--surface-selected);
+  font-weight: var(--fw-ui);
+}
+
+/* 空状态占满新聊天按钮以下的剩余高度，文字在这一段里垂直居中。 */
+.empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  margin: 0;
+  padding: 0 var(--sp-4);
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}

@@ -95,12 +95,20 @@ public final class PermissionCodes {
      */
     public static final List<String> ADMIN_BASELINE = List.of(USER_UPDATE, ROLE_UPDATE);
 
+    public static final String PROVIDER_READ = "agent:provider:read";
+    public static final String PROVIDER_CREATE = "agent:provider:create";
+    public static final String PROVIDER_UPDATE = "agent:provider:update";
+    public static final String PROVIDER_DELETE = "agent:provider:delete";
+    /** 使用海防助手发起对话；先只授予系统管理员角色，真实调用会产生费用。 */
+    public static final String CHAT_USE = "agent:chat:use";
+
     private PermissionCodes() {
     }
 
     /** 全部权限码，供与迁移/恢复清单比对的一致性测试与内置角色展开使用。 */
     public static List<String> all() {
         return List.of(
+                PROVIDER_READ, PROVIDER_CREATE, PROVIDER_UPDATE, PROVIDER_DELETE, CHAT_USE,
                 USER_READ, USER_CREATE, USER_UPDATE, USER_TOGGLE_STATUS, USER_RESET_PASSWORD,
                 ROLE_READ, ROLE_CREATE, ROLE_UPDATE, ROLE_TOGGLE_STATUS, ROLE_DELETE,
                 MENU_READ, MENU_CREATE, MENU_UPDATE, MENU_DELETE, MENU_RESTORE,

@@ -106,11 +106,11 @@ public class RoleController {
      * 角色编辑抽屉直接用它渲染勾选项，避免再维护一份扁平的权限清单。
      */
     @GetMapping("/permission-tree")
-    @Operation(summary = "查询权限勾选树（菜单资源树）")
+    @Operation(summary = "查询权限勾选树（菜单资源树 + 未挂在菜单上的权限码）")
     public ApiResponse<List<MenuNode>> permissionTree(Authentication authentication,
                                                       HttpServletRequest request) {
         guard.require(authentication, PermissionCodes.ROLE_READ, "没有查看角色管理的权限");
-        return ApiResponse.success(menus.tree(), request);
+        return ApiResponse.success(admin.permissionTree(), request);
     }
 
     @PostMapping

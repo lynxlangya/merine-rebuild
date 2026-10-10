@@ -168,23 +168,12 @@ export function toMenuRows(nodes: readonly MenuNode[]): MenuRow[] {
 }
 
 /**
- * 默认展开：每个一级（目录）都展开到二级，再展开第一个还有下级的二级节点到三级。
- * 一进来能看清结构，又不会把每个页面的按钮一次性铺满整屏。
+ * 默认展开：只展开第一个有下级的顶层菜单，其余全部收起。
+ * 一进来不铺满整屏，也保留一个从哪里开始看的暗示。
  */
 export function defaultMenuExpandedKeys(rows: readonly MenuRow[]): string[] {
-  const keys: string[] = [];
-  let expandedFirstChild = false;
-  for (const row of rows) {
-    if (!row.children?.length) continue;
-    keys.push(row.id);
-    if (expandedFirstChild) continue;
-    const firstWithChildren = row.children.find((child) => child.children?.length);
-    if (firstWithChildren) {
-      keys.push(firstWithChildren.id);
-      expandedFirstChild = true;
-    }
-  }
-  return keys;
+  const first = rows.find((row) => row.children?.length);
+  return first ? [first.id] : [];
 }
 
 /**

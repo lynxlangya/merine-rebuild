@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.agent.provider.persistence.ProviderMapper">
+
+  <!-- 列表页批量补装模型：动态 IN 与关联查询放 XML，简单固定 SQL 留在注解。 -->
+  <select id="modelsOf" resultType="com.merine.rebuild.agent.provider.persistence.ProviderModelRow">
+    SELECT id, provider_id AS providerId, model_id AS modelId, display_name AS displayName,
+           remark, reasoning_efforts AS reasoningEfforts, status, sort_order AS sortOrder
+      FROM ai_model_provider_model
+     WHERE provider_id IN
+     <foreach item="item" collection="providerIds" open="(" separator="," close=")">#{item}</foreach>
+     ORDER BY provider_id, sort_order, id
+  </select>
+
+  <select id="modelOptions" resultType="com.merine.rebuild.agent.provider.persistence.ProviderModelOptionRow">
+    SELECT m.id AS id, m.provider_id AS providerId, p.vendor AS vendor, p.name AS providerName,
+           m.model_id AS modelId, m.display_name AS displayName,
+           m.reasoning_efforts AS reasoningEfforts
+      FROM ai_model_provider_model m
+      JOIN ai_model_provider p ON p.id = m.provider_id
+     WHERE m.status = 'ENABLED' AND p.status = 'ENABLED'
+     ORDER BY p.name, m.sort_order, m.id
+  </select>
+
+</mapper>

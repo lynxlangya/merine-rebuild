@@ -16,6 +16,7 @@ public final class RegisteredIcons {
     }
 
     private static final List<Icon> ALL = List.of(
+            new Icon("RobotOutlined", "智能体"),
             new Icon("TeamOutlined", "团队"),
             new Icon("UserOutlined", "用户"),
             new Icon("UserAddOutlined", "新增用户"),

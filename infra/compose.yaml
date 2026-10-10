@@ -58,7 +58,10 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       MERINE_SECURITY_DEV_LOGIN_ENABLED: 'true'
+      MERINE_AGENT_CHAT_DEMO_ENABLED: 'true'
+      MERINE_AGENT_CHAT_MODE: ${MERINE_AGENT_CHAT_MODE:-PROVIDER}
       DB_URL: *db-url
+      MODEL_PROVIDER_ENCRYPTION_KEY: ${MODEL_PROVIDER_ENCRYPTION_KEY:-}
       DB_APP_USER: merine_app
       DB_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
     ports:

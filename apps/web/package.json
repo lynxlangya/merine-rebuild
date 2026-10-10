@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@ant-design/icons": "6.3.4",
+    "@ant-design/x": "2.9.0",
+    "@ant-design/x-markdown": "2.9.0",
     "@merine/api-contract": "workspace:*",
     "@tanstack/react-query": "5.103.1",
     "antd": "6.6.4",

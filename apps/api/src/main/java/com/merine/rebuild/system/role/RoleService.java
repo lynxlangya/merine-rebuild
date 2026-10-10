@@ -9,15 +9,23 @@ import com.merine.rebuild.system.role.dto.RoleMember;
 import com.merine.rebuild.system.role.dto.RoleRequests;
 import com.merine.rebuild.system.role.persistence.RoleMapper;
 import com.merine.rebuild.system.role.persistence.RoleQuery;
+import com.merine.rebuild.system.menu.MenuLookup;
+import com.merine.rebuild.system.menu.dto.MenuNode;
+import com.merine.rebuild.system.permission.PermissionModules;
+import com.merine.rebuild.system.permission.PermissionSummary;
 import com.merine.rebuild.system.role.persistence.RoleRow;
 import com.merine.rebuild.system.security.BuiltinAdminRoles;
 import com.merine.rebuild.system.user.authorization.AdminCoverageGuard;
 import com.merine.rebuild.system.user.authorization.UserAuthorizationCommands;
 import com.merine.rebuild.system.user.usage.RoleUsageLookup;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Set;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -42,18 +50,23 @@ public class RoleService {
     private static final String ENABLED = "ENABLED";
     private static final String DISABLED = "DISABLED";
 
+    /** 模块分组的节点 id 前缀：`module:<模块>`，界面只做勾选、不编辑这些节点。 */
+    static final String MODULE_GROUP_PREFIX = "module:";
+
     private final RoleMapper mapper;
     private final PermissionLookup permissions;
+    private final MenuLookup menus;
     private final BuiltinAdminRoles builtinRoles;
     private final RoleUsageLookup roleUsage;
     private final UserAuthorizationCommands authorization;
     private final AdminCoverageGuard coverage;
 
-    public RoleService(RoleMapper mapper, PermissionLookup permissions,
+    public RoleService(RoleMapper mapper, PermissionLookup permissions, MenuLookup menus,
                        BuiltinAdminRoles builtinRoles, RoleUsageLookup roleUsage,
                        UserAuthorizationCommands authorization, AdminCoverageGuard coverage) {
         this.mapper = mapper;
         this.permissions = permissions;
+        this.menus = menus;
         this.builtinRoles = builtinRoles;
         this.roleUsage = roleUsage;
         this.authorization = authorization;
@@ -253,6 +266,49 @@ public class RoleService {
     }
 
     /** 勾选的权限码必须存在于权限清单里；重复项去掉，顺序按登记顺序。 */
+    /**
+     * 权限勾选树：菜单树 + 每个「有非菜单权限码」的模块一个分组。
+     *
+     * <p>有些权限码故意不挂菜单节点（例如智能体：它有自己的外壳，不占后台菜单），只查菜单树的话
+     * 管理员在角色管理里看不到它们，只能改库授权。这些码按**模块**归组（组名取
+     * {@link PermissionModules}），一个模块一组、顺序由注册表决定；不合并成跨模块的
+     * 「其他权限」，否则归属不清、死码也藏得住。分组本身没有权限码，勾选子项与菜单权限一样生效。
+     */
+    @Transactional(readOnly = true)
+    public List<MenuNode> permissionTree() {
+        List<MenuNode> nodes = new ArrayList<>(menus.tree());
+        Set<String> bound = new HashSet<>(menus.listBoundPermissionCodes());
+        Map<String, List<PermissionSummary>> unboundByModule = new TreeMap<>(
+                Comparator.comparingInt(PermissionModules::sortOrderOf).thenComparing(module -> module));
+        permissions.listAll().stream()
+                .filter(permission -> !bound.contains(permission.code()))
+                .forEach(permission -> unboundByModule
+                        .computeIfAbsent(PermissionModules.codeOf(permission.code()), module -> new ArrayList<>())
+                        .add(permission));
+        unboundByModule.forEach((module, permissions) -> nodes.add(moduleGroup(module, permissions)));
+        return List.copyOf(nodes);
+    }
+
+    /** 模块分组：父节点无权限码，子节点逐个对应权限码，顺序按权限码排序稳定。 */
+    private static MenuNode moduleGroup(String module, List<PermissionSummary> permissions) {
+        List<MenuNode> children = new ArrayList<>();
+        int order = 0;
+        for (PermissionSummary permission : permissions.stream()
+                .sorted(Comparator.comparing(PermissionSummary::code))
+                .toList()) {
+            children.add(new MenuNode(MODULE_GROUP_PREFIX + module + "." + permission.code(),
+                    MODULE_GROUP_PREFIX + module, "BUTTON", permission.name(), null, null,
+                    permission.code(), permission.description(), order, "ENABLED", 0, Instant.now(),
+                    List.of()));
+            order += 10;
+        }
+        return new MenuNode(MODULE_GROUP_PREFIX + module, null, "DIRECTORY",
+                PermissionModules.nameOf(module), null, null, null,
+                "这个模块的权限不出现在后台菜单里（例如智能体有自己的外壳）；勾选后与菜单权限一样生效",
+                PermissionModules.sortOrderOf(module), "ENABLED", 0, Instant.now(),
+                List.copyOf(children));
+    }
+
     private List<String> requireKnownPermissions(List<String> requested) {
         Set<String> known = new HashSet<>(permissions.listAllCodes());
         Set<String> result = new LinkedHashSet<>();

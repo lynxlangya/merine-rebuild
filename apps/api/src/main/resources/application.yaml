@@ -77,12 +77,24 @@ springdoc:
       packages-to-scan: com.merine.rebuild.intelligence
     - group: maritime
       packages-to-scan: com.merine.rebuild.maritime
+    - group: agent
+      packages-to-scan: com.merine.rebuild.agent
     - group: diagnostics
       packages-to-scan: com.merine.rebuild.bootstrap
   swagger-ui:
     path: /api/docs
 
 merine:
+  agent:
+    provider-encryption-key: ${MODEL_PROVIDER_ENCRYPTION_KEY:}
+    chat:
+      # 本地演示对话：仅 dev/test 且显式打开时注册脚本化替身；默认关闭，生产不注册。
+      demo-enabled: false
+      # PROVIDER 调真实模型（需要供应商与模型配置）；DEMO 只走本地替身，不回退。
+      mode: PROVIDER
+      # 是否请求上游在流式响应里返回 token 用量（stream_options.include_usage）。
+      # DeepSeek 与千问官方都支持；遇到不支持的供应商时置为 false，用量记为未知。
+      request-usage: true
   security:
     # 免密选择账号须同时启用 dev profile 和此开关；默认环境不注册该入口。
     dev-login-enabled: false

@@ -25,4 +25,10 @@ public class MenuLookup {
     public List<MenuNode> tree() {
         return MenuTree.build(mapper.findAll());
     }
+
+    /** 已被菜单节点引用的权限码；角色权限树用它识别「未挂在菜单上」的码。 */
+    @Transactional(readOnly = true)
+    public List<String> listBoundPermissionCodes() {
+        return mapper.findBoundPermissionCodes();
+    }
 }

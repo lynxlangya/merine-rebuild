@@ -1,0 +1,1723 @@
+{
+  "components": {
+    "schemas": {
+      "ApiResponseChatConversation": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/ChatConversation" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseChatRunStats": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/ChatRunStats" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseChatRunView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/ChatRunView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseChatRuntime": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/ChatRuntime" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseListChatConversationMessage": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": {
+            "items": { "$ref": "#/components/schemas/ChatConversationMessage" },
+            "type": "array"
+          },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseListModelOption": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "items": { "$ref": "#/components/schemas/ModelOption" }, "type": "array" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseModelProvider": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/ModelProvider" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultChatConversation": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultChatConversation" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultChatRunRecord": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultChatRunRecord" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultModelProvider": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultModelProvider" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseProviderEffortCatalog": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/ProviderEffortCatalog" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseProviderModelCatalog": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/ProviderModelCatalog" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseVoid": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": {},
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "CancelRequested": {
+        "allOf": [{ "properties": { "messageId": { "type": "string" } }, "type": "object" }],
+        "required": ["messageId"]
+      },
+      "Chart": {
+        "allOf": [
+          {
+            "properties": { "spec": { "$ref": "#/components/schemas/ChartSpec" } },
+            "type": "object"
+          }
+        ],
+        "required": ["spec"]
+      },
+      "ChartMeta": {
+        "properties": {
+          "coverage": { "type": "string" },
+          "metricId": { "type": "string" },
+          "period": { "type": "string" },
+          "updatedAt": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "ChartSeries": {
+        "properties": {
+          "data": { "items": { "format": "double", "type": "number" }, "type": "array" },
+          "name": { "type": "string" }
+        },
+        "required": ["data", "name"],
+        "type": "object"
+      },
+      "ChartSpec": {
+        "properties": {
+          "categories": { "items": { "type": "string" }, "type": "array" },
+          "chartType": { "enum": ["LINE", "BAR", "STACKED_BAR", "PIE"], "type": "string" },
+          "meta": { "$ref": "#/components/schemas/ChartMeta" },
+          "series": { "items": { "$ref": "#/components/schemas/ChartSeries" }, "type": "array" },
+          "title": { "type": "string" },
+          "unit": { "type": "string" }
+        },
+        "required": ["chartType", "series"],
+        "type": "object"
+      },
+      "ChatAnswer": {
+        "properties": {
+          "freeText": { "maxLength": 2000, "minLength": 0, "type": "string" },
+          "questionId": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "skipped": { "type": "boolean" },
+          "values": {
+            "items": { "maxLength": 200, "minLength": 0, "type": "string" },
+            "maxItems": 16,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": ["questionId"],
+        "type": "object"
+      },
+      "ChatContext": {
+        "properties": {
+          "period": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "topic": { "maxLength": 80, "minLength": 0, "type": "string" }
+        },
+        "type": "object"
+      },
+      "ChatConversation": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "id": { "type": "string" },
+          "lastModelId": { "type": "string" },
+          "lastProviderId": { "type": "string" },
+          "lastProviderName": { "type": "string" },
+          "lastReasoningEffort": {
+            "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+            "type": "string"
+          },
+          "messageCount": { "format": "int32", "type": "integer" },
+          "title": { "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "version": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "lastModelId",
+          "lastProviderId",
+          "lastProviderName",
+          "messageCount",
+          "title",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "ChatConversationMessage": {
+        "properties": {
+          "createdAt": { "format": "date-time", "type": "string" },
+          "id": { "type": "string" },
+          "role": { "type": "string" },
+          "status": {
+            "enum": ["RUNNING", "AWAITING_INPUT", "SUCCEEDED", "FAILED", "ABORTED"],
+            "type": "string"
+          },
+          "text": { "type": "string" }
+        },
+        "required": ["createdAt", "id", "role", "status", "text"],
+        "type": "object"
+      },
+      "ChatError": {
+        "allOf": [
+          {
+            "properties": {
+              "code": {
+                "enum": [
+                  "MODEL_AUTH_FAILED",
+                  "MODEL_RATE_LIMITED",
+                  "MODEL_TIMEOUT",
+                  "MODEL_UNAVAILABLE",
+                  "MODEL_REQUEST_REJECTED",
+                  "UPSTREAM_PROTOCOL_ERROR",
+                  "INTERNAL"
+                ],
+                "type": "string"
+              },
+              "message": { "type": "string" },
+              "messageId": { "type": "string" },
+              "retryable": { "type": "boolean" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["code", "message", "retryable"]
+      },
+      "ChatPartView": {
+        "properties": {
+          "part": { "$ref": "#/components/schemas/MessagePart" },
+          "partId": { "type": "string" },
+          "status": { "enum": ["STREAMING", "DONE", "FAILED", "ABORTED"], "type": "string" }
+        },
+        "type": "object"
+      },
+      "ChatRequest": {
+        "properties": {
+          "answers": {
+            "items": { "$ref": "#/components/schemas/ChatAnswer" },
+            "maxItems": 16,
+            "minItems": 0,
+            "type": "array"
+          },
+          "clientConversationId": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "clientTimeZone": { "maxLength": 64, "minLength": 0, "type": "string" },
+          "context": { "$ref": "#/components/schemas/ChatContext" },
+          "conversationId": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "generationId": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "idempotencyKey": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "messages": {
+            "items": { "$ref": "#/components/schemas/ChatTurn" },
+            "maxItems": 200,
+            "minItems": 0,
+            "type": "array"
+          },
+          "modelId": { "maxLength": 120, "minLength": 0, "type": "string" },
+          "providerId": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "reasoningEffort": {
+            "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+            "type": "string"
+          }
+        },
+        "required": ["clientConversationId", "clientTimeZone", "idempotencyKey", "messages"],
+        "type": "object"
+      },
+      "ChatRunDailyPoint": {
+        "properties": {
+          "completionTokens": { "format": "int64", "type": "integer" },
+          "date": { "type": "string" },
+          "durationMs": { "format": "int64", "type": "integer" },
+          "failed": { "format": "int32", "type": "integer" },
+          "inputChars": { "format": "int64", "type": "integer" },
+          "outputChars": { "format": "int64", "type": "integer" },
+          "promptTokens": { "format": "int64", "type": "integer" },
+          "runs": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "completionTokens",
+          "date",
+          "durationMs",
+          "failed",
+          "inputChars",
+          "outputChars",
+          "promptTokens",
+          "runs"
+        ],
+        "type": "object"
+      },
+      "ChatRunModelSlice": {
+        "properties": {
+          "completionTokens": { "format": "int64", "type": "integer" },
+          "durationMs": { "format": "int64", "type": "integer" },
+          "failed": { "format": "int32", "type": "integer" },
+          "modelId": { "type": "string" },
+          "promptTokens": { "format": "int64", "type": "integer" },
+          "providerId": { "type": "string" },
+          "providerName": { "type": "string" },
+          "runs": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "completionTokens",
+          "durationMs",
+          "failed",
+          "modelId",
+          "promptTokens",
+          "providerId",
+          "providerName",
+          "runs"
+        ],
+        "type": "object"
+      },
+      "ChatRunRecord": {
+        "properties": {
+          "completionTokens": { "format": "int32", "type": "integer" },
+          "conversationId": { "type": "string" },
+          "durationMs": { "format": "int32", "type": "integer" },
+          "errorCode": { "type": "string" },
+          "errorMessage": { "type": "string" },
+          "finishedAt": { "format": "date-time", "type": "string" },
+          "id": { "type": "string" },
+          "inputChars": { "format": "int32", "type": "integer" },
+          "modelId": { "type": "string" },
+          "outputChars": { "format": "int32", "type": "integer" },
+          "promptTokens": { "format": "int32", "type": "integer" },
+          "providerName": { "type": "string" },
+          "startedAt": { "format": "date-time", "type": "string" },
+          "state": {
+            "enum": ["RUNNING", "AWAITING_INPUT", "SUCCEEDED", "FAILED", "ABORTED"],
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId",
+          "durationMs",
+          "errorCode",
+          "errorMessage",
+          "finishedAt",
+          "id",
+          "inputChars",
+          "modelId",
+          "outputChars",
+          "providerName",
+          "startedAt"
+        ],
+        "type": "object"
+      },
+      "ChatRunStats": {
+        "properties": {
+          "models": {
+            "items": { "$ref": "#/components/schemas/ChatRunModelSlice" },
+            "type": "array"
+          },
+          "offsetMinutes": { "format": "int32", "type": "integer" },
+          "series": {
+            "items": { "$ref": "#/components/schemas/ChatRunDailyPoint" },
+            "type": "array"
+          },
+          "totals": { "$ref": "#/components/schemas/ChatRunStatsTotals" }
+        },
+        "required": ["models", "offsetMinutes", "series", "totals"],
+        "type": "object"
+      },
+      "ChatRunStatsTotals": {
+        "properties": {
+          "aborted": { "format": "int32", "type": "integer" },
+          "completionTokens": { "format": "int64", "type": "integer" },
+          "durationMs": { "format": "int64", "type": "integer" },
+          "failed": { "format": "int32", "type": "integer" },
+          "inputChars": { "format": "int64", "type": "integer" },
+          "outputChars": { "format": "int64", "type": "integer" },
+          "promptTokens": { "format": "int64", "type": "integer" },
+          "runs": { "format": "int32", "type": "integer" },
+          "runsWithoutUsage": { "format": "int32", "type": "integer" },
+          "succeeded": { "format": "int32", "type": "integer" }
+        },
+        "required": [
+          "aborted",
+          "completionTokens",
+          "durationMs",
+          "failed",
+          "inputChars",
+          "outputChars",
+          "promptTokens",
+          "runs",
+          "runsWithoutUsage",
+          "succeeded"
+        ],
+        "type": "object"
+      },
+      "ChatRunView": {
+        "properties": {
+          "cancelRequested": { "type": "boolean" },
+          "clientConversationId": { "type": "string" },
+          "finishedAt": { "format": "date-time", "type": "string" },
+          "generationId": { "type": "string" },
+          "idempotencyKey": { "type": "string" },
+          "parts": { "items": { "$ref": "#/components/schemas/ChatPartView" }, "type": "array" },
+          "question": { "$ref": "#/components/schemas/QuestionAnswerState" },
+          "startedAt": { "format": "date-time", "type": "string" },
+          "status": {
+            "enum": ["RUNNING", "AWAITING_INPUT", "SUCCEEDED", "FAILED", "ABORTED"],
+            "type": "string"
+          }
+        },
+        "required": [
+          "cancelRequested",
+          "clientConversationId",
+          "generationId",
+          "idempotencyKey",
+          "parts",
+          "startedAt",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ChatRuntime": {
+        "properties": { "executionMode": { "enum": ["LOCAL_STUB", "PROVIDER"], "type": "string" } },
+        "required": ["executionMode"],
+        "type": "object"
+      },
+      "ChatStreamEvent": {
+        "description": "SSE data 载荷；type 判别联合",
+        "discriminator": {
+          "mapping": {
+            "CANCEL_REQUESTED": "#/components/schemas/CancelRequested",
+            "ERROR": "#/components/schemas/ChatError",
+            "MESSAGE_DONE": "#/components/schemas/MessageDone",
+            "PART_DONE": "#/components/schemas/PartDone",
+            "PART_SNAPSHOT": "#/components/schemas/PartSnapshot",
+            "PART_START": "#/components/schemas/PartStart",
+            "STREAM_START": "#/components/schemas/StreamStart",
+            "TEXT_DELTA": "#/components/schemas/TextDelta"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          { "$ref": "#/components/schemas/StreamStart" },
+          { "$ref": "#/components/schemas/PartStart" },
+          { "$ref": "#/components/schemas/TextDelta" },
+          { "$ref": "#/components/schemas/PartSnapshot" },
+          { "$ref": "#/components/schemas/PartDone" },
+          { "$ref": "#/components/schemas/CancelRequested" },
+          { "$ref": "#/components/schemas/MessageDone" },
+          { "$ref": "#/components/schemas/ChatError" }
+        ],
+        "properties": { "type": { "type": "string" } },
+        "required": ["type"]
+      },
+      "ChatTurn": {
+        "properties": {
+          "role": { "enum": ["USER", "ASSISTANT"], "type": "string" },
+          "text": { "maxLength": 20000, "minLength": 0, "type": "string" }
+        },
+        "required": ["role", "text"],
+        "type": "object"
+      },
+      "DiscoverProviderModels": {
+        "properties": {
+          "apiKey": { "maxLength": 4096, "minLength": 0, "type": "string", "writeOnly": true },
+          "baseUrl": { "maxLength": 500, "minLength": 0, "type": "string" },
+          "providerId": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "vendor": {
+            "enum": [
+              "DEEPSEEK",
+              "QWEN",
+              "ZHIPU",
+              "MOONSHOT",
+              "DOUBAO",
+              "BAIDU",
+              "TENCENT",
+              "MINIMAX",
+              "CUSTOM"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["baseUrl"],
+        "type": "object"
+      },
+      "DiscoveredProviderModel": {
+        "properties": {
+          "modelId": { "type": "string" },
+          "ownedBy": { "description": "上游返回的归属方，可能为空", "type": "string" },
+          "reasoningEfforts": {
+            "items": {
+              "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["modelId", "reasoningEfforts"],
+        "type": "object"
+      },
+      "FieldError": {
+        "properties": { "field": { "type": "string" }, "message": { "type": "string" } },
+        "required": ["field", "message"],
+        "type": "object"
+      },
+      "MessageDone": {
+        "allOf": [
+          {
+            "properties": {
+              "messageId": { "type": "string" },
+              "status": { "enum": ["SUCCEEDED", "AWAITING_INPUT", "ABORTED"], "type": "string" },
+              "usage": { "$ref": "#/components/schemas/TokenUsage" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["messageId", "status"]
+      },
+      "MessagePart": {
+        "discriminator": {
+          "mapping": {
+            "CHART": "#/components/schemas/Chart",
+            "NOTICE": "#/components/schemas/Notice",
+            "QUESTION": "#/components/schemas/Question",
+            "SOURCES": "#/components/schemas/Sources",
+            "STEPS": "#/components/schemas/Steps",
+            "TABLE": "#/components/schemas/Table",
+            "TEXT": "#/components/schemas/Text"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          { "$ref": "#/components/schemas/Text" },
+          { "$ref": "#/components/schemas/Table" },
+          { "$ref": "#/components/schemas/Chart" },
+          { "$ref": "#/components/schemas/Sources" },
+          { "$ref": "#/components/schemas/Steps" },
+          { "$ref": "#/components/schemas/Question" },
+          { "$ref": "#/components/schemas/Notice" }
+        ],
+        "properties": { "type": { "type": "string" } },
+        "required": ["type"]
+      },
+      "ModelOption": {
+        "properties": {
+          "defaultReasoningEffort": {
+            "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+            "type": "string"
+          },
+          "displayName": { "type": "string" },
+          "id": { "type": "string" },
+          "modelId": { "type": "string" },
+          "providerId": { "type": "string" },
+          "providerName": { "type": "string" },
+          "reasoningEfforts": {
+            "items": {
+              "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "vendor": {
+            "enum": [
+              "DEEPSEEK",
+              "QWEN",
+              "ZHIPU",
+              "MOONSHOT",
+              "DOUBAO",
+              "BAIDU",
+              "TENCENT",
+              "MINIMAX",
+              "CUSTOM"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "id",
+          "modelId",
+          "providerId",
+          "providerName",
+          "reasoningEfforts",
+          "vendor"
+        ],
+        "type": "object"
+      },
+      "ModelProvider": {
+        "properties": {
+          "baseUrl": { "type": "string" },
+          "id": { "type": "string" },
+          "models": { "items": { "$ref": "#/components/schemas/ProviderModel" }, "type": "array" },
+          "name": { "type": "string" },
+          "remark": { "type": "string" },
+          "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "vendor": {
+            "enum": [
+              "DEEPSEEK",
+              "QWEN",
+              "ZHIPU",
+              "MOONSHOT",
+              "DOUBAO",
+              "BAIDU",
+              "TENCENT",
+              "MINIMAX",
+              "CUSTOM"
+            ],
+            "type": "string"
+          },
+          "version": { "format": "int32", "type": "integer" },
+          "website": { "type": "string" }
+        },
+        "required": [
+          "baseUrl",
+          "id",
+          "models",
+          "name",
+          "remark",
+          "status",
+          "updatedAt",
+          "vendor",
+          "version",
+          "website"
+        ],
+        "type": "object"
+      },
+      "Notice": {
+        "allOf": [
+          {
+            "properties": {
+              "code": { "type": "string" },
+              "level": { "enum": ["INFO", "WARNING", "ERROR"], "type": "string" },
+              "text": { "type": "string" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["level", "text"]
+      },
+      "PageResultChatConversation": {
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/ChatConversation" },
+            "type": "array"
+          },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultChatRunRecord": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/ChatRunRecord" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PageResultModelProvider": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/ModelProvider" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
+      "PartDone": {
+        "allOf": [
+          {
+            "properties": { "messageId": { "type": "string" }, "partId": { "type": "string" } },
+            "type": "object"
+          }
+        ],
+        "required": ["messageId", "partId"]
+      },
+      "PartSnapshot": {
+        "allOf": [
+          {
+            "properties": {
+              "messageId": { "type": "string" },
+              "part": { "$ref": "#/components/schemas/MessagePart" },
+              "partId": { "type": "string" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["messageId", "part", "partId"]
+      },
+      "PartStart": {
+        "allOf": [
+          {
+            "properties": {
+              "messageId": { "type": "string" },
+              "partId": { "type": "string" },
+              "partType": { "type": "string" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["messageId", "partId", "partType"]
+      },
+      "ProviderEffortCatalog": {
+        "properties": {
+          "covered": { "type": "boolean" },
+          "models": {
+            "items": { "$ref": "#/components/schemas/ProviderModelEfforts" },
+            "type": "array"
+          }
+        },
+        "required": ["covered", "models"],
+        "type": "object"
+      },
+      "ProviderEffortLookup": {
+        "properties": {
+          "modelIds": {
+            "items": { "maxLength": 120, "minLength": 0, "type": "string" },
+            "maxItems": 20,
+            "minItems": 0,
+            "type": "array"
+          },
+          "vendor": {
+            "enum": [
+              "DEEPSEEK",
+              "QWEN",
+              "ZHIPU",
+              "MOONSHOT",
+              "DOUBAO",
+              "BAIDU",
+              "TENCENT",
+              "MINIMAX",
+              "CUSTOM"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["vendor"],
+        "type": "object"
+      },
+      "ProviderModel": {
+        "properties": {
+          "displayName": { "type": "string" },
+          "id": { "type": "string" },
+          "modelId": { "type": "string" },
+          "reasoningEfforts": {
+            "items": {
+              "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "remark": { "type": "string" },
+          "sortOrder": { "format": "int32", "type": "integer" },
+          "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" }
+        },
+        "required": [
+          "displayName",
+          "id",
+          "modelId",
+          "reasoningEfforts",
+          "remark",
+          "sortOrder",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ProviderModelCatalog": {
+        "properties": {
+          "models": {
+            "items": { "$ref": "#/components/schemas/DiscoveredProviderModel" },
+            "type": "array"
+          }
+        },
+        "required": ["models"],
+        "type": "object"
+      },
+      "ProviderModelEfforts": {
+        "properties": {
+          "defaultReasoningEffort": {
+            "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+            "type": "string"
+          },
+          "modelId": { "type": "string" },
+          "reasoningEfforts": {
+            "items": {
+              "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["modelId", "reasoningEfforts"],
+        "type": "object"
+      },
+      "Question": {
+        "allOf": [
+          {
+            "properties": {
+              "allowOther": { "type": "boolean" },
+              "maxLength": { "format": "int32", "type": "integer" },
+              "maxSelections": { "format": "int32", "type": "integer" },
+              "minSelections": { "format": "int32", "type": "integer" },
+              "mode": { "enum": ["SINGLE", "MULTIPLE", "TEXT"], "type": "string" },
+              "options": {
+                "items": { "$ref": "#/components/schemas/QuestionOption" },
+                "type": "array"
+              },
+              "placeholder": { "type": "string" },
+              "prompt": { "type": "string" },
+              "questionId": { "type": "string" },
+              "required": { "type": "boolean" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["mode", "prompt", "questionId", "required"]
+      },
+      "QuestionAnswerState": {
+        "properties": {
+          "answered": { "type": "boolean" },
+          "freeText": { "type": "string" },
+          "questionId": { "type": "string" },
+          "values": { "items": { "type": "string" }, "type": "array" }
+        },
+        "type": "object"
+      },
+      "QuestionOption": {
+        "properties": {
+          "hint": { "type": "string" },
+          "label": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "required": ["value"],
+        "type": "object"
+      },
+      "RenameChatConversation": {
+        "properties": {
+          "title": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "version": { "format": "int32", "minimum": 0, "type": "integer" }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "SaveModelProvider": {
+        "properties": {
+          "apiKey": {
+            "description": "新建必填；编辑留空保留原密钥；更换供应商或地址时须重新输入",
+            "maxLength": 4096,
+            "minLength": 0,
+            "type": "string",
+            "writeOnly": true
+          },
+          "baseUrl": { "maxLength": 500, "minLength": 0, "type": "string" },
+          "models": {
+            "items": { "$ref": "#/components/schemas/SaveProviderModel" },
+            "maxItems": 20,
+            "minItems": 0,
+            "type": "array"
+          },
+          "name": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "remark": { "maxLength": 300, "minLength": 0, "type": "string" },
+          "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" },
+          "vendor": {
+            "enum": [
+              "DEEPSEEK",
+              "QWEN",
+              "ZHIPU",
+              "MOONSHOT",
+              "DOUBAO",
+              "BAIDU",
+              "TENCENT",
+              "MINIMAX",
+              "CUSTOM"
+            ],
+            "type": "string"
+          },
+          "version": { "format": "int32", "minimum": 0, "type": "integer" },
+          "website": { "maxLength": 500, "minLength": 0, "type": "string" }
+        },
+        "required": ["baseUrl", "name", "remark", "status", "vendor", "website"],
+        "type": "object"
+      },
+      "SaveProviderModel": {
+        "properties": {
+          "displayName": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "modelId": {
+            "maxLength": 120,
+            "minLength": 0,
+            "pattern": "[A-Za-z0-9._:/-]+",
+            "type": "string"
+          },
+          "reasoningEfforts": {
+            "items": {
+              "enum": ["NONE", "LOW", "MEDIUM", "HIGH", "XHIGH", "MAX"],
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 0,
+            "type": "array"
+          },
+          "remark": { "maxLength": 300, "minLength": 0, "type": "string" },
+          "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" }
+        },
+        "required": ["modelId", "status"],
+        "type": "object"
+      },
+      "SourceRef": {
+        "properties": {
+          "kind": { "enum": ["TASK", "FLOW", "INTEL", "MENU", "EXTERNAL"], "type": "string" },
+          "refId": { "type": "string" },
+          "routeKey": { "type": "string" },
+          "snippet": { "type": "string" },
+          "title": { "type": "string" },
+          "url": { "type": "string" }
+        },
+        "required": ["kind", "title"],
+        "type": "object"
+      },
+      "Sources": {
+        "allOf": [
+          {
+            "properties": {
+              "items": { "items": { "$ref": "#/components/schemas/SourceRef" }, "type": "array" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["items"]
+      },
+      "StepItem": {
+        "properties": {
+          "label": { "enum": ["RETRIEVE", "PLAN", "QUERY", "ANALYZE", "CITE"], "type": "string" },
+          "status": { "enum": ["RUNNING", "DONE", "FAILED"], "type": "string" },
+          "text": { "type": "string" }
+        },
+        "required": ["label", "status", "text"],
+        "type": "object"
+      },
+      "Steps": {
+        "allOf": [
+          {
+            "properties": {
+              "items": { "items": { "$ref": "#/components/schemas/StepItem" }, "type": "array" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["items"]
+      },
+      "StreamStart": {
+        "allOf": [
+          {
+            "properties": {
+              "clientConversationId": { "type": "string" },
+              "conversationId": { "type": "string" },
+              "executionMode": { "enum": ["LOCAL_STUB", "PROVIDER"], "type": "string" },
+              "generationId": { "type": "string" },
+              "messageId": { "type": "string" },
+              "model": { "type": "string" },
+              "protocolVersion": { "format": "int32", "type": "integer" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": [
+          "clientConversationId",
+          "conversationId",
+          "executionMode",
+          "generationId",
+          "messageId",
+          "protocolVersion"
+        ]
+      },
+      "Table": {
+        "allOf": [
+          {
+            "properties": {
+              "columns": {
+                "items": { "$ref": "#/components/schemas/TableColumn" },
+                "type": "array"
+              },
+              "note": { "type": "string" },
+              "rows": {
+                "items": { "items": { "type": "string" }, "type": "array" },
+                "type": "array"
+              },
+              "title": { "type": "string" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["columns", "rows"]
+      },
+      "TableColumn": {
+        "properties": {
+          "key": { "type": "string" },
+          "numeric": { "type": "boolean" },
+          "title": { "type": "string" },
+          "unit": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "Text": {
+        "allOf": [{ "properties": { "text": { "type": "string" } }, "type": "object" }],
+        "required": ["text"]
+      },
+      "TextDelta": {
+        "allOf": [
+          {
+            "properties": {
+              "delta": { "type": "string" },
+              "messageId": { "type": "string" },
+              "partId": { "type": "string" }
+            },
+            "type": "object"
+          }
+        ],
+        "required": ["delta", "messageId", "partId"]
+      },
+      "TokenUsage": {
+        "properties": {
+          "inputTokens": { "format": "int32", "type": "integer" },
+          "outputTokens": { "format": "int32", "type": "integer" }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "info": { "title": "OpenAPI definition", "version": "v0" },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/agent/chat": {
+      "post": {
+        "operationId": "chatChat",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ChatRequest" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ChatRunView" } },
+              "text/event-stream": { "schema": { "$ref": "#/components/schemas/ChatStreamEvent" } }
+            },
+            "description": "SSE 事件流，或同 key 已完成时的快照 JSON"
+          }
+        },
+        "summary": "发起或续接一次本地演示执行",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/config": {
+      "get": {
+        "operationId": "chatConfig",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseChatRuntime" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "读取对话运行模式，用于界面标注本地演示或真实模型",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/conversations": {
+      "get": {
+        "operationId": "chatConversations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "minimum": 1, "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultChatConversation" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "列出我的助手会话",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/conversations/{id}": {
+      "delete": {
+        "operationId": "chatDeleteConversation",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "minimum": 0, "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除我的会话（进行中的轮次会先被拒绝）",
+        "tags": ["海防助手 · 对话"]
+      },
+      "patch": {
+        "operationId": "chatRenameConversation",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RenameChatConversation" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseChatConversation" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "重命名我的会话",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/conversations/{id}/messages": {
+      "get": {
+        "operationId": "chatConversationMessages",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseListChatConversationMessage" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "读取我的某个会话的消息",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/requests/{idempotencyKey}": {
+      "get": {
+        "operationId": "chatStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "idempotencyKey",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseChatRunView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "按幂等键查询当前身份的原执行状态与受限快照",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/requests/{idempotencyKey}/stop": {
+      "post": {
+        "operationId": "chatStop",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "idempotencyKey",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseChatRunView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "请求停止本次演示执行",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/runs": {
+      "get": {
+        "operationId": "chatRuns",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "minimum": 1, "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": { "default": "", "maxLength": 16, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "providerId",
+            "required": false,
+            "schema": { "default": "", "maxLength": 64, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "modelId",
+            "required": false,
+            "schema": { "default": "", "maxLength": 120, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": { "format": "int32", "maximum": 90, "minimum": 1, "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultChatRunRecord" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "列出我的助手执行记录",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/chat/runs/stats": {
+      "get": {
+        "operationId": "chatRunStats",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 14,
+              "format": "int32",
+              "maximum": 90,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "providerId",
+            "required": false,
+            "schema": { "default": "", "maxLength": 64, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "modelId",
+            "required": false,
+            "schema": { "default": "", "maxLength": 120, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "offsetMinutes",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "maximum": 840,
+              "minimum": -720,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseChatRunStats" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "我的助手用量聚合（KPI、按天趋势、模型分布）",
+        "tags": ["海防助手 · 对话"]
+      }
+    },
+    "/api/agent/conversations": {
+      "get": {
+        "operationId": "conversationList",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "minimum": 1, "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultChatConversation" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "列出我的助手会话（最近更新在前）",
+        "tags": ["海防助手 · 会话"]
+      }
+    },
+    "/api/agent/conversations/{id}": {
+      "delete": {
+        "operationId": "conversationDelete",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "minimum": 0, "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "summary": "删除我的会话",
+        "tags": ["海防助手 · 会话"]
+      },
+      "patch": {
+        "operationId": "conversationRename",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RenameChatConversation" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseChatConversation" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "重命名我的会话",
+        "tags": ["海防助手 · 会话"]
+      }
+    },
+    "/api/agent/conversations/{id}/messages": {
+      "get": {
+        "operationId": "conversationMessages",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseListChatConversationMessage" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "读取我的某个会话的消息",
+        "tags": ["海防助手 · 会话"]
+      }
+    },
+    "/api/agent/models": {
+      "get": {
+        "operationId": "modelOptionList",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseListModelOption" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "读取已启用连接下的启用模型；不返回地址、备注与密钥",
+        "tags": ["模型选项"]
+      }
+    },
+    "/api/agent/providers": {
+      "get": {
+        "operationId": "providerList",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": { "default": "", "maxLength": 80, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "minimum": 1, "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "format": "int32",
+              "maximum": 60,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultModelProvider" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["模型供应商"]
+      },
+      "post": {
+        "operationId": "providerCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/SaveModelProvider" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseModelProvider" } }
+            },
+            "description": "Created"
+          }
+        },
+        "tags": ["模型供应商"]
+      }
+    },
+    "/api/agent/providers/models/discover": {
+      "post": {
+        "operationId": "providerDiscover",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DiscoverProviderModels" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseProviderModelCatalog" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["模型供应商"]
+      }
+    },
+    "/api/agent/providers/reasoning-efforts": {
+      "post": {
+        "operationId": "providerReasoningEfforts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProviderEffortLookup" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseProviderEffortCatalog" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["模型供应商"]
+      }
+    },
+    "/api/agent/providers/{id}": {
+      "delete": {
+        "operationId": "providerDelete",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "version",
+            "required": true,
+            "schema": { "format": "int32", "minimum": 0, "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } },
+            "description": "OK"
+          }
+        },
+        "tags": ["模型供应商"]
+      },
+      "put": {
+        "operationId": "providerUpdate",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/SaveModelProvider" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseModelProvider" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["模型供应商"]
+      }
+    }
+  },
+  "servers": [{ "url": "/" }],
+  "tags": [
+    {
+      "description": "配置管理；密钥只写不读，仅「获取模型列表」会带密钥出站",
+      "name": "模型供应商"
+    },
+    {
+      "description": "读取已启用的模型选项（登录即可）；配置管理需要 agent:provider:* 权限",
+      "name": "模型选项"
+    },
+    {
+      "description": "只返回归属用户自己的会话；不返回密钥与执行正文以外的内容",
+      "name": "海防助手 · 会话"
+    },
+    { "description": "流式执行、停止与执行记录；一轮结束后落库", "name": "海防助手 · 对话" }
+  ]
+}

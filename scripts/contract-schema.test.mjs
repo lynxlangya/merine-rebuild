@@ -94,3 +94,32 @@ test('输出顺序稳定，同时保留参数和枚举数组顺序', () => {
   assert.equal(JSON.stringify(normalizeSchema(a)), JSON.stringify(normalizeSchema(b)));
   assert.deepEqual(normalizeSchema(a).enum, ['z', 'a']);
 });
+
+test('多态子类型去掉父引用，其它 allOf 保留', () => {
+  const schema = doc({});
+  schema.components = {
+    schemas: {
+      Parent: {
+        oneOf: [{ $ref: '#/components/schemas/Child' }, { $ref: '#/components/schemas/Other' }],
+      },
+      Child: {
+        allOf: [
+          { $ref: '#/components/schemas/Parent' },
+          { properties: { text: { type: 'string' } }, type: 'object' },
+        ],
+      },
+      Other: { allOf: [{ $ref: '#/components/schemas/Parent' }] },
+      Plain: { allOf: [{ $ref: '#/components/schemas/Mixin' }, { properties: {} }] },
+      Mixin: { properties: { id: { type: 'string' } } },
+    },
+  };
+  const normalized = normalizeSchema(schema);
+  assert.deepEqual(normalized.components.schemas.Child.allOf, [
+    { properties: { text: { type: 'string' } }, type: 'object' },
+  ]);
+  assert.deepEqual(normalized.components.schemas.Other.allOf, []);
+  assert.deepEqual(normalized.components.schemas.Plain.allOf, [
+    { $ref: '#/components/schemas/Mixin' },
+    { properties: {} },
+  ]);
+});

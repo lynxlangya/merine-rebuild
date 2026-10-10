@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.agent.chat.persistence.ChatHistoryMapper">
+
+  <sql id="conversationColumns">
+    id, user_id AS userId, title, last_provider_id AS lastProviderId,
+    last_provider_name AS lastProviderName, last_model_id AS lastModelId,
+    last_reasoning_effort AS lastReasoningEffort, message_count AS messageCount,
+    version, created_at AS createdAt, updated_at AS updatedAt
+  </sql>
+
+  <insert id="insertConversation">
+    INSERT INTO ai_conversation(id,user_id,title,last_provider_id,last_provider_name,last_model_id,last_reasoning_effort)
+    VALUES(#{id},#{userId},#{title},#{providerId},#{providerName},#{modelId},#{reasoningEffort})
+  </insert>
+
+  <select id="findConversation" resultType="com.merine.rebuild.agent.chat.persistence.ConversationRow">
+    SELECT <include refid="conversationColumns"/> FROM ai_conversation WHERE id = #{id}
+  </select>
+
+  <select id="lockConversation" resultType="com.merine.rebuild.agent.chat.persistence.ConversationRow">
+    SELECT <include refid="conversationColumns"/> FROM ai_conversation WHERE id = #{id} FOR UPDATE
+  </select>
+
+  <select id="listConversations" resultType="com.merine.rebuild.agent.chat.persistence.ConversationRow">
+    SELECT <include refid="conversationColumns"/> FROM ai_conversation
+     WHERE user_id = #{userId}
+     ORDER BY updated_at DESC, id DESC
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="countConversations" resultType="long">
+    SELECT COUNT(*) FROM ai_conversation WHERE user_id = #{userId}
+  </select>
+
+  <update id="touchConversation">
+    UPDATE ai_conversation
+       SET last_provider_id = #{providerId}, last_provider_name = #{providerName},
+           last_model_id = #{modelId}, last_reasoning_effort = #{reasoningEffort},
+           message_count = message_count + #{addedMessages},
+           version = version + 1, updated_at = CURRENT_TIMESTAMP(6)
+     WHERE id = #{id}
+  </update>
+
+  <update id="renameConversation">
+    UPDATE ai_conversation SET title = #{title}, version = version + 1, updated_at = CURRENT_TIMESTAMP(6)
+     WHERE id = #{id} AND user_id = #{userId} AND version = #{version}
+  </update>
+
+  <delete id="deleteConversation">
+    DELETE FROM ai_conversation WHERE id = #{id} AND user_id = #{userId} AND version = #{version}
+  </delete>
+
+  <select id="nextSeq" resultType="int">
+    SELECT COALESCE(MAX(seq), 0) + 1 FROM ai_conversation_message WHERE conversation_id = #{conversationId}
+  </select>
+
+  <insert id="insertMessage">
+    INSERT INTO ai_conversation_message(id,conversation_id,run_id,seq,role,text,status)
+    VALUES(#{id},#{conversationId},#{runId},#{seq},#{role},#{text},#{status})
+  </insert>
+
+  <select id="listMessages" resultType="com.merine.rebuild.agent.chat.persistence.ChatHistoryMapper$MessageRow">
+    SELECT id, role, text, status, created_at AS createdAt
+      FROM ai_conversation_message
+     WHERE conversation_id = #{conversationId}
+     ORDER BY seq
+  </select>
+
+  <delete id="deleteMessagesOfConversation">
+    DELETE FROM ai_conversation_message WHERE conversation_id = #{conversationId}
+  </delete>
+
+  <insert id="insertRun">
+    INSERT INTO ai_chat_run(id,user_id,conversation_id,idempotency_key,message_id,generation_id,mode,
+                            provider_id,provider_name,model_id,reasoning_effort,state,error_code,error_message,
+                            started_at,finished_at,duration_ms,input_chars,output_chars,prompt_tokens,completion_tokens)
+    VALUES(#{id},#{userId},#{conversationId},#{idempotencyKey},#{messageId},#{generationId},#{mode},
+           #{providerId},#{providerName},#{modelId},#{reasoningEffort},#{state},#{errorCode},#{errorMessage},
+           #{startedAt},#{finishedAt},#{durationMs},#{inputChars},#{outputChars},#{promptTokens},#{completionTokens})
+  </insert>
+
+  <select id="listRuns" resultType="com.merine.rebuild.agent.chat.persistence.ChatRunRow">
+    SELECT id, user_id AS userId, conversation_id AS conversationId, idempotency_key AS idempotencyKey,
+           message_id AS messageId, generation_id AS generationId, mode, provider_id AS providerId,
+           provider_name AS providerName, model_id AS modelId, reasoning_effort AS reasoningEffort,
+           state, error_code AS errorCode, error_message AS errorMessage, started_at AS startedAt,
+           finished_at AS finishedAt, duration_ms AS durationMs, input_chars AS inputChars,
+           output_chars AS outputChars, prompt_tokens AS promptTokens, completion_tokens AS completionTokens
+      FROM ai_chat_run
+     WHERE user_id = #{userId}
+     <if test="state != null and state != ''">AND state = #{state}</if>
+     <if test="providerId != null and providerId != ''">AND provider_id = #{providerId}</if>
+     <if test="modelId != null and modelId != ''">AND model_id = #{modelId}</if>
+     <if test="since != null">AND started_at &gt;= #{since}</if>
+     ORDER BY started_at DESC, id DESC
+     LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <sql id="runScope">
+     WHERE user_id = #{userId}
+       AND started_at &gt;= #{since}
+    <if test="providerId != null and providerId != ''">AND provider_id = #{providerId}</if>
+    <if test="modelId != null and modelId != ''">AND model_id = #{modelId}</if>
+  </sql>
+
+  <select id="totals" resultType="com.merine.rebuild.agent.chat.persistence.ChatHistoryMapper$ChatRunStatsRow">
+    SELECT COUNT(*) AS runs,
+           COALESCE(SUM(state = 'SUCCEEDED'), 0) AS succeeded,
+           COALESCE(SUM(state = 'FAILED'), 0) AS failed,
+           COALESCE(SUM(state = 'ABORTED'), 0) AS aborted,
+           COALESCE(SUM(prompt_tokens IS NULL AND completion_tokens IS NULL), 0) AS runsWithoutUsage,
+           COALESCE(SUM(prompt_tokens), 0) AS promptTokens,
+           COALESCE(SUM(completion_tokens), 0) AS completionTokens,
+           COALESCE(SUM(input_chars), 0) AS inputChars,
+           COALESCE(SUM(output_chars), 0) AS outputChars,
+           COALESCE(SUM(duration_ms), 0) AS durationMs
+      FROM ai_chat_run
+    <include refid="runScope"/>
+  </select>
+
+  <select id="daily" resultType="com.merine.rebuild.agent.chat.persistence.ChatHistoryMapper$ChatRunDailyRow">
+    SELECT DATE(CONVERT_TZ(started_at, '+00:00', #{offset})) AS date,
+           COUNT(*) AS runs,
+           COALESCE(SUM(state = 'FAILED'), 0) AS failed,
+           COALESCE(SUM(prompt_tokens), 0) AS promptTokens,
+           COALESCE(SUM(completion_tokens), 0) AS completionTokens,
+           COALESCE(SUM(input_chars), 0) AS inputChars,
+           COALESCE(SUM(output_chars), 0) AS outputChars,
+           COALESCE(SUM(duration_ms), 0) AS durationMs
+      FROM ai_chat_run
+    <include refid="runScope"/>
+     GROUP BY DATE(CONVERT_TZ(started_at, '+00:00', #{offset}))
+     ORDER BY date
+  </select>
+
+  <select id="byModel" resultType="com.merine.rebuild.agent.chat.persistence.ChatHistoryMapper$ChatRunModelRow">
+    SELECT provider_id AS providerId, provider_name AS providerName, model_id AS modelId,
+           COUNT(*) AS runs,
+           COALESCE(SUM(state = 'FAILED'), 0) AS failed,
+           COALESCE(SUM(prompt_tokens), 0) AS promptTokens,
+           COALESCE(SUM(completion_tokens), 0) AS completionTokens,
+           COALESCE(SUM(duration_ms), 0) AS durationMs
+      FROM ai_chat_run
+     WHERE user_id = #{userId} AND started_at &gt;= #{since}
+    <if test="providerId != null and providerId != ''">AND provider_id = #{providerId}</if>
+    <if test="modelId != null and modelId != ''">AND model_id = #{modelId}</if>
+     GROUP BY provider_id, provider_name, model_id
+     ORDER BY runs DESC, model_id
+     LIMIT #{limit}
+  </select>
+
+  <select id="countRuns" resultType="long">
+    SELECT COUNT(*) FROM ai_chat_run WHERE user_id = #{userId}
+    <if test="state != null and state != ''">AND state = #{state}</if>
+    <if test="providerId != null and providerId != ''">AND provider_id = #{providerId}</if>
+    <if test="modelId != null and modelId != ''">AND model_id = #{modelId}</if>
+    <if test="since != null">AND started_at &gt;= #{since}</if>
+  </select>
+
+  <delete id="deleteRunsOfConversation">
+    DELETE FROM ai_chat_run WHERE conversation_id = #{conversationId}
+  </delete>
+</mapper>

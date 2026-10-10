@@ -1,0 +1,13 @@
+.settings {
+  min-width: 0;
+  min-height: 100%;
+  background: var(--bg);
+}
+
+/* 无权限时把结果块放在页面中部，与助手主页的 403 呈现一致。 */
+.forbidden {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}

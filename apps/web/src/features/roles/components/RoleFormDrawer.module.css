@@ -1,4 +1,4 @@
-/* 角色抽屉（560px）：基本信息、功能权限与授权摘要三段 */
+/* 角色抽屉（560px）：基本信息与功能权限 */
 
 .title {
   font-family: var(--font-display);
@@ -75,31 +75,92 @@
 
 /* ---------- 权限勾选（紧凑树） ---------- */
 
-/* 树本身只放宽行高，具体外观仍由 Ant Design Tree 提供 */
-.section :global(.ant-tree) {
+.permissionPanel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  background: var(--surface);
+}
+
+.treeToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.treeActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.expandActions {
+  margin-left: auto;
+}
+
+.treeToolbar :global(.ant-btn-text:not(:disabled)) {
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.treeToolbar .selectAll:global(.ant-btn-text:not(:disabled)) {
+  color: var(--accent);
+}
+
+.treeHint {
+  margin: 10px 12px 4px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+
+.permissionTree:global(.ant-tree) {
+  padding: 8px 12px 12px;
   background: transparent;
   font-size: var(--fs-13);
 }
 
-.section :global(.ant-tree .ant-tree-node-content-wrapper) {
-  padding-inline: 4px;
+.permissionTree :global(.ant-tree-node-content-wrapper) {
+  min-width: 0;
+  padding-inline: 6px;
+  line-height: 28px;
+}
+
+.permissionTree :global(.ant-tree-treenode) {
+  align-items: center;
+  padding-bottom: 2px;
+}
+
+.permissionTree :global(.ant-tree-indent-unit) {
+  width: 16px;
 }
 
 .treeRow {
-  display: inline-flex;
-  align-items: baseline;
+  display: flex;
+  align-items: center;
   gap: var(--sp-2);
+  min-height: 28px;
 }
 
 .treeName {
+  flex: 1;
+  min-width: 0;
   color: var(--fg);
+  overflow-wrap: anywhere;
 }
 
-.treeCode {
+.treeBranch {
+  font-weight: var(--fw-ui);
+}
+
+.treeKind {
+  flex-shrink: 0;
   color: var(--muted);
-  font-family: var(--font-mono);
   font-size: var(--fs-11);
-  letter-spacing: var(--ls-mono);
 }
 
 .treeTag {
@@ -108,61 +169,6 @@
   border-color: var(--tag-border);
   color: var(--fg);
   font-size: var(--fs-11);
-}
-
-/* ---------- 授权摘要 ---------- */
-
-.summary {
-  display: grid;
-  grid-template-columns: 96px 1fr;
-  margin: 0;
-  padding: var(--sp-3);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--r-3);
-  font-size: var(--fs-13);
-}
-
-.term {
-  padding: 7px 0;
-  color: var(--muted);
-  line-height: var(--lh-ui);
-}
-
-.detail {
-  margin: 0;
-  padding: 7px 0;
-  color: var(--fg);
-  line-height: var(--lh-ui);
-  overflow-wrap: anywhere;
-}
-
-.summary dt + dd {
-  border-bottom: 1px solid var(--border);
-}
-
-.summary dt:last-of-type + dd {
-  border-bottom: 0;
-}
-
-.builtinTag {
-  margin: 0 0 0 var(--sp-2);
-  border-radius: var(--r-2);
-  background: var(--tag-accent-bg);
-  border-color: var(--tag-border);
-  color: var(--accent);
-  font-size: var(--fs-11);
-}
-
-.selfNote {
-  display: block;
-  margin-top: 6px;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--tag-warning-bg);
-  border: 1px solid var(--tag-border);
-  border-radius: var(--r-3);
-  color: var(--fg);
-  font-size: var(--fs-12);
 }
 
 /* ---------- 底部操作 ---------- */
