@@ -1,5 +1,6 @@
 package com.merine.rebuild.agent.provider;
 
+import com.merine.rebuild.agent.AgentSecretCipher;
 import com.merine.rebuild.agent.provider.dto.EffortCatalog;
 import com.merine.rebuild.agent.provider.dto.ModelCatalog;
 import com.merine.rebuild.agent.provider.dto.ModelOption;
@@ -41,11 +42,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProviderService implements ProviderTargetLookup {
     private static final Logger log = LoggerFactory.getLogger(ProviderService.class);
     private final ProviderMapper mapper;
-    private final ProviderKeyCipher cipher;
+    private final AgentSecretCipher cipher;
     private final ProviderCatalogClient catalog;
     private final AuditTrail audit;
 
-    public ProviderService(ProviderMapper mapper, ProviderKeyCipher cipher,
+    public ProviderService(ProviderMapper mapper, AgentSecretCipher cipher,
                            ProviderCatalogClient catalog, AuditTrail audit) {
         this.mapper = mapper;
         this.cipher = cipher;

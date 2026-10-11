@@ -101,6 +101,12 @@ public final class PermissionCodes {
     public static final String PROVIDER_CREATE = "agent:provider:create";
     public static final String PROVIDER_UPDATE = "agent:provider:update";
     public static final String PROVIDER_DELETE = "agent:provider:delete";
+    /** 数据源配置：供未来 Agent 受控查询使用；测试连接是独立的管理动作。 */
+    public static final String DATASOURCE_READ = "agent:datasource:read";
+    public static final String DATASOURCE_CREATE = "agent:datasource:create";
+    public static final String DATASOURCE_UPDATE = "agent:datasource:update";
+    public static final String DATASOURCE_TOGGLE_STATUS = "agent:datasource:toggle-status";
+    public static final String DATASOURCE_TEST = "agent:datasource:test";
     /** 使用海防助手发起对话；先只授予系统管理员角色，真实调用会产生费用。 */
     public static final String CHAT_USE = "agent:chat:use";
 
@@ -111,6 +117,7 @@ public final class PermissionCodes {
     public static List<String> all() {
         return List.of(
                 PROVIDER_READ, PROVIDER_CREATE, PROVIDER_UPDATE, PROVIDER_DELETE, CHAT_USE,
+                DATASOURCE_READ, DATASOURCE_CREATE, DATASOURCE_UPDATE, DATASOURCE_TOGGLE_STATUS, DATASOURCE_TEST,
                 USER_READ, USER_CREATE, USER_UPDATE, USER_TOGGLE_STATUS, USER_RESET_PASSWORD,
                 ROLE_READ, ROLE_CREATE, ROLE_UPDATE, ROLE_TOGGLE_STATUS, ROLE_DELETE,
                 MENU_READ, MENU_CREATE, MENU_UPDATE, MENU_DELETE, MENU_RESTORE,

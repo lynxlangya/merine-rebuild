@@ -1,6 +1,7 @@
 import {
   ApartmentOutlined,
   AuditOutlined,
+  DatabaseOutlined,
   GlobalOutlined,
   EnvironmentOutlined,
   BookOutlined,
@@ -66,6 +67,11 @@ const PoliceResourcesPage = lazy(() =>
     default: module.PoliceResourcesPage,
   })),
 );
+const DataSourceListPage = lazy(() =>
+  import('../features/data-sources/DataSourceListPage').then((module) => ({
+    default: module.DataSourceListPage,
+  })),
+);
 
 /**
  * 前端已注册页面：路由 key → 组件、路径与图标。
@@ -82,6 +88,12 @@ export interface RegisteredRoute {
 }
 
 export const appRoutes: RegisteredRoute[] = [
+  {
+    key: 'agent.datasources',
+    path: '/agent/datasources',
+    element: <DataSourceListPage />,
+    icon: <DatabaseOutlined />,
+  },
   {
     key: 'maritime.harbor-sites',
     path: '/maritime/harbor-sites',

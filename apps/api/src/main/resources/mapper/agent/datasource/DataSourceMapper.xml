@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.merine.rebuild.agent.datasource.persistence.DataSourceMapper">
+
+  <!-- 列表页批量补装视图：动态 IN 与多条插入放 XML，简单固定 SQL 留在注解。 -->
+  <select id="viewsOfMany" resultType="com.merine.rebuild.agent.datasource.persistence.DataSourceViewRow">
+    SELECT id, data_source_id AS dataSourceId, view_name AS viewName
+      FROM ai_data_source_view
+     WHERE data_source_id IN
+     <foreach item="item" collection="ids" open="(" separator="," close=")">#{item}</foreach>
+     ORDER BY data_source_id, view_name
+  </select>
+
+  <insert id="insertViews">
+    INSERT INTO ai_data_source_view(data_source_id, view_name) VALUES
+    <foreach item="view" collection="views" separator=",">
+      (#{dataSourceId}, #{view})
+    </foreach>
+  </insert>
+
+</mapper>

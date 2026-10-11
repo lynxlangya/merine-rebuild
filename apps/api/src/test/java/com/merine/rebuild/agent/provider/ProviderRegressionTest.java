@@ -2,6 +2,7 @@ package com.merine.rebuild.agent.provider;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import com.merine.rebuild.agent.AgentSecretCipher;
 import com.merine.rebuild.system.security.SystemAdminRegressionSupport;
 import com.merine.rebuild.common.ApiException;
 import java.util.List;
@@ -18,7 +19,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class ProviderRegressionTest extends SystemAdminRegressionSupport {
     private static final String URL="/api/agent/providers";
     private static final String KEY="synthetic-provider-key-for-local-tests";
-    @Autowired ProviderKeyCipher cipher;
+    @Autowired AgentSecretCipher cipher;
     @BeforeEach void resetProviders() { jdbcTemplate.update("DELETE FROM ai_model_provider WHERE name LIKE 'REGR-PROVIDER%'"); }
     @AfterEach void cleanup() {
         resetProviders();
@@ -187,7 +188,7 @@ class ProviderRegressionTest extends SystemAdminRegressionSupport {
         assertThat(cipher.encrypt("record-one",KEY)).isNotEqualTo(encrypted);
         assertThatThrownBy(()->cipher.decrypt("record-two",encrypted)).isInstanceOf(ApiException.class);
         assertThatThrownBy(()->cipher.decrypt("record-one",encrypted.substring(0,encrypted.length()-6)+"AAAAAA")).isInstanceOf(ApiException.class);
-        assertThatThrownBy(()->new ProviderKeyCipher("").encrypt("record-one",KEY)).isInstanceOf(ApiException.class);
+        assertThatThrownBy(()->new AgentSecretCipher("").encrypt("record-one",KEY)).isInstanceOf(ApiException.class);
     }
     @Test void schemaHasDocumentedColumnsAndNoPhysicalReferences() {
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='ai_model_provider' AND column_comment=''",Integer.class)).isZero();

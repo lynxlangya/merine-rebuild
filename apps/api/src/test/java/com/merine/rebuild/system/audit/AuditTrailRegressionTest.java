@@ -135,7 +135,7 @@ class AuditTrailRegressionTest extends SystemAdminRegressionSupport {
         assertThat(intOf(bodyOf(getJson(PATH + "?targetType=PROVIDER&targetId=p-1", session)),
                 "$.data.total")).isEqualTo(1);
         // 模块名来自代码侧注册表，响应里带中文名而不是原始码
-        assertThat(bodyOf(getJson(PATH + "?module=agent", session))).contains("模型连接");
+        assertThat(bodyOf(getJson(PATH + "?module=agent", session))).contains("智能体");
         // 时间范围缺省近 7 天；显式给一个过去的窗口应当查不到
         assertThat(intOf(bodyOf(getJson(PATH + "?from=2020-01-01T00:00:00Z&to=2020-01-02T00:00:00Z",
                 session)), "$.data.total")).isZero();
@@ -151,7 +151,7 @@ class AuditTrailRegressionTest extends SystemAdminRegressionSupport {
     void modulesEndpointComesFromCodeRegistry() throws Exception {
         var result = getJson(PATH + "/modules", adminSession());
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
-        assertThat(bodyOf(result)).contains("系统管理", "涉海要素", "模型连接", "登录与退出", "初始化")
+        assertThat(bodyOf(result)).contains("系统管理", "涉海要素", "智能体", "登录与退出", "初始化")
                 .doesNotContain("任务处置", "信息流转");
     }
 

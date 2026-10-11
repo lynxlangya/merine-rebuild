@@ -17,6 +17,14 @@ export type ChatConversationPage = components['schemas']['PageResultChatConversa
 export type ChatRunRecordPage = components['schemas']['PageResultChatRunRecord'];
 export type ProviderModelEfforts = components['schemas']['ProviderModelEfforts'];
 
+/** 数据源管理：配置、检查结论与启停动作。 */
+export type DataSourceView = components['schemas']['DataSourceView'];
+export type DataSourcePage = components['schemas']['PageResultDataSourceView'];
+export type SaveDataSource = components['schemas']['SaveDataSource'];
+export type CheckDataSourceDraft = components['schemas']['CheckDataSourceDraft'];
+export type DataSourceCheckResult = components['schemas']['DataSourceCheckResult'];
+export type DataSourceStatusChange = components['schemas']['DataSourceStatusChange'];
+
 /** 本地演示对话的契约类型：SSE data 载荷联合、请求、执行快照与消息部件联合。 */
 export type ChatEvent = components['schemas']['ChatStreamEvent'];
 export type ChatRequest = components['schemas']['ChatRequest'];

@@ -52,6 +52,7 @@ ensure_env_key() {
 load_env() {
   require_env
   ensure_env_key MODEL_PROVIDER_ENCRYPTION_KEY 32
+  ensure_env_key MYSQL_DS_FIXTURE_PASSWORD 24
   set -a
   # shellcheck disable=SC1091
   . "$ROOT/.env"
@@ -76,6 +77,39 @@ SQL
     -e DB_MIGRATION_USER=merine_migrate \
     -e DB_MIGRATION_PASSWORD="$MYSQL_MIGRATION_PASSWORD" \
     migrate
+  prepare_datasource_fixtures
+}
+
+# 数据源检查回归的合成账号与视图：只存在于隔离测试库，密码来自本地 .env。
+# 每次重建，授权分支固定：表级只读、库级只读、全局只读、角色只读、列级受限、含写权限。
+# 视图建在测试库内，数据来自迁移后的 sys_unit；账号建在测试 MySQL 实例的全局范围内。
+prepare_datasource_fixtures() {
+  compose exec -T -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql \
+    mysql --protocol=socket --user=root <<SQL
+DROP USER IF EXISTS 'regr_ds_ro_table'@'%', 'regr_ds_ro_schema'@'%', 'regr_ds_ro_global'@'%',
+  'regr_ds_ro_role'@'%', 'regr_ds_ro_column'@'%', 'regr_ds_writer'@'%';
+DROP ROLE IF EXISTS 'regr_ds_read_role';
+CREATE OR REPLACE VIEW merine_rebuild_test.regr_ds_view_alpha AS
+  SELECT id, unit_code FROM merine_rebuild_test.sys_unit;
+CREATE OR REPLACE VIEW merine_rebuild_test.regr_ds_view_beta AS
+  SELECT id, unit_name FROM merine_rebuild_test.sys_unit;
+CREATE USER 'regr_ds_ro_table'@'%' IDENTIFIED BY '$MYSQL_DS_FIXTURE_PASSWORD';
+CREATE USER 'regr_ds_ro_schema'@'%' IDENTIFIED BY '$MYSQL_DS_FIXTURE_PASSWORD';
+CREATE USER 'regr_ds_ro_global'@'%' IDENTIFIED BY '$MYSQL_DS_FIXTURE_PASSWORD';
+CREATE USER 'regr_ds_ro_role'@'%' IDENTIFIED BY '$MYSQL_DS_FIXTURE_PASSWORD';
+CREATE USER 'regr_ds_ro_column'@'%' IDENTIFIED BY '$MYSQL_DS_FIXTURE_PASSWORD';
+CREATE USER 'regr_ds_writer'@'%' IDENTIFIED BY '$MYSQL_DS_FIXTURE_PASSWORD';
+CREATE ROLE 'regr_ds_read_role';
+GRANT SELECT ON merine_rebuild_test.regr_ds_view_alpha TO 'regr_ds_ro_table'@'%';
+GRANT SELECT ON merine_rebuild_test.* TO 'regr_ds_ro_schema'@'%';
+GRANT SELECT ON *.* TO 'regr_ds_ro_global'@'%';
+GRANT SELECT (unit_code) ON merine_rebuild_test.regr_ds_view_alpha TO 'regr_ds_ro_column'@'%';
+GRANT SELECT ON merine_rebuild_test.regr_ds_view_beta TO 'regr_ds_read_role';
+GRANT 'regr_ds_read_role' TO 'regr_ds_ro_role'@'%';
+SET DEFAULT ROLE ALL TO 'regr_ds_ro_role'@'%';
+GRANT SELECT, INSERT ON merine_rebuild_test.regr_ds_view_alpha TO 'regr_ds_writer'@'%';
+FLUSH PRIVILEGES;
+SQL
 }
 
 case "${1:-help}" in
@@ -227,6 +261,7 @@ case "${1:-help}" in
       -e TEST_DB_URL="$DB_URL_TEST" \
       -e TEST_DB_APP_USER=merine_app_test \
       -e TEST_DB_APP_PASSWORD="$MYSQL_TEST_PASSWORD" \
+      -e MERINE_TEST_DATASOURCE_FIXTURE_PASSWORD="$MYSQL_DS_FIXTURE_PASSWORD" \
       api ./mvnw -B -q verify
     ;;
   build)
@@ -241,6 +276,7 @@ case "${1:-help}" in
       -e TEST_DB_URL="$DB_URL_TEST" \
       -e TEST_DB_APP_USER=merine_app_test \
       -e TEST_DB_APP_PASSWORD="$MYSQL_TEST_PASSWORD" \
+      -e MERINE_TEST_DATASOURCE_FIXTURE_PASSWORD="$MYSQL_DS_FIXTURE_PASSWORD" \
       api ./mvnw -B -q package
     printf '\n构建海防助手 Agent（apps/agent）...\n'
     agent_ctl build

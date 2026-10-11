@@ -205,6 +205,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/agent/datasources': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['dataSourceList'];
+    put?: never;
+    post: operations['dataSourceCreate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/datasources/check': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['dataSourceCheck'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/datasources/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['dataSourceUpdate'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/datasources/{id}/check': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['dataSourceCheckSaved'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/datasources/{id}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['dataSourceUpdateStatus'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/agent/models': {
     parameters: {
       query?: never;
@@ -339,6 +419,22 @@ export interface components {
       message: string;
       requestId: string;
     };
+    ApiResponseDataSourceCheckResult: {
+      code: string;
+      data: components['schemas']['DataSourceCheckResult'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
+    ApiResponseDataSourceView: {
+      code: string;
+      data: components['schemas']['DataSourceView'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
     ApiResponseListChatConversationMessage: {
       code: string;
       data: components['schemas']['ChatConversationMessage'][];
@@ -374,6 +470,14 @@ export interface components {
     ApiResponsePageResultChatRunRecord: {
       code: string;
       data: components['schemas']['PageResultChatRunRecord'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
+    ApiResponsePageResultDataSourceView: {
+      code: string;
+      data: components['schemas']['PageResultDataSourceView'];
       /** @description 字段级校验错误；无字段错误时为 null */
       fieldErrors?: components['schemas']['FieldError'][];
       message: string;
@@ -662,6 +766,66 @@ export interface components {
       role: 'USER' | 'ASSISTANT';
       text: string;
     };
+    CheckDataSourceDraft: {
+      databaseName: string;
+      /** @enum {string} */
+      dbType: 'MYSQL';
+      host: string;
+      id?: string;
+      password?: string;
+      /** Format: int32 */
+      port: number;
+      username: string;
+      views?: string[];
+    };
+    DataSourceCheckResult: {
+      /** Format: date-time */
+      checkedAt?: string;
+      detectedViews?: string[];
+      message?: string;
+      /** @enum {string} */
+      outcome?:
+        | 'PASSED'
+        | 'CONNECTION_FAILED'
+        | 'WRITE_PRIVILEGE'
+        | 'AUTHORIZATION_UNCONFIRMED'
+        | 'VIEW_DENIED';
+    };
+    DataSourceStatusChange: {
+      /** @enum {string} */
+      status: 'ENABLED' | 'DISABLED';
+      /** Format: int32 */
+      version: number;
+    };
+    DataSourceView: {
+      databaseName?: string;
+      /** @enum {string} */
+      dbType?: 'MYSQL';
+      host?: string;
+      id?: string;
+      /** Format: date-time */
+      lastCheckAt?: string;
+      lastCheckMessage?: string;
+      /** @enum {string} */
+      lastCheckStatus?:
+        | 'PASSED'
+        | 'CONNECTION_FAILED'
+        | 'WRITE_PRIVILEGE'
+        | 'AUTHORIZATION_UNCONFIRMED'
+        | 'VIEW_DENIED';
+      name?: string;
+      /** Format: int32 */
+      port?: number;
+      remark?: string;
+      /** @enum {string} */
+      status?: 'ENABLED' | 'DISABLED';
+      /** Format: date-time */
+      updatedAt?: string;
+      username?: string;
+      /** Format: int32 */
+      version?: number;
+      views?: string[];
+    };
     DiscoverProviderModels: {
       apiKey?: string;
       baseUrl: string;
@@ -810,6 +974,15 @@ export interface components {
       /** Format: int64 */
       total: number;
     };
+    PageResultDataSourceView: {
+      items: components['schemas']['DataSourceView'][];
+      /** Format: int32 */
+      page: number;
+      /** Format: int32 */
+      pageSize: number;
+      /** Format: int64 */
+      total: number;
+    };
     PageResultModelProvider: {
       items: components['schemas']['ModelProvider'][];
       /** Format: int32 */
@@ -926,6 +1099,22 @@ export interface components {
       title: string;
       /** Format: int32 */
       version?: number;
+    };
+    SaveDataSource: {
+      databaseName: string;
+      /** @enum {string} */
+      dbType: 'MYSQL';
+      host: string;
+      name: string;
+      /** @description 新建必填；编辑留空保留原密码。只保存到服务端密文，不回显 */
+      password?: string;
+      /** Format: int32 */
+      port: number;
+      remark?: string;
+      username: string;
+      /** Format: int32 */
+      version?: number;
+      views?: string[];
     };
     SaveModelProvider: {
       /** @description 新建必填；编辑留空保留原密钥；更换供应商或地址时须重新输入 */
@@ -1404,6 +1593,152 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseListChatConversationMessage'];
+        };
+      };
+    };
+  };
+  dataSourceList: {
+    parameters: {
+      query?: {
+        search?: string;
+        page?: number;
+        pageSize?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePageResultDataSourceView'];
+        };
+      };
+    };
+  };
+  dataSourceCreate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SaveDataSource'];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDataSourceView'];
+        };
+      };
+    };
+  };
+  dataSourceCheck: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CheckDataSourceDraft'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDataSourceCheckResult'];
+        };
+      };
+    };
+  };
+  dataSourceUpdate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SaveDataSource'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDataSourceView'];
+        };
+      };
+    };
+  };
+  dataSourceCheckSaved: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDataSourceCheckResult'];
+        };
+      };
+    };
+  };
+  dataSourceUpdateStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DataSourceStatusChange'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDataSourceView'];
         };
       };
     };

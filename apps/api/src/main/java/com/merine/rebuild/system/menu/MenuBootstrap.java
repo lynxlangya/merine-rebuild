@@ -23,6 +23,18 @@ public class MenuBootstrap {
     }
 
     private static final List<Entry> ENTRIES = List.of(
+            new Entry("dir:agent", null, Type.DIRECTORY, "智能体管理", null, null, 50,
+                    "Agent 数据源等运行配置"),
+            new Entry("page:agent:datasources", "dir:agent", Type.PAGE, "数据源管理", "agent.datasources",
+                    PermissionCodes.DATASOURCE_READ, 10, "受控查询数据源的连接配置、只读授权检查与视图白名单"),
+            new Entry("btn:datasource:test", "page:agent:datasources", Type.BUTTON, "测试连接", null,
+                    PermissionCodes.DATASOURCE_TEST, 10, "数据源 · 测试连接与授权检查"),
+            new Entry("btn:datasource:create", "page:agent:datasources", Type.BUTTON, "新增数据源", null,
+                    PermissionCodes.DATASOURCE_CREATE, 20, "数据源 · 新增"),
+            new Entry("btn:datasource:update", "page:agent:datasources", Type.BUTTON, "编辑数据源", null,
+                    PermissionCodes.DATASOURCE_UPDATE, 30, "数据源 · 编辑连接参数、密码与视图"),
+            new Entry("btn:datasource:toggle", "page:agent:datasources", Type.BUTTON, "启停数据源", null,
+                    PermissionCodes.DATASOURCE_TOGGLE_STATUS, 40, "数据源 · 启用或停用"),
             new Entry("dir:maritime", null, Type.DIRECTORY, "涉海要素", null, null, 20,
                     "港口停泊点、海岛与警务基础档案"),
             new Entry("page:maritime:harbor-sites", "dir:maritime", Type.PAGE, "港口与停泊点", "maritime.harbor-sites", PermissionCodes.MARITIME_HARBOR_READ, 10, "港口与停泊点档案维护"),

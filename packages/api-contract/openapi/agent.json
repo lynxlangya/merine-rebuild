@@ -61,6 +61,36 @@
         "required": ["code", "data", "message", "requestId"],
         "type": "object"
       },
+      "ApiResponseDataSourceCheckResult": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/DataSourceCheckResult" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponseDataSourceView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/DataSourceView" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
       "ApiResponseListChatConversationMessage": {
         "properties": {
           "code": { "type": "string" },
@@ -128,6 +158,21 @@
         "properties": {
           "code": { "type": "string" },
           "data": { "$ref": "#/components/schemas/PageResultChatRunRecord" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "ApiResponsePageResultDataSourceView": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/PageResultDataSourceView" },
           "fieldErrors": {
             "description": "字段级校验错误；无字段错误时为 null",
             "items": { "$ref": "#/components/schemas/FieldError" },
@@ -592,6 +637,80 @@
         "required": ["role", "text"],
         "type": "object"
       },
+      "CheckDataSourceDraft": {
+        "properties": {
+          "databaseName": { "maxLength": 64, "minLength": 0, "type": "string" },
+          "dbType": { "enum": ["MYSQL"], "type": "string" },
+          "host": { "maxLength": 253, "minLength": 0, "type": "string" },
+          "id": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "password": { "maxLength": 128, "minLength": 0, "type": "string", "writeOnly": true },
+          "port": { "format": "int32", "maximum": 65535, "minimum": 1, "type": "integer" },
+          "username": { "maxLength": 64, "minLength": 0, "type": "string" },
+          "views": {
+            "items": { "maxLength": 64, "minLength": 0, "type": "string" },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": ["databaseName", "dbType", "host", "port", "username"],
+        "type": "object"
+      },
+      "DataSourceCheckResult": {
+        "properties": {
+          "checkedAt": { "format": "date-time", "type": "string" },
+          "detectedViews": { "items": { "type": "string" }, "type": "array" },
+          "message": { "type": "string" },
+          "outcome": {
+            "enum": [
+              "PASSED",
+              "CONNECTION_FAILED",
+              "WRITE_PRIVILEGE",
+              "AUTHORIZATION_UNCONFIRMED",
+              "VIEW_DENIED"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DataSourceStatusChange": {
+        "properties": {
+          "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" },
+          "version": { "format": "int32", "minimum": 0, "type": "integer" }
+        },
+        "required": ["status", "version"],
+        "type": "object"
+      },
+      "DataSourceView": {
+        "properties": {
+          "databaseName": { "type": "string" },
+          "dbType": { "enum": ["MYSQL"], "type": "string" },
+          "host": { "type": "string" },
+          "id": { "type": "string" },
+          "lastCheckAt": { "format": "date-time", "type": "string" },
+          "lastCheckMessage": { "type": "string" },
+          "lastCheckStatus": {
+            "enum": [
+              "PASSED",
+              "CONNECTION_FAILED",
+              "WRITE_PRIVILEGE",
+              "AUTHORIZATION_UNCONFIRMED",
+              "VIEW_DENIED"
+            ],
+            "type": "string"
+          },
+          "name": { "type": "string" },
+          "port": { "format": "int32", "type": "integer" },
+          "remark": { "type": "string" },
+          "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" },
+          "updatedAt": { "format": "date-time", "type": "string" },
+          "username": { "type": "string" },
+          "version": { "format": "int32", "type": "integer" },
+          "views": { "items": { "type": "string" }, "type": "array" }
+        },
+        "type": "object"
+      },
       "DiscoverProviderModels": {
         "properties": {
           "apiKey": { "maxLength": 4096, "minLength": 0, "type": "string", "writeOnly": true },
@@ -843,6 +962,16 @@
         "required": ["items", "page", "pageSize", "total"],
         "type": "object"
       },
+      "PageResultDataSourceView": {
+        "properties": {
+          "items": { "items": { "$ref": "#/components/schemas/DataSourceView" }, "type": "array" },
+          "page": { "format": "int32", "type": "integer" },
+          "pageSize": { "format": "int32", "type": "integer" },
+          "total": { "format": "int64", "type": "integer" }
+        },
+        "required": ["items", "page", "pageSize", "total"],
+        "type": "object"
+      },
       "PageResultModelProvider": {
         "properties": {
           "items": { "items": { "$ref": "#/components/schemas/ModelProvider" }, "type": "array" },
@@ -1027,6 +1156,33 @@
           "version": { "format": "int32", "minimum": 0, "type": "integer" }
         },
         "required": ["title"],
+        "type": "object"
+      },
+      "SaveDataSource": {
+        "properties": {
+          "databaseName": { "maxLength": 64, "minLength": 0, "type": "string" },
+          "dbType": { "enum": ["MYSQL"], "type": "string" },
+          "host": { "maxLength": 253, "minLength": 0, "type": "string" },
+          "name": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "password": {
+            "description": "新建必填；编辑留空保留原密码。只保存到服务端密文，不回显",
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "writeOnly": true
+          },
+          "port": { "format": "int32", "maximum": 65535, "minimum": 1, "type": "integer" },
+          "remark": { "maxLength": 300, "minLength": 0, "type": "string" },
+          "username": { "maxLength": 64, "minLength": 0, "type": "string" },
+          "version": { "format": "int32", "minimum": 0, "type": "integer" },
+          "views": {
+            "items": { "maxLength": 64, "minLength": 0, "type": "string" },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": ["databaseName", "dbType", "host", "name", "port", "username"],
         "type": "object"
       },
       "SaveModelProvider": {
@@ -1651,6 +1807,157 @@
         "tags": ["海防助手 · 会话"]
       }
     },
+    "/api/agent/datasources": {
+      "get": {
+        "operationId": "dataSourceList",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": { "default": "", "maxLength": 80, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "minimum": 1, "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "format": "int32",
+              "maximum": 60,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultDataSourceView" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["数据源管理"]
+      },
+      "post": {
+        "operationId": "dataSourceCreate",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/SaveDataSource" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseDataSourceView" } }
+            },
+            "description": "Created"
+          }
+        },
+        "tags": ["数据源管理"]
+      }
+    },
+    "/api/agent/datasources/check": {
+      "post": {
+        "operationId": "dataSourceCheck",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CheckDataSourceDraft" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseDataSourceCheckResult" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["数据源管理"]
+      }
+    },
+    "/api/agent/datasources/{id}": {
+      "put": {
+        "operationId": "dataSourceUpdate",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/SaveDataSource" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseDataSourceView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["数据源管理"]
+      }
+    },
+    "/api/agent/datasources/{id}/check": {
+      "post": {
+        "operationId": "dataSourceCheckSaved",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseDataSourceCheckResult" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["数据源管理"]
+      }
+    },
+    "/api/agent/datasources/{id}/status": {
+      "post": {
+        "operationId": "dataSourceUpdateStatus",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DataSourceStatusChange" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseDataSourceView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["数据源管理"]
+      }
+    },
     "/api/agent/models": {
       "get": {
         "operationId": "modelOptionList",
@@ -1834,6 +2141,10 @@
   },
   "servers": [{ "url": "/" }],
   "tags": [
+    {
+      "description": "Agent 受控查询的数据源配置；密码只写不读，检查只读授权",
+      "name": "数据源管理"
+    },
     {
       "description": "配置管理；密钥只写不读，仅「获取模型列表」会带密钥出站",
       "name": "模型供应商"

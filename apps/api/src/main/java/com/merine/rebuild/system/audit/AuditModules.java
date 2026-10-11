@@ -20,7 +20,7 @@ public final class AuditModules {
     private static final List<Module> ALL = List.of(
             new Module("system", "系统管理", 100),
             new Module("maritime", "涉海要素", 200),
-            new Module("agent", "模型连接", 300),
+            new Module("agent", "智能体", 300),
             new Module("auth", "登录与退出", 400),
             new Module("bootstrap", "初始化", 500));
 

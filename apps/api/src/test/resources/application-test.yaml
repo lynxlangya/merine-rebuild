@@ -15,3 +15,8 @@ merine:
     retention:
       # 测试不跑定时清理：AuditRetentionRegressionTest 直接触发清理方法并断言保留窗口。
       enabled: false
+  agent:
+    datasource:
+      # 测试目标固定为编排内的 mysql 服务；生产与交付编排由部署显式配置。
+      allowed-networks: 172.16.0.0/12,127.0.0.0/8,::1/128
+      allowed-ports: 3306

@@ -323,6 +323,11 @@ class ReferenceIntegrityRegressionTest extends MockMvcRegressionSupport {
                  LEFT JOIN sys_dict_type t ON t.id = i.dict_type_id
                 WHERE t.id IS NULL
                 """);
+        checks.put("ai_data_source_view.data_source_id → ai_data_source", """
+                SELECT COUNT(*) FROM ai_data_source_view v
+                 LEFT JOIN ai_data_source d ON d.id = v.data_source_id
+                WHERE d.id IS NULL
+                """);
         String[][] taskReferences = {
                 {"task_order", "issuer_unit_id", "sys_unit"},
                 {"task_order", "issuer_user_id", "sys_user"},

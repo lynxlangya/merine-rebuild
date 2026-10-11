@@ -71,6 +71,9 @@ services:
     environment:
       DB_URL: *db-url
       MODEL_PROVIDER_ENCRYPTION_KEY: ${MODEL_PROVIDER_ENCRYPTION_KEY:-}
+      # 数据源检查的目标网段与端口：交付演练必须显式提供，留空即拒绝全部目标（fail closed）。
+      MERINE_AGENT_DATASOURCE_ALLOWED_NETWORKS: ${MERINE_AGENT_DATASOURCE_ALLOWED_NETWORKS:-}
+      MERINE_AGENT_DATASOURCE_ALLOWED_PORTS: ${MERINE_AGENT_DATASOURCE_ALLOWED_PORTS:-3306}
       DB_APP_USER: merine_app
       DB_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?Run scripts/dev.sh setup}
       # HTTPS 终结后把 COOKIE_SECURE 设成 true（在 .env 里配置即可）

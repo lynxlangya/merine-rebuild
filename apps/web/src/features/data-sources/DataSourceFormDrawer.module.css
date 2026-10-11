@@ -1,0 +1,85 @@
+.intro {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.intro strong {
+  font-size: var(--fs-14);
+}
+.intro p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+.sectionTitle {
+  margin: 24px 0 16px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--fg);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-strong);
+}
+.twoColumns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 16px;
+}
+.port {
+  width: 100%;
+}
+.hint {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: var(--fs-12);
+  line-height: var(--lh-body);
+}
+.checkRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.checkRow .hint {
+  margin: 0;
+}
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.views :global(.ant-checkbox-wrapper) {
+  margin-inline-start: 0;
+}
+.undetected {
+  margin-left: 6px;
+  font-size: var(--fs-10, 10px);
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.footer > span {
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+.alert {
+  margin-bottom: 16px;
+}
+@media (max-width: 600px) {
+  .twoColumns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .footer > span {
+    display: none;
+  }
+  .footer {
+    justify-content: flex-end;
+  }
+}
