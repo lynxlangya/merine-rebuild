@@ -6,7 +6,12 @@ import { HomePage } from '../features/home/HomePage';
 import { resolveAgentSource } from './agentNavigation';
 import { AppShell } from './AppShell';
 import { NotFoundPage } from './NotFoundPage';
-import { appRoutes, TaskHandlingPage, InformationFlowPage } from './routeRegistry';
+import {
+  appRoutes,
+  QueryScopeDetailPage,
+  TaskHandlingPage,
+  InformationFlowPage,
+} from './routeRegistry';
 import styles from './routes.module.css';
 
 // 助手整条链路独立成块：未进入 /agent 的用户不加载对话与部件渲染代码。
@@ -73,6 +78,7 @@ export const router = createBrowserRouter([
           })),
           { path: 'collaboration/tasks/:taskId', element: <TaskHandlingPage /> },
           { path: 'collaboration/flows/:topicId', element: <InformationFlowPage /> },
+          { path: 'agent/query-scopes/:sourceId', element: <QueryScopeDetailPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

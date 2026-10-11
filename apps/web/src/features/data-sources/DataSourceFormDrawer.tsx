@@ -6,29 +6,20 @@ import type {
 } from '@merine/api-contract';
 import { SafetyCertificateOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Alert,
-  App,
-  Button,
-  Checkbox,
-  Drawer,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Space,
-  Tag,
-} from 'antd';
+import { Alert, App, Button, Drawer, Form, Input, InputNumber, Select, Space } from 'antd';
 import { useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { errorText } from '../../shared/api-error';
 import { ApiError } from '../../shared/http';
 import { checkDataSourceDraft, createDataSource, dataSourceKeys, updateDataSource } from './api';
-import { formatCheckedAt, mergeViewChoices, outcomeMeta } from './model';
+import { formatCheckedAt, outcomeMeta } from './model';
 import styles from './DataSourceFormDrawer.module.css';
 
 /**
  * 新增/编辑数据源。表单不碰启停状态：保存一律以「停用」落库，
- * 启用走列表里的「检查并启用」。唯一写入型字段是密码——编辑留空表示保持原值。
+ * 启用走列表里的「检查并启用」。允许查询的视图范围不在本表单维护，
+ * 统一到「智能体管理 → 查询范围」页整表替换，避免两处写入口。
+ * 唯一写入型字段是密码——编辑留空表示保持原值。
  */
 export function DataSourceFormDrawer({
   target,
@@ -42,8 +33,6 @@ export function DataSourceFormDrawer({
   const [form] = Form.useForm<SaveDataSource>();
   const [checkResult, setCheckResult] = useState<DataSourceCheckResult | null>(null);
   const submitting = useRef(false);
-  const selectedViews = Form.useWatch('views', form) ?? [];
-  const choices = mergeViewChoices(checkResult?.detectedViews ?? null, selectedViews);
   const checkMeta = outcomeMeta(checkResult?.outcome);
   const save = useMutation({
     mutationFn: (values: SaveDataSource) =>
@@ -69,7 +58,6 @@ export function DataSourceFormDrawer({
           'databaseName',
           'username',
           'password',
-          'views',
           'version',
         ];
         form.setFields(
@@ -103,7 +91,6 @@ export function DataSourceFormDrawer({
       databaseName: (values.databaseName ?? '').trim(),
       username: (values.username ?? '').trim(),
       password: values.password ? values.password : undefined,
-      views: values.views ?? [],
     });
   };
   const close = () => {
@@ -132,7 +119,7 @@ export function DataSourceFormDrawer({
       destroyOnHidden
       footer={
         <div className={styles.footer}>
-          <span>保存默认停用；启用前会重新检查并需要已勾选视图</span>
+          <span>保存默认停用；视图范围在「查询范围」页维护，复检并启用后才生效</span>
           <Space>
             <Button onClick={close} disabled={save.isPending}>
               取消
@@ -159,9 +146,8 @@ export function DataSourceFormDrawer({
                 databaseName: target.databaseName ?? '',
                 username: target.username ?? '',
                 password: '',
-                views: target.views ?? [],
               }
-            : { dbType: 'MYSQL', port: 3306, views: [] }
+            : { dbType: 'MYSQL', port: 3306 }
         }
         onValuesChange={(changed) => {
           // 连接参数变化后，之前的检测结果不再代表当前配置。
@@ -268,8 +254,10 @@ export function DataSourceFormDrawer({
         </Form.Item>
         <h3 className={styles.sectionTitle}>允许查询的视图</h3>
         <p className={styles.hint}>
-          先测试连接并检查授权，再从服务端检测到的、账号具备 SELECT 的视图中勾选；首版不开放基础表。
-          勾选只约束本平台，不会创建或修改数据库授权。
+          当前已选 {target?.views?.length ?? 0} 个视图。范围与说明统一在{' '}
+          <Link to="/agent/query-scopes">智能体管理 → 查询范围</Link> 维护：先测试连接并检查授权，
+          再从服务端检测到的、账号具备 SELECT
+          的视图中勾选；勾选只约束本平台，不会创建或修改数据库授权。
         </p>
         <div className={styles.checkRow}>
           <Button
@@ -287,38 +275,8 @@ export function DataSourceFormDrawer({
             type={checkResult.outcome === 'PASSED' ? 'success' : 'warning'}
             showIcon
             title={`${checkMeta?.label ?? '检查结论'} · ${formatCheckedAt(checkResult.checkedAt)}`}
-            description={checkResult.message}
+            description={`${checkResult.message ?? ''}；检测到 ${checkResult.detectedViews?.length ?? 0} 个可读视图`}
           />
-        )}
-        <Form.Item name="views" label="视图白名单">
-          <Checkbox.Group
-            className={styles.views}
-            disabled={save.isPending}
-            options={choices.map((choice) => ({
-              value: choice.name,
-              label: choice.detected ? (
-                choice.name
-              ) : (
-                <span>
-                  {choice.name}
-                  <Tag color="warning" bordered={false} className={styles.undetected}>
-                    未检测到授权
-                  </Tag>
-                </span>
-              ),
-            }))}
-          />
-        </Form.Item>
-        {choices.length === 0 ? (
-          <p className={styles.hint}>
-            {target && (target.views?.length ?? 0) === 0
-              ? '还没有检测结果：点击上方按钮获取可勾选视图。'
-              : '还没有检测结果：点击上方按钮获取可勾选视图；也可以取消已勾选项后保存。'}
-          </p>
-        ) : (
-          <p className={styles.hint}>
-            共 {choices.length} 个候选，已勾选 {selectedViews.length} 个。
-          </p>
         )}
       </Form>
     </Drawer>

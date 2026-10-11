@@ -16,6 +16,8 @@ export const PERMISSIONS = {
   datasourceUpdate: 'agent:datasource:update',
   datasourceToggleStatus: 'agent:datasource:toggle-status',
   datasourceTest: 'agent:datasource:test',
+  scopeRead: 'agent:scope:read',
+  scopeUpdate: 'agent:scope:update',
   userRead: 'system:user:read',
   userCreate: 'system:user:create',
   userUpdate: 'system:user:update',

@@ -9,6 +9,7 @@ import {
   SafetyCertificateOutlined,
   SettingOutlined,
   SwapOutlined,
+  TableOutlined,
   TeamOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
@@ -72,6 +73,17 @@ const DataSourceListPage = lazy(() =>
     default: module.DataSourceListPage,
   })),
 );
+const QueryScopePage = lazy(() =>
+  import('../features/query-scopes/QueryScopePage').then((module) => ({
+    default: module.QueryScopePage,
+  })),
+);
+/** 详情页走参数路由（同任务处置），不占后端菜单节点，只需在前端路由表登记。 */
+export const QueryScopeDetailPage = lazy(() =>
+  import('../features/query-scopes/QueryScopeDetailPage').then((module) => ({
+    default: module.QueryScopeDetailPage,
+  })),
+);
 
 /**
  * 前端已注册页面：路由 key → 组件、路径与图标。
@@ -93,6 +105,12 @@ export const appRoutes: RegisteredRoute[] = [
     path: '/agent/datasources',
     element: <DataSourceListPage />,
     icon: <DatabaseOutlined />,
+  },
+  {
+    key: 'agent.query-scopes',
+    path: '/agent/query-scopes',
+    element: <QueryScopePage />,
+    icon: <TableOutlined />,
   },
   {
     key: 'maritime.harbor-sites',

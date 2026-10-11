@@ -1,33 +1,15 @@
-import {
-  DatabaseOutlined,
-  EditOutlined,
-  LockOutlined,
-  PlusOutlined,
-  PoweroffOutlined,
-  ReloadOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
+import { DatabaseOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { DataSourceView } from '@merine/api-contract';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Alert,
-  App,
-  Button,
-  Empty,
-  Input,
-  Pagination,
-  Result,
-  Skeleton,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
-import { useId, useState } from 'react';
-import { useAuth } from '../auth/public';
-import { DICTIONARY_CODES, DictTag, useDictionary } from '../dictionaries/public';
+import type { TableColumnsType } from 'antd';
+import { Alert, App, Button, Input, Result, Skeleton, Table, Tag, Tooltip, Typography } from 'antd';
+import { useState } from 'react';
 import { errorText, isForbiddenError } from '../../shared/api-error';
 import { PERMISSIONS, hasPermission } from '../../shared/permissions';
 import { PageHeader } from '../../shared/ui/PageHeader';
+import { TablePager } from '../../shared/ui/TablePager';
+import { useAuth } from '../auth/public';
+import { DICTIONARY_CODES, DictTag, useDictionary } from '../dictionaries/public';
 import {
   changeDataSourceStatus,
   checkDataSourceSaved,
@@ -39,14 +21,13 @@ import { DataSourceFormDrawer } from './DataSourceFormDrawer';
 import styles from './DataSourceListPage.module.css';
 
 /**
- * 数据源管理：连接列表是主工作区。
+ * 数据源管理：连接列表是主工作区，与用户管理的列表页保持同一套版式。
  * 「检查」只影响这里的展示与最近结论；真正的启用动作会在服务端重新检查，不复用页面上的旧结果。
  */
 export function DataSourceListPage() {
   const { state } = useAuth();
   const { message, modal } = App.useApp();
   const client = useQueryClient();
-  const id = useId();
   const codes = state.status === 'authenticated' ? state.user.permissionCodes : [];
   const canRead = hasPermission(codes, PERMISSIONS.datasourceRead),
     canCreate = hasPermission(codes, PERMISSIONS.datasourceCreate),
@@ -108,6 +89,7 @@ export function DataSourceListPage() {
   };
   const forbidden = !canRead || isForbiddenError(query.error);
   const items = query.data?.items ?? [];
+  const hasFilters = search !== '';
   const changeSearch = (value: string) => {
     setSearch(value.trim());
     setPage(1);
@@ -116,275 +98,308 @@ export function DataSourceListPage() {
     setDraft('');
     changeSearch('');
   };
-  const hasActions = canTest || canUpdate || canToggle;
+  const columns: TableColumnsType<DataSourceView> = [
+    {
+      title: '名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 280,
+      render: (value: string, item) => (
+        <div className={styles.ident}>
+          <span className={styles.nameLine}>
+            <b>{value}</b>
+            {item.remark && <span className={styles.muted}>· {item.remark}</span>}
+          </span>
+          <Typography.Text
+            className={styles.idText}
+            copyable={{ text: item.id ?? '', tooltips: ['复制数据源 ID', '已复制'] }}
+          >
+            {item.id}
+          </Typography.Text>
+        </div>
+      ),
+    },
+    {
+      title: '连接',
+      key: 'endpoint',
+      width: 250,
+      render: (_value, item) => (
+        <span className={styles.mono}>
+          {item.host}:{item.port}/{item.databaseName}
+        </span>
+      ),
+    },
+    {
+      title: '账号',
+      dataIndex: 'username',
+      key: 'username',
+      width: 160,
+      render: (value: string) => <span className={styles.mono}>{value}</span>,
+    },
+    {
+      title: '允许视图',
+      key: 'views',
+      width: 100,
+      align: 'center',
+      render: (_value, item) => (
+        <span className={styles.countCell}>
+          <DatabaseOutlined aria-hidden="true" />
+          {item.views?.length ?? 0}
+        </span>
+      ),
+    },
+    {
+      title: '状态',
+      key: 'status',
+      width: 120,
+      render: (_value, item) => <DictTag dictionary={statusDictionary} value={item.status ?? ''} />,
+    },
+    {
+      title: '最近检查',
+      key: 'check',
+      width: 200,
+      render: (_value, item) => {
+        const outcome = outcomeMeta(item.lastCheckStatus);
+        if (!item.lastCheckAt || !outcome) {
+          return <span className={styles.muted}>尚未检查</span>;
+        }
+        return (
+          <span className={styles.checkCell}>
+            <Tag color={outcome.color} bordered={false}>
+              {outcome.label}
+            </Tag>
+            <span className={styles.muted}>{formatCheckedAt(item.lastCheckAt)}</span>
+          </span>
+        );
+      },
+    },
+    ...(canTest || canUpdate || canToggle
+      ? [
+          {
+            title: '操作',
+            key: 'actions',
+            align: 'right' as const,
+            width: 210,
+            render: (_value: unknown, item: DataSourceView) => {
+              const views = item.views ?? [];
+              return (
+                <span className={styles.actions}>
+                  {canUpdate && (
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={`编辑${item.name ?? ''}`}
+                      disabled={toggle.isPending}
+                      onClick={() => setDrawer({ target: item })}
+                    >
+                      编辑
+                    </Button>
+                  )}
+                  {canTest && (
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={`检查${item.name ?? ''}的连接与授权`}
+                      loading={check.isPending && check.variables === item.id}
+                      disabled={toggle.isPending}
+                      onClick={() => check.mutate(item.id ?? '')}
+                    >
+                      检查
+                    </Button>
+                  )}
+                  {canToggle &&
+                    (item.status === 'ENABLED' ? (
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        aria-label={`停用${item.name ?? ''}`}
+                        loading={toggle.isPending && toggle.variables?.id === item.id}
+                        disabled={check.isPending}
+                        onClick={() => disable(item)}
+                      >
+                        停用
+                      </Button>
+                    ) : (
+                      <Tooltip
+                        title={
+                          views.length === 0 ? '先在「查询范围」勾选至少一个允许查询的视图' : ''
+                        }
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          aria-label={`启用${item.name ?? ''}`}
+                          loading={toggle.isPending && toggle.variables?.id === item.id}
+                          disabled={views.length === 0 || check.isPending}
+                          onClick={() => confirmEnable(item)}
+                        >
+                          启用
+                        </Button>
+                      </Tooltip>
+                    ))}
+                </span>
+              );
+            },
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className={styles.page}>
+    <div>
       <PageHeader
         demo={false}
         title="数据源管理"
         description="维护 Agent 受控查询的数据库连接；密码加密保存、不回显，启用前必须重新检查只读授权。"
         actions={
-          !forbidden && (
-            <div className={styles.headActions}>
-              <Tooltip title="刷新数据源列表">
-                <Button
-                  aria-label="刷新数据源列表"
-                  icon={<ReloadOutlined spin={query.isFetching} />}
-                  disabled={query.isFetching || query.fetchStatus === 'paused'}
-                  onClick={() => void query.refetch()}
-                />
-              </Tooltip>
-              {canCreate && (
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => setDrawer({ target: null })}
-                >
-                  新增数据源
-                </Button>
-              )}
-            </div>
+          !forbidden &&
+          canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setDrawer({ target: null })}
+            >
+              新增数据源
+            </Button>
           )
         }
       />
-      {forbidden ? (
-        <Result status="403" title="没有查看数据源的权限" />
-      ) : (
-        <>
-          <section className={styles.configured} aria-labelledby={`${id}-configured`}>
-            <div className={styles.sectionHead}>
-              <div>
-                <h2 id={`${id}-configured`}>
-                  {search ? '搜索结果' : '已配置数据源'}
-                  {query.data && <span className={styles.count}>{query.data.total}</span>}
-                </h2>
-                <p>检查只核对只读授权与视图白名单；配置通过不代表已授权 Agent 使用。</p>
-              </div>
-              <Input.Search
-                className={styles.search}
-                placeholder="搜索数据源名称"
-                aria-label="搜索数据源名称"
-                allowClear
-                maxLength={80}
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                onSearch={changeSearch}
-              />
-            </div>
-            {query.fetchStatus === 'paused' && (
-              <Alert
-                className={styles.alert}
-                type="warning"
-                showIcon
-                title="网络连接已断开，恢复后会自动加载"
-              />
-            )}
-            {query.isError && (
-              <Alert
-                className={styles.alert}
-                type={query.data ? 'warning' : 'error'}
-                showIcon
-                title={query.data ? '刷新失败，当前显示上次加载的数据源' : '数据源加载失败'}
-                description={errorText(query.error)}
-                action={
-                  <Button size="small" onClick={() => void query.refetch()}>
-                    重试
-                  </Button>
-                }
-              />
-            )}
-            {query.isPending ? (
-              <div className={styles.loading}>
-                <Skeleton active paragraph={{ rows: 3 }} />
-              </div>
-            ) : !query.data ? null : items.length === 0 ? (
-              <div className={styles.empty}>
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={search ? '没有找到匹配的数据源' : '还没有数据源配置'}
+      <div className={styles.page}>
+        {forbidden ? (
+          <div className={styles.stateCard}>
+            <Result
+              status="403"
+              title="没有查看数据源的权限"
+              subTitle="数据源管理需要具备智能体管理权限的账号。这里不显示任何连接信息，也不会因此退出登录。"
+            />
+          </div>
+        ) : (
+          <>
+            <div className={styles.filters}>
+              <label className={styles.field}>
+                <span className={styles.label}>名称</span>
+                <Input
+                  allowClear
+                  maxLength={80}
+                  placeholder="搜索数据源名称"
+                  aria-label="搜索数据源名称"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onPressEnter={() => changeSearch(draft)}
                 />
-                {search ? (
-                  <Button onClick={clearSearch}>清除搜索</Button>
+              </label>
+              <div className={styles.filterActions}>
+                <Button
+                  type="primary"
+                  icon={<SearchOutlined />}
+                  onClick={() => changeSearch(draft)}
+                >
+                  查询
+                </Button>
+                <Button onClick={clearSearch}>重置</Button>
+              </div>
+            </div>
+
+            <div className={styles.panel}>
+              <div className={styles.toolbar}>
+                <b className={styles.toolbarTitle}>{hasFilters ? '搜索结果' : '数据源列表'}</b>
+                <Tag className={styles.countTag}>
+                  {query.isPending ? '—' : (query.data?.total ?? 0)}
+                </Tag>
+                <span className={styles.spacer} />
+                <Button
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  loading={query.isFetching}
+                  disabled={query.fetchStatus === 'paused'}
+                  onClick={() => void query.refetch()}
+                >
+                  刷新
+                </Button>
+              </div>
+              <div className={styles.tableWrap}>
+                {query.fetchStatus === 'paused' && (
+                  <Alert
+                    className={styles.banner}
+                    type="warning"
+                    showIcon
+                    title="网络连接已断开，恢复后会自动加载"
+                  />
+                )}
+                {query.isError && (
+                  <Alert
+                    className={styles.banner}
+                    type={query.data ? 'warning' : 'error'}
+                    showIcon
+                    title={query.data ? '刷新失败，以下为上一次的结果' : '数据源加载失败'}
+                    description={errorText(query.error)}
+                    action={
+                      <Button size="small" onClick={() => void query.refetch()}>
+                        重试
+                      </Button>
+                    }
+                  />
+                )}
+                {query.isPending ? (
+                  <div className={styles.skeleton} role="status" aria-live="polite">
+                    <Skeleton active title={false} paragraph={{ rows: 5 }} />
+                    <span className={styles.skeletonText}>正在加载数据源列表…</span>
+                  </div>
                 ) : (
-                  <p>
-                    {canCreate
-                      ? '点击右上角新增；保存后先测试连接、勾选视图，再启用。'
-                      : '数据源配置添加后会显示在这里。'}
-                  </p>
+                  <Table<DataSourceView>
+                    rowKey="id"
+                    size="small"
+                    tableLayout="fixed"
+                    scroll={{ x: 1320 }}
+                    loading={query.isFetching && !query.isError}
+                    dataSource={items}
+                    columns={columns}
+                    pagination={false}
+                    locale={{
+                      emptyText: hasFilters ? (
+                        <span className={styles.emptyText}>
+                          <span>没有找到匹配的数据源</span>
+                          <span className={styles.emptyHint}>
+                            可以更换关键字，或清空筛选查看全部配置。
+                          </span>
+                          <Button type="link" size="small" onClick={clearSearch}>
+                            清空筛选条件
+                          </Button>
+                        </span>
+                      ) : (
+                        <span className={styles.emptyText}>
+                          <span>还没有数据源配置</span>
+                          <span className={styles.emptyHint}>
+                            {canCreate
+                              ? '可以用右上角「新增数据源」创建第一个配置；保存后到「查询范围」勾选视图，再复检启用。'
+                              : '数据源配置添加后会显示在这里。'}
+                          </span>
+                        </span>
+                      ),
+                    }}
+                  />
                 )}
               </div>
-            ) : (
-              <div>
-                {items.map((item) => {
-                  const views = item.views ?? [];
-                  const outcome = outcomeMeta(item.lastCheckStatus);
-                  const checking = check.isPending && check.variables === item.id;
-                  return (
-                    <article key={item.id} className={styles.card} aria-label={item.name}>
-                      <div className={styles.cardHead}>
-                        <div className={styles.mark} aria-hidden="true">
-                          <DatabaseOutlined />
-                        </div>
-                        <div className={styles.identity}>
-                          <div className={styles.nameLine}>
-                            <h3>{item.name}</h3>
-                            <DictTag dictionary={statusDictionary} value={item.status ?? ''} />
-                            {outcome && item.lastCheckAt && (
-                              <Tag color={outcome.color} bordered={false}>
-                                {outcome.label}
-                              </Tag>
-                            )}
-                          </div>
-                          <p className={styles.description}>
-                            MySQL
-                            {item.remark && (
-                              <>
-                                <span className={styles.separator}>·</span>
-                                {item.remark}
-                              </>
-                            )}
-                          </p>
-                        </div>
-                        {hasActions && (
-                          <div className={styles.cardActions}>
-                            {canTest && (
-                              <Button
-                                size="small"
-                                icon={<SafetyCertificateOutlined />}
-                                loading={checking}
-                                disabled={toggle.isPending}
-                                aria-label={`检查${item.name ?? ''}的连接与授权`}
-                                onClick={() => check.mutate(item.id ?? '')}
-                              >
-                                检查
-                              </Button>
-                            )}
-                            {canUpdate && (
-                              <Button
-                                size="small"
-                                icon={<EditOutlined />}
-                                aria-label={`编辑${item.name ?? ''}`}
-                                disabled={toggle.isPending}
-                                onClick={() => setDrawer({ target: item })}
-                              >
-                                编辑
-                              </Button>
-                            )}
-                            {canToggle &&
-                              (item.status === 'ENABLED' ? (
-                                <Button
-                                  size="small"
-                                  icon={<PoweroffOutlined />}
-                                  aria-label={`停用${item.name ?? ''}`}
-                                  loading={toggle.isPending && toggle.variables?.id === item.id}
-                                  disabled={check.isPending}
-                                  onClick={() => disable(item)}
-                                >
-                                  停用
-                                </Button>
-                              ) : (
-                                <Tooltip
-                                  title={
-                                    views.length === 0 ? '先检查并勾选至少一个允许查询的视图' : ''
-                                  }
-                                >
-                                  <span>
-                                    <Button
-                                      size="small"
-                                      type="primary"
-                                      ghost
-                                      icon={<PoweroffOutlined />}
-                                      aria-label={`启用${item.name ?? ''}`}
-                                      loading={toggle.isPending && toggle.variables?.id === item.id}
-                                      disabled={views.length === 0 || check.isPending}
-                                      onClick={() => confirmEnable(item)}
-                                    >
-                                      启用
-                                    </Button>
-                                  </span>
-                                </Tooltip>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className={styles.cardBody}>
-                        <div className={styles.field}>
-                          <span className={styles.fieldLabel}>数据源 ID</span>
-                          <Typography.Text copyable={{ text: item.id ?? '' }} code>
-                            {item.id}
-                          </Typography.Text>
-                        </div>
-                        <div className={styles.field}>
-                          <span className={styles.fieldLabel}>连接</span>
-                          <code className={styles.endpoint}>
-                            {item.username}@{item.host}:{item.port}/{item.databaseName}
-                          </code>
-                          <span className={styles.keyHint}>
-                            <LockOutlined aria-hidden="true" />
-                            密码已加密保存，不回显
-                          </span>
-                        </div>
-                        <div className={styles.field}>
-                          <span className={styles.fieldLabel}>
-                            允许查询的视图
-                            <span className={styles.count}>{views.length}</span>
-                          </span>
-                          {views.length > 0 ? (
-                            <div className={styles.views} aria-label={`${item.name ?? ''} 的视图`}>
-                              {views.map((view) => (
-                                <Tag key={view} bordered={false} className={styles.viewTag}>
-                                  {view}
-                                </Tag>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className={styles.muted}>尚未勾选视图，当前不允许启用</p>
-                          )}
-                        </div>
-                        <div className={styles.field}>
-                          <span className={styles.fieldLabel}>最近检查</span>
-                          {item.lastCheckAt && item.lastCheckStatus ? (
-                            <>
-                              <span className={styles.checkedAt}>
-                                {formatCheckedAt(item.lastCheckAt)}
-                                <span className={styles.separator}>·</span>
-                                {outcome?.label}
-                              </span>
-                              <p className={styles.checkMessage}>
-                                {item.lastCheckMessage || outcome?.hint}
-                              </p>
-                            </>
-                          ) : (
-                            <p className={styles.muted}>
-                              尚未检查；编辑连接参数或视图后，旧结论会立即失效
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-            {query.data && query.data.total > 12 && (
-              <div className={styles.pagination}>
-                <span>共 {query.data.total} 个数据源</span>
-                <Pagination
-                  current={page}
-                  pageSize={12}
+              {query.data && (
+                <TablePager
                   total={query.data.total}
-                  showSizeChanger={false}
-                  onChange={setPage}
+                  page={page}
+                  pageSize={query.data.pageSize}
+                  itemCount={items.length}
+                  onPageChange={setPage}
                 />
-              </div>
-            )}
-          </section>
-          <p className={styles.note}>
-            <SafetyCertificateOutlined aria-hidden="true" />
-            连接测试只读取授权元数据，不执行任何写操作；勾选视图不会修改数据库授权。
-          </p>
-        </>
-      )}
+              )}
+            </div>
+
+            <p className={styles.note}>
+              <span aria-hidden="true">·</span>
+              检查只读取授权元数据，不执行任何写操作；勾选视图不会修改数据库授权。配置通过不代表已授权
+              Agent 使用。
+            </p>
+          </>
+        )}
+      </div>
       {drawer && (
         <DataSourceFormDrawer
           key={drawer.target?.id ?? 'create'}
