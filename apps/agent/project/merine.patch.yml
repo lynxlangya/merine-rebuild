@@ -47,8 +47,6 @@
   disabled: true
 - id: ui-deliverables
   disabled: true
-- id: ui-plugin-manager
-  disabled: true
 - id: file-reference-local
   disabled: true
 - id: workspace-files
