@@ -11,12 +11,13 @@ AGENT_DIR="$ROOT/apps/agent"
 AGENT_HOME="$AGENT_DIR/.dsh-home"
 AGENT_LOG="$AGENT_HOME/dsh-web.log"
 AGENT_PID_FILE="$AGENT_HOME/dsh-web.pid"
+AGENT_PATCH="$AGENT_DIR/project/merine.patch.yml"
 PORT="${MERINE_AGENT_PORT:-3080}"
 
 log() { printf '%s\n' "$*"; }
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 
-listener_pid() { lsof -t -iTCP:"$PORT" -sTCP:LISTEN 2>/dev/null | head -1; }
+listener_pid() { lsof -t -iTCP:"$PORT" -sTCP:LISTEN 2>/dev/null | head -1 || true; }
 port_in_use() { [[ -n "$(listener_pid)" ]]; }
 read_pid() { [[ -f "$AGENT_PID_FILE" ]] && tr -d '[:space:]' < "$AGENT_PID_FILE" || true; }
 pid_alive() { [[ -n "${1:-}" ]] && kill -0 "$1" 2>/dev/null; }
@@ -69,8 +70,10 @@ start() {
     : >"$AGENT_LOG"
     (
         cd "$AGENT_DIR"
+        patch_args=()
+        [[ -f "$AGENT_PATCH" ]] && patch_args=(--patch "$AGENT_PATCH")
         nohup env DSH_HOME="$AGENT_HOME" COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-            corepack pnpm dsh web --no-open --port "$PORT" >>"$AGENT_LOG" 2>&1 &
+            corepack pnpm dsh --profile web ${patch_args[@]+"${patch_args[@]}"} --no-open --port "$PORT" >>"$AGENT_LOG" 2>&1 &
         echo $! >"$AGENT_PID_FILE"
     )
     local waited=0
@@ -87,6 +90,7 @@ start() {
     # 记录真正监听端口的进程（pnpm/corepack 会再派生子进程，父进程 PID 不足以管理）。
     listener_pid >"$AGENT_PID_FILE"
     log "Agent 已启动（PID $(listener_pid)，端口 ${PORT}，DSH_HOME=${AGENT_HOME}）。"
+    [[ -f "$AGENT_PATCH" ]] && log "已应用项目覆盖层：project/merine.patch.yml"
     print_url
 }
 

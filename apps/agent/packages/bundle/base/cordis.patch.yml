@@ -42,6 +42,7 @@
 
     - id: session-log-deepseek
       name: '@deepseek-ai/dsh-session-log-deepseek'
+      disabled: true
 
     - id: typert
       name: '@deepseek-ai/dsh-typert-registry'
@@ -79,6 +80,7 @@
 
     - id: plugin-package-inventory-deepseek
       name: '@deepseek-ai/dsh-plugin-package-inventory-deepseek'
+      disabled: true
 
     # The transport-independent default for Agents created by entry points.
     # Settings may supply a saved selection; consumers read it at creation time.
@@ -197,6 +199,7 @@
     - id: otel
       name: '@deepseek-ai/dsh-otel'
 
+    # 本项目关闭反馈遥测；保留以下上游配置供后续审查，不加载发送插件。
     # OTel releases a Session-log prefix only after explicit user feedback,
     # regardless of model provider. Ordinary activity never triggers capture.
     # DSH_TELEMETRY_OTLP_URL overrides the production endpoint. A non-empty
@@ -212,6 +215,7 @@
     # Every CLI exit path drains by disposing the root on SIGINT/SIGTERM.
     - id: session-telemetry-otel
       name: '@deepseek-ai/dsh-session-telemetry-otel'
+      disabled: true
       config:
         mode: !!js process.env.DSH_TELEMETRY_MODE || 'FEEDBACK_ONLY'
         shutdownTimeoutMillis: 3000
@@ -314,6 +318,7 @@
 
     - id: command-feedback
       name: '@deepseek-ai/dsh-command-feedback'
+      disabled: true
 
     - id: goal
       name: '@deepseek-ai/dsh-goal'
@@ -446,7 +451,8 @@
         thresholds: [3, 5, 8]
         argumentsPreviewChars: 500
 
-    # The shared base enables the stable model-facing web_search and web_fetch
+    # 本项目关闭搜索、抓取提供方及各预设的工具入口。
+    # The upstream shared base provides the stable model-facing web_search and web_fetch
     # tools. The Web app disables this host row and composes both tools per agent
     # preset; products with a stricter network policy override tool-web. DeepSeek
     # search resolves the same DEEPSEEK_API_KEY
@@ -465,14 +471,17 @@
 
     - id: web-search-deepseek
       name: '@deepseek-ai/dsh-web-search-deepseek'
+      disabled: true
       config:
         apiKeyEnv: DEEPSEEK_API_KEY
 
     - id: web-fetch-http
       name: '@deepseek-ai/dsh-web-fetch-http'
+      disabled: true
 
     - id: tool-web
       name: '@deepseek-ai/dsh-tool-web'
+      disabled: true
       config:
         fetch: true
         searchTimeoutMs: 60000

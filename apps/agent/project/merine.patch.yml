@@ -1,0 +1,35 @@
+# 海防助手项目覆盖层（由 scripts/agent.sh 以 --patch 应用，排在所有上游层之后）。
+#
+# 目的：关闭与 DeepSeek 官方账号、会话日志上传、产品遥测、消息反馈、DeepSeek 搜索
+# 后端相关的插件与设置页；这些是本项目不使用的上游产品能力，也会把数据发往上游。
+# 只按 id 覆盖上游行的 disabled，不改名、不删文件，便于后续同步上游。
+#
+# 保留：模型供应商目录里的 DeepSeek 条目（它是真实可选的模型 API 供应商，
+# 用户用 API Key 接入，与上面的官方账号/遥测无关）。
+
+- id: session-log-deepseek
+  disabled: true
+- id: session-telemetry-otel
+  disabled: true
+- id: deepseek-account
+  disabled: true
+- id: llm-deepseek-account
+  disabled: true
+- id: command-feedback
+  disabled: true
+- id: web-search-deepseek
+  disabled: true
+- id: desktop-product-telemetry
+  disabled: true
+- id: message-feedback
+  disabled: true
+- id: ui-message-feedback
+  disabled: true
+- id: ui-settings-account
+  disabled: true
+- id: account-controller
+  disabled: true
+- id: ui-settings-session-log
+  disabled: true
+- id: ui-settings-web-search
+  disabled: true

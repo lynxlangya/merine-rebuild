@@ -126,6 +126,7 @@
               allowParallelInProgress: true
           - id: tool-web
             name: '@deepseek-ai/dsh-tool-web'
+            disabled: true
             config:
               fetch: true
               searchTimeoutMs: 60000
