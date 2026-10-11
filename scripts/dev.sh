@@ -28,6 +28,9 @@ compose_prod() {
   docker compose --project-name merine-rebuild-prod --env-file "$ROOT/.env" -f "$ROOT/infra/compose.prod.yaml" "$@"
 }
 
+# 海防助手 Agent（apps/agent）的生命周期：与开发栈同启停，但独立运行在宿主机
+agent_ctl() { "$ROOT/scripts/agent.sh" "$@"; }
+
 require_env() {
   [[ -f "$ROOT/.env" ]] || { printf 'Run ./scripts/dev.sh setup first.\n' >&2; exit 1; }
 }
@@ -85,6 +88,9 @@ case "${1:-help}" in
     compose run --rm --no-deps migrate
     compose up -d --wait --wait-timeout 600 api web
     printf '\nWeb: http://127.0.0.1:5173\nAPI docs: http://127.0.0.1:9002/api/docs\n'
+    if ! agent_ctl start; then
+      printf '警告：海防助手 Agent 未启动；可稍后执行 ./scripts/dev.sh agent start 重试。\n' >&2
+    fi
     ;;
   deps)
     setup
@@ -97,8 +103,21 @@ case "${1:-help}" in
     compose up -d --wait --wait-timeout 180 mysql
     compose run --rm --no-deps migrate
     ;;
-  status) require_env; compose ps ;;
-  logs) require_env; shift; compose logs --tail 100 -f "$@" ;;
+  status)
+    require_env
+    compose ps
+    printf '\n'
+    agent_ctl status || true
+    ;;
+  logs)
+    require_env
+    shift
+    if [[ "${1:-}" == agent ]]; then
+      agent_ctl logs
+    else
+      compose logs --tail 100 -f "$@"
+    fi
+    ;;
   restart)
     # 改完 Java 必须重启 api：spring-boot:run 不会热加载，重启时会重新编译并重放迁移。
     require_env
@@ -111,11 +130,24 @@ case "${1:-help}" in
         compose up -d --wait --wait-timeout 180 mysql
         compose run --rm --no-deps migrate
         compose restart api web
+        if ! agent_ctl restart; then
+          printf '警告：海防助手 Agent 未重启；可执行 ./scripts/dev.sh agent status 查看。\n' >&2
+        fi
         ;;
       *) printf 'restart 只接受 api 或 web（留空表示整栈）\n' >&2; exit 1 ;;
     esac
     ;;
-  down) require_env; compose down ;;
+  agent)
+    shift
+    agent_ctl "$@"
+    ;;
+  down)
+    require_env
+    if ! agent_ctl stop; then
+      printf '警告：海防助手 Agent 未正常停止；可执行 ./scripts/dev.sh agent stop 重试。\n' >&2
+    fi
+    compose down
+    ;;
   seed)
     require_env
     ensure_env_key MYSQL_TEST_PASSWORD >/dev/null 2>&1 || true
@@ -210,6 +242,8 @@ case "${1:-help}" in
       -e TEST_DB_APP_USER=merine_app_test \
       -e TEST_DB_APP_PASSWORD="$MYSQL_TEST_PASSWORD" \
       api ./mvnw -B -q package
+    printf '\n构建海防助手 Agent（apps/agent）...\n'
+    agent_ctl build
     ;;
   prod-build)
     # 只构建交付镜像，不动正在运行的开发栈
@@ -217,6 +251,9 @@ case "${1:-help}" in
     load_env
     compose_prod config --quiet
     compose_prod build api web
+    # Agent 是宿主机运行时，不进入交付镜像；打包时一并构建其产物。
+    printf '\n构建海防助手 Agent（apps/agent）...\n'
+    agent_ctl build
     ;;
   prod-up)
     # 与开发栈同构的顺序：先迁移再启动应用；迁移失败就不启动（set -e 会直接退出）
@@ -260,8 +297,9 @@ case "${1:-help}" in
     compose_prod down
     ;;
   *)
-    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|seed-maritime|menus|test-db|status|logs [service]|restart [api|web]|down|check|build|prod-build|prod-up|prod-seed|prod-down}\n'
+    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|seed-maritime|menus|test-db|status|logs [service]|restart [api|web]|agent <start|stop|restart|status|logs>|down|check|build|prod-build|prod-up|prod-seed|prod-down}\n'
     printf 'up starts the local development stack; down preserves all named volumes.\n'
+    printf 'up/down/restart also start/stop the local Agent (apps/agent, port 3080); agent passes through its subcommands.\n'
     printf 'restart recompiles and restarts api/web (Java changes are not hot-reloaded).\n'
     printf 'prod-* builds and runs the delivery-shaped images (jar + nginx) for a local rehearsal.\n'
     printf 'seed initializes a local demo account; test-db prepares the isolated test schema.\n'

@@ -89,6 +89,16 @@ scripts/              启停、检查、类型生成和实际联调验证
 ./scripts/dev.sh up
 ```
 
+`up` 会同时启动项目内的海防助手 Agent（`apps/agent`，端口 3080），`down` 会先停 Agent 再停开发栈；`status` 一并显示，`restart` 留空时也会重启 Agent。Agent 的配置与运行数据固定在 `apps/agent/.dsh-home`（已 gitignore），不读写 `~/.dsh`，不影响本机桌面版；也可以单独管理：
+
+```bash
+./scripts/dev.sh agent status
+./scripts/dev.sh agent logs
+./scripts/dev.sh agent restart
+```
+
+Agent 首次使用前需在仓库根执行 `(cd apps/agent && corepack pnpm install)`，并在其 Web UI 的「设置 → 模型」里配置模型 Key。
+
 已有 Node / pnpm 时，也可以使用 `pnpm dev`、`pnpm stack:status`、`pnpm stack:logs` 和 `pnpm stack:down`。本机工具版本记录在 `mise.toml`，容器不依赖本机工具版本。
 
 直接使用 Compose 的等价入口如下。常规启动优先使用脚本，它会先确认数据库就绪并运行迁移。
@@ -123,7 +133,7 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 ```
 
 - `check`：建好测试库并跑 TypeScript、Node 内置前端回归测试、格式检查与 Maven 验证（含认证、用户管理与单位管理回归测试）。
-- `build`：前端生产构建与后端 jar 打包（`project.build.outputTimestamp` 固定产物时间戳，同一份源码重复构建哈希一致）。交付镜像见下面的「交付形态演练」。
+- `build`：前端生产构建与后端 jar 打包（`project.build.outputTimestamp` 固定产物时间戳，同一份源码重复构建哈希一致）。同时构建项目内的海防助手 Agent 产物（`apps/agent`，需要本机 Node 22.19+ 与已安装的 Agent 依赖）。交付镜像见下面的「交付形态演练」。
 - `test-db`：准备隔离的测试库 `merine_rebuild_test` 并应用同一套迁移；重复执行是幂等的，不动开发库。
 - `contract:generate`：从当前源码启动的本地后端自动发现 OpenAPI 分组，更新 `packages/api-contract/openapi/*.json` 与 `src/generated/*.d.ts`。页面仍通过 `@merine/api-contract` 统一导入类型，生成文件不手改。本地开发通过 dev 入口建立临时会话，导出后注销；非 dev 环境需提供 `API_LOGIN_NAME` / `API_PASSWORD`。接口文档访问不额外要求系统管理角色。
 - `contract:test`：验证分组发现、完整覆盖、重复接口、协议一致性和引用完整性的生成工具回归，已接入 `check`。
@@ -140,11 +150,13 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 开发编排跑的是「Maven + Vite 开发服务器 + 挂载源码」，交付形态跑的是构建产物：后端只有 JRE 与分层解压后的 jar，前端只有 nginx 与静态文件。两者互不干扰（独立项目名、独立数据卷），可以在本机同时存在。
 
 ```bash
-./scripts/dev.sh prod-build   # 构建交付镜像（api ≈ 248 MB，web ≈ 63 MB；不含 Maven/Node/源码）
+./scripts/dev.sh prod-build   # 构建交付镜像（api ≈ 248 MB，web ≈ 63 MB；不含 Maven/Node/源码），并构建 Agent 产物
 ./scripts/dev.sh prod-up      # 建库 → 迁移（独立迁移账号）→ 启动，访问 http://127.0.0.1:8080
 ./scripts/dev.sh prod-seed    # 首次运行后初始化一个管理员账号（密码交互输入）
 ./scripts/dev.sh prod-down    # 停止，保留数据卷
 ```
+
+Agent（`apps/agent`）是宿主机运行时，不打进交付镜像：`prod-build` 只额外构建它的产物，启动/停止仍由 `dev.sh` 统一管理（与开发栈共用同一个 Agent 实例，端口 3080）。
 
 镜像与编排要点：
 
