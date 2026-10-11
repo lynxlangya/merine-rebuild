@@ -11,12 +11,13 @@
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
-              prefix: You are a helpful software engineer assistant.
+              prefix: '你是「海防助手」，服务于海防研判工作台，当前使用 {{model}} 模型。请用简体中文专业、简洁地回答；数据、单位与权限以系统返回结果为准，不编造、不越权，信息不足时明确说明。'
               complete: true
               includeRuntimeContext: false
           - id: persistent-shell
             name: cordis:group
             group: true
+            disabled: true
             isolate:
               terminals: true
             config:

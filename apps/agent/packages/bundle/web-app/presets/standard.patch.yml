@@ -11,7 +11,7 @@
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
-              prefix: You are a coding agent powered by the {{model}} model.
+              prefix: '你是「海防助手」，服务于海防研判工作台，当前使用 {{model}} 模型。请用简体中文专业、简洁地回答；数据、单位与权限以系统返回结果为准，不编造、不越权，信息不足时明确说明。'
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'
             config:
@@ -20,14 +20,16 @@
             name: '@deepseek-ai/dsh-time-context'
           - id: tool-bash
             name: '@deepseek-ai/dsh-tool-bash'
-            disabled: !!js process.platform === 'win32'
+            disabled: true
           - id: tool-pwsh
             name: '@deepseek-ai/dsh-tool-pwsh'
-            disabled: !!js process.platform !== 'win32'
+            disabled: true
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
+            disabled: true
           - id: tool-fs-search
             name: '@deepseek-ai/dsh-tool-fs-search'
+            disabled: true
             config:
               sampleOverCapGlobResults: false
           - id: tool-jobs
@@ -36,6 +38,7 @@
             name: '@deepseek-ai/dsh-tool-schedule'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
+            disabled: true
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
           - id: command-goal

@@ -33,3 +33,36 @@
   disabled: true
 - id: ui-settings-web-search
   disabled: true
+
+# 公安内网部署：关闭一切拉起本机程序/终端/目录选择的能力。
+- id: open-in-app
+  disabled: true
+- id: ui-open-in-app
+  disabled: true
+- id: directory-picker
+  disabled: true
+- id: terminal-controller
+  disabled: true
+- id: ui-sidebar-terminal
+  disabled: true
+- id: ui-deliverables
+  disabled: true
+- id: ui-plugin-manager
+  disabled: true
+- id: file-reference-local
+  disabled: true
+- id: workspace-files
+  disabled: true
+- id: ui-sidebar-files
+  disabled: true
+- id: ui-sidebar-documentpreview
+  disabled: true
+- id: office-to-pdf
+  disabled: true
+
+# 关闭引擎固定的 “You are an AI agent powered by DeepSeek Harness.” 身份句；
+# 身份由预设 persona（海防助手）提供。
+- id: system-prompt
+  config:
+    includeHarnessIdentity: false
+    personaPrefix: ''
