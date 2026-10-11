@@ -286,6 +286,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/agent/semantics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 读取资料库业务概念与指标定义 */
+    get: operations['semanticCatalogGet'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -386,6 +403,14 @@ export interface components {
       message: string;
       requestId: string;
     };
+    ApiResponseSemanticCatalog: {
+      code: string;
+      data: components['schemas']['SemanticCatalog'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
     ApiResponseVoid: {
       code: string;
       data: unknown;
@@ -393,6 +418,15 @@ export interface components {
       fieldErrors?: components['schemas']['FieldError'][];
       message: string;
       requestId: string;
+    };
+    BusinessConcept: {
+      definition: string;
+      example: string;
+      id: string;
+      /** Format: int32 */
+      revision: number;
+      rules: string[];
+      title: string;
     };
     CancelRequested: {
       messageId: string;
@@ -677,6 +711,29 @@ export interface components {
       | components['schemas']['Question']
       | components['schemas']['Notice']
     );
+    MetricDefinition: {
+      aliases: string[];
+      countingObject: string;
+      deduplicationRule: string;
+      definition: string;
+      examples: components['schemas']['MetricDefinitionExample'][];
+      id: string;
+      inclusionRule: string;
+      pendingQuestions: string[];
+      /** Format: int32 */
+      revision: number;
+      scopeRule: string;
+      /** @enum {string} */
+      status: 'DRAFT' | 'CONFIRMED';
+      statusLabel: string;
+      timeBasis: string;
+      title: string;
+      unit: string;
+    };
+    MetricDefinitionExample: {
+      explanation: string;
+      question: string;
+    };
     ModelOption: {
       /** @enum {string} */
       defaultReasoningEffort?: 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX';
@@ -901,6 +958,20 @@ export interface components {
       remark?: string;
       /** @enum {string} */
       status: 'ENABLED' | 'DISABLED';
+    };
+    SemanticCatalog: {
+      /** Format: int32 */
+      revision: number;
+      /** Format: int32 */
+      schemaVersion: number;
+      topics: components['schemas']['SemanticTopic'][];
+    };
+    SemanticTopic: {
+      concepts: components['schemas']['BusinessConcept'][];
+      description: string;
+      id: string;
+      metrics: components['schemas']['MetricDefinition'][];
+      title: string;
     };
     SourceRef: {
       /** @enum {string} */
@@ -1499,6 +1570,26 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseVoid'];
+        };
+      };
+    };
+  };
+  semanticCatalogGet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseSemanticCatalog'];
         };
       };
     };

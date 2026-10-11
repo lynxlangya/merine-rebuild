@@ -30,7 +30,9 @@ public record ChatProperties(
         @DefaultValue("5m") Duration runTimeout,
         @DefaultValue("15s") Duration heartbeatInterval,
         /** 是否请求上游在流式响应里返回 token 用量（DeepSeek 与千问官方都支持，默认开启）。 */
-        @DefaultValue("true") boolean requestUsage) {
+        @DefaultValue("true") boolean requestUsage,
+        @DefaultValue("2") int maxToolCalls,
+        @DefaultValue("2048") int maxToolArgumentChars) {
 
     /** PROVIDER = 调真实模型；DEMO = 本地脚本替身（仅 dev/test 注册）。不提供自动回退。 */
     public enum ChatMode { PROVIDER, DEMO }

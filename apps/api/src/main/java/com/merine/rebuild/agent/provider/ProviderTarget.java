@@ -1,6 +1,7 @@
 package com.merine.rebuild.agent.provider;
 
 import com.merine.rebuild.agent.provider.dto.ProviderRequests.ReasoningEffort;
+import com.merine.rebuild.agent.provider.dto.ProviderRequests.Vendor;
 
 /**
  * 对话调用所需的连接与密钥：providerId、连接名、模型标识、基础地址与解密后的 API Key。
@@ -13,4 +14,6 @@ public record ProviderTarget(
         String baseUrl,
         String apiKey,
         /** 已按模型配置校验过的推理强度；null 表示不发送该参数，交给供应商默认值。 */
-        ReasoningEffort reasoningEffort) {}
+        ReasoningEffort reasoningEffort,
+        /** 厂商协议差异由适配层明确处理，不从基础 URL 或模型名字猜测。 */
+        Vendor vendor) {}

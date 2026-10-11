@@ -12,6 +12,7 @@ import com.merine.rebuild.auth.AuthenticatedAccount;
 import com.merine.rebuild.common.ApiException;
 import com.merine.rebuild.common.ApiResponse;
 import com.merine.rebuild.common.CommandDigest;
+import jakarta.servlet.http.HttpSession;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.databind.ObjectMapper;
 
@@ -43,7 +45,7 @@ final class ChatService {
     private final ChatHistoryService history;
     private final ChatProperties props;
     private final ScriptedChatStub stub;
-    private final ProviderChatClient client;
+    private final ToolCallingChat toolChat;
     private final ProviderTargetLookup providers;
     private final ObjectMapper json;
     private final ScheduledExecutorService scheduler;
@@ -53,7 +55,7 @@ final class ChatService {
                 ChatHistoryService history,
                 ChatProperties props,
                 ObjectProvider<ScriptedChatStub> stubProvider,
-                ProviderChatClient client,
+                ToolCallingChat toolChat,
                 ProviderTargetLookup providers,
                 ObjectMapper json,
                 @Qualifier("chatRunScheduler") ScheduledExecutorService scheduler,
@@ -62,7 +64,7 @@ final class ChatService {
         this.history = history;
         this.props = props;
         this.stub = stubProvider.getIfAvailable();
-        this.client = client;
+        this.toolChat = toolChat;
         this.providers = providers;
         this.json = json;
         this.scheduler = scheduler;
@@ -73,7 +75,8 @@ final class ChatService {
         }
     }
 
-    ChatStart start(ChatRequest request, AuthenticatedAccount account) {
+    ChatStart start(ChatRequest request, AuthenticatedAccount account,
+                    Authentication authentication, HttpSession session) {
         validateRequest(request);
         ProviderTarget target = props.mode() == ChatProperties.ChatMode.PROVIDER
                 ? resolveTarget(request)
@@ -115,12 +118,17 @@ final class ChatService {
         // 会话只在新建执行时确定，且放在作答受理之后：被拒绝的作答不会留下空会话。
         // 同幂等键重放已经在上面直接返回快照，不会再建会话。
         ChatHistoryService.TargetSnapshot snapshot = snapshotOf(target);
-        run.attachConversation(history.ensureConversation(account.userId(),
-                request.conversationId(), lastUserText(request), snapshot));
+        try {
+            run.attachConversation(history.ensureConversation(account.userId(),
+                    request.conversationId(), lastUserText(request), snapshot));
+        } catch (RuntimeException error) {
+            registry.discard(run);
+            throw error;
+        }
         SseEmitter emitter = new SseEmitter(props.runTimeout().toMillis() + 10_000L);
         ChatStreamWriter writer = new ChatStreamWriter(run, emitter, json, props);
         try {
-            executor.execute(() -> stream(run, writer, request, answering, target));
+            executor.execute(() -> stream(run, writer, request, answering, target, authentication, session));
         } catch (RuntimeException error) {
             registry.discard(run);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "CHAT_EXECUTOR_UNAVAILABLE",
@@ -155,12 +163,12 @@ final class ChatService {
     }
 
     private void stream(ChatRun run, ChatStreamWriter writer, ChatRequest request, boolean answering,
-                        ProviderTarget target) {
+                        ProviderTarget target, Authentication authentication, HttpSession session) {
         long heartbeatMillis = Math.max(1_000L, props.heartbeatInterval().toMillis());
         ScheduledFuture<?> heartbeat = scheduler.scheduleAtFixedRate(writer::heartbeat,
                 heartbeatMillis, heartbeatMillis, TimeUnit.MILLISECONDS);
         try {
-            if (!writer.streamStart()) {
+            if (!writer.streamStart(target == null ? null : target.modelId())) {
                 writer.markAborted();
                 return;
             }
@@ -169,11 +177,17 @@ final class ChatService {
                 if (props.mode() == ChatProperties.ChatMode.DEMO) {
                     stub.run(writer, pacing, request, answering);
                 } else {
-                    client.stream(writer, pacing, request, target);
+                    toolChat.stream(writer, pacing, request, target, authentication, session);
                 }
             } catch (ChatUpstreamException upstream) {
                 // 上游已明确失败：不写成功终态，只发 ERROR 事件。
                 writer.fail(upstream.code(), upstream.getMessage(), upstream.retryable());
+                return;
+            } catch (ApiException business) {
+                String message = business.status() == HttpStatus.UNAUTHORIZED
+                        ? "登录身份已失效，请重新登录后查询"
+                        : business.status() == HttpStatus.FORBIDDEN ? "没有查询该业务数据的权限" : "业务查询未完成";
+                writer.fail(ChatErrorCode.INTERNAL, message, false);
                 return;
             }
             writer.messageDone(ChatEvent.MessageStatus.SUCCEEDED);
@@ -185,13 +199,13 @@ final class ChatService {
                 }
                 case DISCONNECTED -> writer.markAborted();
                 case TIMEOUT -> writer.fail(ChatErrorCode.MODEL_TIMEOUT,
-                        "本地演示执行超过时限", true);
+                        "本轮回答超过时限，请稍后重试", true);
             }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             writer.markAborted();
         } catch (RuntimeException error) {
-            writer.fail(ChatErrorCode.INTERNAL, "本地演示执行中断", true);
+            writer.fail(ChatErrorCode.INTERNAL, "本轮回答未完成，请稍后重试", true);
         } finally {
             heartbeat.cancel(false);
             writer.completeQuietly();
@@ -347,6 +361,7 @@ final class ChatService {
         }
         int total = 0;
         for (ChatRequest.ChatTurn turn : request.messages()) {
+            if (turn == null || turn.role() == null) throw invalid("messages", "消息必须包含角色与正文");
             int length = turn.text().length();
             if (length > props.maxMessageChars()) {
                 throw invalid("messages", "单条消息长度超过本地演示上限");
@@ -355,6 +370,9 @@ final class ChatService {
         }
         if (total > props.maxTotalChars()) {
             throw invalid("messages", "消息总长度超过本地演示上限");
+        }
+        if (request.messages().getLast().role() != ChatRequest.ChatRole.USER) {
+            throw invalid("messages", "最后一条消息必须是用户提问");
         }
         if (request.answers() != null && request.answers().size() > 16) {
             throw invalid("answers", "一次提交的答案数量超过上限");
@@ -370,6 +388,8 @@ final class ChatService {
         parts[index++] = request.providerId();
         parts[index++] = request.modelId();
         parts[index++] = request.reasoningEffort();
+        parts[index++] = request.conversationId();
+        parts[index++] = request.context();
         for (ChatRequest.ChatTurn turn : request.messages()) {
             parts[index++] = turn.role().name();
             parts[index++] = turn.text();

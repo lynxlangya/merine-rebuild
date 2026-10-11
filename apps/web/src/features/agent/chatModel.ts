@@ -1,4 +1,4 @@
-import type { ChatRunView, MessagePart, ModelOption } from '@merine/api-contract';
+import type { ChatRequest, ChatRunView, MessagePart, ModelOption } from '@merine/api-contract';
 import { errorText } from '../../shared/api-error.ts';
 import { ApiError, isAbortError } from '../../shared/http.ts';
 import { ChatProtocolError, type StreamItem } from './stream.ts';
@@ -101,6 +101,31 @@ const KNOWN_PART_TYPES = new Set([
 
 export function createSession(id: string, index: number): AgentSession {
   return { id, title: `新对话 ${index}`, draft: '', messages: [] };
+}
+
+/** 为最新问题预留预算；重试只重发该问题，不回传失败的半句回答或重复提问。 */
+export function requestMessages(
+  session: AgentSession,
+  text: string,
+  retry = false,
+): ChatRequest['messages'] {
+  let lastUser = session.messages.length - 1;
+  while (lastUser >= 0 && session.messages[lastUser].role !== 'USER') lastUser--;
+  const history = retry && lastUser >= 0 ? session.messages.slice(0, lastUser) : session.messages;
+  const turns: ChatRequest['messages'] = [];
+  let remaining = 128000 - text.length;
+  for (const message of history.slice(-20).reverse()) {
+    if (message.role === 'ASSISTANT' && !['SUCCEEDED', 'AWAITING_INPUT'].includes(message.status))
+      continue;
+    const content = messageText(message).slice(0, 8000);
+    if (!content) continue;
+    if (content.length > remaining) break;
+    turns.unshift({ role: message.role, text: content });
+    remaining -= content.length;
+  }
+  // 裁剪后不以孤立的助手回答开头。
+  while (turns[0]?.role === 'ASSISTANT') turns.shift();
+  return [...turns, { role: 'USER', text }];
 }
 
 /**
@@ -297,6 +322,7 @@ export function failRun(
 ): AgentChatState {
   const partStatus: PartStatus = input.status === 'ABORTED' ? 'ABORTED' : 'FAILED';
   return patchSession(state, sessionId, (session) => {
+    if (input.messageId && input.messageId !== session.run?.messageId) return session;
     const targetId = input.messageId ?? session.run?.messageId;
     return {
       ...session,
@@ -405,6 +431,7 @@ export function applyRunView(
       : { kind: 'unknown', partId, rawType: 'UNKNOWN', status: partStatus };
   });
   return patchSession(state, sessionId, (session) => {
+    if (session.run?.idempotencyKey !== view.idempotencyKey) return session;
     const messages = [...session.messages];
     // 只按当前执行的 messageId 定位：本轮尚未收到 STREAM_START 时不能复用上一轮的助手消息。
     const targetId = session.run?.messageId;
@@ -500,6 +527,9 @@ export function applyStreamItem(
     }));
   }
   const event = item.event;
+  const run = state.sessions.find((session) => session.id === sessionId)?.run;
+  if (event.type !== 'STREAM_START' && event.messageId && event.messageId !== run?.messageId)
+    return state;
   switch (event.type) {
     case 'STREAM_START':
       return patchSession(state, sessionId, (session) => {

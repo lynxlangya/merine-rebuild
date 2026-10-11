@@ -77,6 +77,21 @@ class ChatProtocolTest {
     }
 
     @Test
+    void usageSumsModelRequestsAndKeepsMissingCountsUnknown() {
+        ChatRun run = run();
+        run.recordUsage(10, 2);
+        run.recordUsage(20, 5);
+        assertThat(run.promptTokens()).isEqualTo(30);
+        assertThat(run.completionTokens()).isEqualTo(7);
+        run.recordUsage(null, 1);
+        assertThat(run.promptTokens()).isNull();
+        assertThat(run.completionTokens()).isEqualTo(8);
+        run.recordUsage(5, null);
+        assertThat(run.promptTokens()).isNull();
+        assertThat(run.completionTokens()).isNull();
+    }
+
+    @Test
     void questionIsConsumedAtomicallyAndConditionsAreRecorded() {
         ChatRun run = run();
         run.setPendingQuestion(new MessagePart.Question("Q1", "口径？",
@@ -163,10 +178,19 @@ class ChatProtocolTest {
     }
 
     @Test
+    void digestBindsTheServerConversation() {
+        ChatRequest first = request("key-0001-aaaa", "合成问题");
+        var other = new ChatRequest(first.idempotencyKey(), first.generationId(), first.clientConversationId(),
+                "different-conversation", first.clientTimeZone(), first.providerId(), first.modelId(),
+                first.reasoningEffort(), first.messages(), first.answers(), first.context());
+        assertThat(ChatService.digestOf(first)).isNotEqualTo(ChatService.digestOf(other));
+    }
+
+    @Test
     void writerEnforcesFrozenPartLimits() {
         ChatProperties small = new ChatProperties(ChatProperties.ChatMode.PROVIDER, 40, 8000, 128000, /*maxPartsPerMessage*/ 1, 1, 1,
                 200, 1, 8, 500, 1, 10, 50, Duration.ofMinutes(30),
-                Duration.ofMinutes(5), Duration.ofSeconds(15), true);
+                Duration.ofMinutes(5), Duration.ofSeconds(15), true, 2, 2048);
         ChatRun run = run();
         var writer = new ChatStreamWriter(run, new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(10_000L),
                 JsonMapper.builder().build(), small);
@@ -205,6 +229,6 @@ class ChatProtocolTest {
                                         Duration ttl) {
         return new ChatProperties(ChatProperties.ChatMode.PROVIDER, 40, 8000, 128000, 32, 100, 12, 200, 12, 8, 500,
                 maxActivePerUser, maxActiveGlobal, maxRecords, ttl,
-                Duration.ofMinutes(5), Duration.ofSeconds(15), true);
+                Duration.ofMinutes(5), Duration.ofSeconds(15), true, 2, 2048);
     }
 }

@@ -12,6 +12,7 @@ import {
   isBusy,
   markAnswered,
   messageText,
+  requestMessages,
   pendingQuestion,
   openServerSession,
   selectSession,
@@ -522,3 +523,96 @@ function selectAndSend(state: AgentChatState, sessionId: string, text: string): 
     idempotencyKey: `key-${sessionId}`,
   });
 }
+
+test('长历史为当前问题留出总字符预算，失败回答不作为完整上下文', () => {
+  const messages: AgentSession['messages'] = Array.from({ length: 20 }, (_, index) => ({
+    id: `history-${index}`,
+    role: index % 2 === 0 ? 'USER' : 'ASSISTANT',
+    status: 'SUCCEEDED',
+    parts: [
+      {
+        kind: 'known',
+        partId: 'text',
+        status: 'DONE',
+        part: { type: 'TEXT', text: '字'.repeat(8000) },
+      },
+    ],
+    createdAt: '',
+  }));
+  const session = { ...createSession('s', 1), messages };
+  const request = requestMessages(session, '问'.repeat(8000));
+  assert.ok(request.reduce((sum, turn) => sum + turn.text.length, 0) <= 128000);
+  assert.equal(request[0].role, 'USER');
+  assert.equal(request.at(-1)?.text, '问'.repeat(8000));
+  session.messages.at(-1)!.status = 'FAILED';
+  assert.equal(
+    requestMessages(session, '重问', true).filter((turn) => turn.text === '重问').length,
+    1,
+  );
+  assert.equal(requestMessages(session, '重问', true).at(-2)?.role, 'ASSISTANT');
+});
+
+test('重试上下文去除原问题与失败的半句回答', () => {
+  let state = send(baseState(), '只问一次');
+  state = applyStreamItem(
+    state,
+    's-1',
+    event({
+      type: 'STREAM_START',
+      protocolVersion: 1,
+      messageId: 'm',
+      generationId: 'g',
+      clientConversationId: 's-1',
+      conversationId: 'srv',
+      executionMode: 'PROVIDER',
+    }),
+  );
+  state = applyStreamItem(
+    state,
+    's-1',
+    event({ type: 'PART_START', messageId: 'm', partId: 'p', partType: 'TEXT' }),
+  );
+  state = applyStreamItem(
+    state,
+    's-1',
+    event({ type: 'TEXT_DELTA', messageId: 'm', partId: 'p', delta: '未完成的错误答案' }),
+  );
+  state = failRun(state, 's-1', {
+    code: 'ERROR',
+    message: '失败',
+    retryable: true,
+    status: 'FAILED',
+  });
+  assert.deepEqual(requestMessages(activeSession(state)!, '只问一次', true), [
+    { role: 'USER', text: '只问一次' },
+  ]);
+});
+
+test('上一轮迟到的成功、错误、取消及快照不能改写新一轮状态', () => {
+  const state = send(baseState(), '新问题', 'new-key');
+  for (const value of [
+    { type: 'MESSAGE_DONE', messageId: 'old-message', status: 'SUCCEEDED' },
+    { type: 'CANCEL_REQUESTED', messageId: 'old-message' },
+    {
+      type: 'ERROR',
+      messageId: 'old-message',
+      code: 'INTERNAL',
+      message: '旧失败',
+      retryable: false,
+    },
+  ] as ChatEvent[]) {
+    assert.deepEqual(applyStreamItem(state, 's-1', event(value)), state);
+  }
+  assert.deepEqual(
+    applyRunView(state, 's-1', {
+      idempotencyKey: 'old-key',
+      status: 'SUCCEEDED',
+      parts: [],
+      cancelRequested: false,
+      clientConversationId: 's-1',
+      generationId: 'old-generation',
+      startedAt: '',
+    }),
+    state,
+  );
+});

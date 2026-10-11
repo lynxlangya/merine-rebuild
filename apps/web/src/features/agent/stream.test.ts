@@ -137,3 +137,38 @@ test('单事件超过上限时报错且错误信息不含载荷', () => {
     assert.ok((error as Error).message.length < 80);
   }
 });
+
+test('CR 与 LF 跨网络块拆分时，多行 data 不会提前派发', () => {
+  const parser = new SseFrameParser();
+  assert.deepEqual(parser.push('data: {"a":\r'), []);
+  assert.deepEqual(parser.push('\ndata: 1}\r'), []);
+  const frames = parser.push('\n\r\n');
+  assert.equal(frames.length, 1);
+  assert.deepEqual(JSON.parse(frames[0].data), { a: 1 });
+});
+
+test('提前结束或协议错误时取消响应流，避免后台继续占用生成名额', async () => {
+  for (const invalid of [false, true]) {
+    let cancelled = false;
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(invalid ? 'data: {broken}\n\n' : frame(streamStart)),
+        );
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const consume = async () => {
+      for await (const item of readChatStream(stream)) {
+        assert.ok(item);
+        break;
+      }
+    };
+    if (invalid) await assert.rejects(consume, ChatProtocolError);
+    else await consume();
+    assert.equal(cancelled, true);
+    assert.equal(stream.locked, false);
+  }
+});

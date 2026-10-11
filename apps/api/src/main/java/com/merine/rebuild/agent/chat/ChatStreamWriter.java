@@ -48,9 +48,14 @@ final class ChatStreamWriter {
     }
 
     boolean streamStart() {
+        return streamStart(null);
+    }
+
+    boolean streamStart(String model) {
         return send(new ChatEvent.StreamStart(ChatEvent.PROTOCOL_VERSION, run.messageId(),
                 run.generationId(), run.clientConversationId(), run.conversationId(),
-                ChatEvent.ExecutionMode.LOCAL_STUB, null));
+                props.mode() == ChatProperties.ChatMode.PROVIDER
+                        ? ChatEvent.ExecutionMode.PROVIDER : ChatEvent.ExecutionMode.LOCAL_STUB, model));
     }
 
     boolean startPart(String partId, String partType) {
@@ -122,7 +127,7 @@ final class ChatStreamWriter {
         return send(new ChatEvent.PartDone(run.messageId(), partId));
     }
 
-    /** 记录上游返回的 token 用量；缺失时不写，落库为 NULL。 */
+    /** 每次上游请求结束记录一次并累计；任一请求缺失的维度仍为未知。 */
     void recordUsage(Integer promptTokens, Integer completionTokens) {
         run.recordUsage(promptTokens, completionTokens);
     }

@@ -188,7 +188,7 @@ public class ProviderService implements ProviderTargetLookup {
                     "供应商密钥不可用，请重新保存配置");
         }
         return new ProviderTarget(provider.id(), provider.name(), model.modelId(),
-                provider.baseUrl(), apiKey, reasoningEffort);
+                provider.baseUrl(), apiKey, reasoningEffort, provider.vendor());
     }
 
     private static ApiException unavailable(String field, String message) {

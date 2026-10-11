@@ -184,6 +184,21 @@
         "required": ["code", "data", "message", "requestId"],
         "type": "object"
       },
+      "ApiResponseSemanticCatalog": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/SemanticCatalog" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
       "ApiResponseVoid": {
         "properties": {
           "code": { "type": "string" },
@@ -197,6 +212,23 @@
           "requestId": { "type": "string" }
         },
         "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
+      "BusinessConcept": {
+        "properties": {
+          "definition": { "minLength": 1, "type": "string" },
+          "example": { "minLength": 1, "type": "string" },
+          "id": { "minLength": 1, "pattern": "[a-z][a-z0-9.-]*", "type": "string" },
+          "revision": { "format": "int32", "minimum": 1, "type": "integer" },
+          "rules": {
+            "items": { "minLength": 1, "type": "string" },
+            "maxItems": 2147483647,
+            "minItems": 1,
+            "type": "array"
+          },
+          "title": { "minLength": 1, "type": "string" }
+        },
+        "required": ["definition", "example", "id", "revision", "rules", "title"],
         "type": "object"
       },
       "CancelRequested": {
@@ -641,6 +673,56 @@
         "properties": { "type": { "type": "string" } },
         "required": ["type"]
       },
+      "MetricDefinition": {
+        "properties": {
+          "aliases": { "items": { "minLength": 1, "type": "string" }, "type": "array" },
+          "countingObject": { "minLength": 1, "type": "string" },
+          "deduplicationRule": { "minLength": 1, "type": "string" },
+          "definition": { "minLength": 1, "type": "string" },
+          "examples": {
+            "items": { "$ref": "#/components/schemas/MetricDefinitionExample" },
+            "maxItems": 2147483647,
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": { "minLength": 1, "pattern": "[a-z][a-z0-9.-]*", "type": "string" },
+          "inclusionRule": { "minLength": 1, "type": "string" },
+          "pendingQuestions": { "items": { "minLength": 1, "type": "string" }, "type": "array" },
+          "revision": { "format": "int32", "minimum": 1, "type": "integer" },
+          "scopeRule": { "minLength": 1, "type": "string" },
+          "status": { "enum": ["DRAFT", "CONFIRMED"], "type": "string" },
+          "statusLabel": { "minLength": 1, "type": "string" },
+          "timeBasis": { "minLength": 1, "type": "string" },
+          "title": { "minLength": 1, "type": "string" },
+          "unit": { "minLength": 1, "type": "string" }
+        },
+        "required": [
+          "aliases",
+          "countingObject",
+          "deduplicationRule",
+          "definition",
+          "examples",
+          "id",
+          "inclusionRule",
+          "pendingQuestions",
+          "revision",
+          "scopeRule",
+          "status",
+          "statusLabel",
+          "timeBasis",
+          "title",
+          "unit"
+        ],
+        "type": "object"
+      },
+      "MetricDefinitionExample": {
+        "properties": {
+          "explanation": { "minLength": 1, "type": "string" },
+          "question": { "minLength": 1, "type": "string" }
+        },
+        "required": ["explanation", "question"],
+        "type": "object"
+      },
       "ModelOption": {
         "properties": {
           "defaultReasoningEffort": {
@@ -1008,6 +1090,37 @@
           "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" }
         },
         "required": ["modelId", "status"],
+        "type": "object"
+      },
+      "SemanticCatalog": {
+        "properties": {
+          "revision": { "format": "int32", "minimum": 1, "type": "integer" },
+          "schemaVersion": { "format": "int32", "minimum": 1, "type": "integer" },
+          "topics": {
+            "items": { "$ref": "#/components/schemas/SemanticTopic" },
+            "maxItems": 2147483647,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": ["revision", "schemaVersion", "topics"],
+        "type": "object"
+      },
+      "SemanticTopic": {
+        "properties": {
+          "concepts": {
+            "items": { "$ref": "#/components/schemas/BusinessConcept" },
+            "type": "array"
+          },
+          "description": { "minLength": 1, "type": "string" },
+          "id": { "minLength": 1, "pattern": "[a-z][a-z0-9.-]*", "type": "string" },
+          "metrics": {
+            "items": { "$ref": "#/components/schemas/MetricDefinition" },
+            "type": "array"
+          },
+          "title": { "minLength": 1, "type": "string" }
+        },
+        "required": ["concepts", "description", "id", "metrics", "title"],
         "type": "object"
       },
       "SourceRef": {
@@ -1702,6 +1815,21 @@
         },
         "tags": ["模型供应商"]
       }
+    },
+    "/api/agent/semantics": {
+      "get": {
+        "operationId": "semanticCatalogGet",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseSemanticCatalog" } }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "读取资料库业务概念与指标定义",
+        "tags": ["海防助手 · 业务定义"]
+      }
     }
   },
   "servers": [{ "url": "/" }],
@@ -1713,6 +1841,10 @@
     {
       "description": "读取已启用的模型选项（登录即可）；配置管理需要 agent:provider:* 权限",
       "name": "模型选项"
+    },
+    {
+      "description": "只读业务概念与指标口径，不提供业务数据或统计执行",
+      "name": "海防助手 · 业务定义"
     },
     {
       "description": "只返回归属用户自己的会话；不返回密钥与执行正文以外的内容",

@@ -53,6 +53,7 @@ export class SseFrameParser {
   private data: string[] = [];
   private id: string | undefined;
   private eventSize = 0;
+  private skipLf = false;
 
   push(text: string): SseFrame[] {
     this.buffer += text;
@@ -64,7 +65,14 @@ export class SseFrameParser {
       const breakAt = this.findLineBreak();
       if (breakAt < 0) break;
       const line = this.buffer.slice(0, breakAt);
+      // 上一块以 CR 结尾时，下一块开头的 LF 仍属于同一个换行。
+      if (this.skipLf && breakAt === 0 && this.buffer[0] === '\n') {
+        this.buffer = this.buffer.slice(1);
+        this.skipLf = false;
+        continue;
+      }
       const width = this.buffer[breakAt] === '\r' && this.buffer[breakAt + 1] === '\n' ? 2 : 1;
+      this.skipLf = this.buffer[breakAt] === '\r' && breakAt === this.buffer.length - 1;
       this.buffer = this.buffer.slice(breakAt + width);
       const frame = this.consumeLine(line);
       if (frame) frames.push(frame);
@@ -132,7 +140,7 @@ export async function* readChatStream(
   stream: ReadableStream<Uint8Array>,
 ): AsyncGenerator<StreamItem> {
   const reader = stream.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder('utf-8', { fatal: true });
   const parser = new SseFrameParser();
   try {
     for (;;) {
@@ -142,11 +150,17 @@ export async function* readChatStream(
         yield parseSseData(frame.data);
       }
     }
-    for (const frame of parser.end()) {
+    for (const frame of [...parser.push(decoder.decode()), ...parser.end()]) {
       yield parseSseData(frame.data);
     }
   } finally {
-    reader.releaseLock();
+    try {
+      await reader.cancel();
+    } catch {
+      // 已断开的网络流可能拒绝 cancel，仍须释放锁。
+    } finally {
+      reader.releaseLock();
+    }
   }
 }
 

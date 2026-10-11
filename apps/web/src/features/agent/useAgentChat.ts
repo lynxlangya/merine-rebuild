@@ -14,7 +14,7 @@ import {
   describeStreamFailure,
   failRun,
   isBusy,
-  messageText,
+  requestMessages,
   pendingQuestion,
   retryTurn,
   openServerSession as openServerSessionState,
@@ -80,6 +80,7 @@ export function useAgentChat(): AgentChatApi {
   const stateRef = useRef(state);
   stateRef.current = state;
   const controllers = useRef(new Map<string, AbortController>());
+  const retryPending = useRef(new Set<string>());
   const client = useQueryClient();
   const historyController = useRef<AbortController | undefined>(undefined);
   const [loadingId, setLoadingId] = useState<string | undefined>(restoreId);
@@ -104,12 +105,20 @@ export function useAgentChat(): AgentChatApi {
       controllers.current.get(sessionId)?.abort();
       const controller = new AbortController();
       controllers.current.set(sessionId, controller);
+      const updateCurrent = (update: (previous: AgentChatState) => AgentChatState) => {
+        setState((previous) =>
+          previous.sessions.find((item) => item.id === sessionId)?.run?.idempotencyKey ===
+          request.idempotencyKey
+            ? update(previous)
+            : previous,
+        );
+      };
       let settled = false;
       let streamStarted = false;
       try {
         const result = await startChat(request, controller.signal);
         if (result.kind === 'snapshot') {
-          setState((previous) => applyRunView(previous, sessionId, result.view));
+          updateCurrent((previous) => applyRunView(previous, sessionId, result.view));
           settled = true;
           return;
         }
@@ -117,7 +126,7 @@ export function useAgentChat(): AgentChatApi {
         const body = result.response.body;
         if (!body) throw new ApiError('响应没有可读取的流', 200, 'EMPTY_STREAM');
         for await (const item of readChatStream(body)) {
-          setState((previous) => applyStreamItem(previous, sessionId, item));
+          updateCurrent((previous) => applyStreamItem(previous, sessionId, item));
           if (
             item.kind === 'event' &&
             (item.event.type === 'MESSAGE_DONE' || item.event.type === 'ERROR')
@@ -129,11 +138,12 @@ export function useAgentChat(): AgentChatApi {
       } catch (error) {
         settled = true;
         const failure = describeStreamFailure(error, streamStarted);
-        setState((previous) => failRun(previous, sessionId, failure));
+        updateCurrent((previous) => failRun(previous, sessionId, failure));
       } finally {
-        controllers.current.delete(sessionId);
+        if (controllers.current.get(sessionId) === controller)
+          controllers.current.delete(sessionId);
         if (!settled) {
-          setState((previous) =>
+          updateCurrent((previous) =>
             failRun(previous, sessionId, {
               code: 'INCOMPLETE',
               message: '连接中断，结果可能不完整',
@@ -271,10 +281,9 @@ export function useAgentChat(): AgentChatApi {
         target = createSession(crypto.randomUUID(), current.sessions.length + 1);
         setState((previous) => addSession(previous, target!));
       }
-      if (isBusy(target) || pendingQuestion(target)) return;
+      if (isBusy(target) || pendingQuestion(target) || controllers.current.has(target.id)) return;
       const sessionId = target.id;
       const chosen = model ?? target.model;
-      const history = requestHistory(target);
       const idempotencyKey = crypto.randomUUID();
       setState((previous) =>
         startTurn(previous, sessionId, {
@@ -292,7 +301,7 @@ export function useAgentChat(): AgentChatApi {
         providerId: chosen?.providerId,
         modelId: chosen?.modelId,
         reasoningEffort: chosen?.reasoningEffort,
-        messages: [...history, { role: 'USER', text }],
+        messages: requestMessages(target, text),
       });
     },
     [runStream],
@@ -304,7 +313,14 @@ export function useAgentChat(): AgentChatApi {
     const run = target?.run;
     if (!target || !run || !isBusy(target)) return;
     void stopChatRun(run.idempotencyKey)
-      .then(() => setState((previous) => stopRequested(previous, target.id)))
+      .then(() =>
+        setState((previous) =>
+          previous.sessions.find((item) => item.id === target.id)?.run?.idempotencyKey ===
+          run.idempotencyKey
+            ? stopRequested(previous, target.id)
+            : previous,
+        ),
+      )
       .catch(() => undefined);
   }, []);
 
@@ -313,11 +329,10 @@ export function useAgentChat(): AgentChatApi {
       const current = stateRef.current;
       const target = activeSession(current);
       const pending = pendingQuestion(target);
-      if (!target || !pending || isBusy(target)) return;
+      if (!target || !pending || isBusy(target) || controllers.current.has(target.id)) return;
       const text = input.skipped
         ? '跳过该问题'
         : (input.label ?? [...input.values, input.freeText ?? ''].filter(Boolean).join('、'));
-      const history = requestHistory(target);
       const idempotencyKey = crypto.randomUUID();
       setState((previous) =>
         startTurn(previous, target.id, {
@@ -334,7 +349,10 @@ export function useAgentChat(): AgentChatApi {
         clientConversationId: target.id,
         conversationId: target.conversationId,
         clientTimeZone: timeZone(),
-        messages: [...history, { role: 'USER', text: text || '继续' }],
+        providerId: target.model?.providerId,
+        modelId: target.model?.modelId,
+        reasoningEffort: target.model?.reasoningEffort,
+        messages: requestMessages(target, text || '继续'),
         answers: [
           {
             questionId: input.questionId,
@@ -352,53 +370,77 @@ export function useAgentChat(): AgentChatApi {
     const current = stateRef.current;
     const target = activeSession(current);
     const run = target?.run;
-    if (!target || !run || isBusy(target) || !run.retryText) return;
-    const history = requestHistory(target);
+    if (
+      !target ||
+      !run ||
+      isBusy(target) ||
+      !run.retryText ||
+      retryPending.current.has(target.id) ||
+      controllers.current.has(target.id)
+    )
+      return;
+    retryPending.current.add(target.id);
+    const stillCurrent = () =>
+      stateRef.current.sessions.find((item) => item.id === target.id)?.run?.idempotencyKey ===
+      run.idempotencyKey;
+    const updateCurrent = (update: (previous: AgentChatState) => AgentChatState) => {
+      setState((previous) =>
+        previous.sessions.find((item) => item.id === target.id)?.run?.idempotencyKey ===
+        run.idempotencyKey
+          ? update(previous)
+          : previous,
+      );
+    };
     void (async () => {
-      if (run.status === 'INTERRUPTED' || run.status === 'CANCEL_REQUESTED') {
-        try {
-          const view = await fetchChatRun(run.idempotencyKey);
-          if (view.status === 'RUNNING') {
-            // 原执行仍在运行：保持可再次核对的待确认状态，避免永久停在生成中。
-            setState((previous) =>
-              failRun(previous, target.id, {
-                code: 'RUNNING_UNCONFIRMED',
-                message: '原执行仍在运行，请稍后再次核对',
-                retryable: true,
-                status: 'INTERRUPTED',
-              }),
-            );
+      try {
+        if (run.status === 'INTERRUPTED' || run.status === 'CANCEL_REQUESTED') {
+          try {
+            const view = await fetchChatRun(run.idempotencyKey);
+            if (view.status === 'RUNNING') {
+              // 原执行仍在运行：保持可再次核对的待确认状态，避免永久停在生成中。
+              updateCurrent((previous) =>
+                failRun(previous, target.id, {
+                  code: 'RUNNING_UNCONFIRMED',
+                  message: '原执行仍在运行，请稍后再次核对',
+                  retryable: true,
+                  status: 'INTERRUPTED',
+                }),
+              );
+              return;
+            }
+            updateCurrent((previous) => applyRunView(previous, target.id, view));
             return;
-          }
-          setState((previous) => applyRunView(previous, target.id, view));
-          return;
-        } catch (error) {
-          if (!(error instanceof ApiError && error.status === 404)) {
-            setState((previous) =>
-              failRun(previous, target.id, {
-                code: error instanceof ApiError ? error.code : 'UNKNOWN',
-                message: errorText(error),
-                retryable: true,
-                status: 'INTERRUPTED',
-              }),
-            );
-            return;
+          } catch (error) {
+            if (!(error instanceof ApiError && error.status === 404)) {
+              updateCurrent((previous) =>
+                failRun(previous, target.id, {
+                  code: error instanceof ApiError ? error.code : 'UNKNOWN',
+                  message: errorText(error),
+                  retryable: true,
+                  status: 'INTERRUPTED',
+                }),
+              );
+              return;
+            }
           }
         }
+        if (!stillCurrent() || controllers.current.has(target.id)) return;
+        const idempotencyKey = crypto.randomUUID();
+        const chosen = target.model;
+        updateCurrent((previous) => retryTurn(previous, target.id, idempotencyKey));
+        void runStream(target.id, {
+          idempotencyKey,
+          clientConversationId: target.id,
+          conversationId: target.conversationId,
+          clientTimeZone: timeZone(),
+          providerId: chosen?.providerId,
+          modelId: chosen?.modelId,
+          reasoningEffort: chosen?.reasoningEffort,
+          messages: requestMessages(target, run.retryText!, true),
+        });
+      } finally {
+        retryPending.current.delete(target.id);
       }
-      const idempotencyKey = crypto.randomUUID();
-      const chosen = target.model;
-      setState((previous) => retryTurn(previous, target.id, idempotencyKey));
-      void runStream(target.id, {
-        idempotencyKey,
-        clientConversationId: target.id,
-        conversationId: target.conversationId,
-        clientTimeZone: timeZone(),
-        providerId: chosen?.providerId,
-        modelId: chosen?.modelId,
-        reasoningEffort: chosen?.reasoningEffort,
-        messages: [...history, { role: 'USER', text: run.retryText! }],
-      });
     })();
   }, [runStream]);
 
@@ -428,13 +470,6 @@ export function useAgentChat(): AgentChatApi {
     retry,
     answer,
   };
-}
-
-function requestHistory(session: AgentSession) {
-  return session.messages
-    .slice(-20)
-    .map((message) => ({ role: message.role, text: messageText(message).slice(0, 8000) }))
-    .filter((turn) => turn.text.length > 0);
 }
 
 function timeZone(): string {

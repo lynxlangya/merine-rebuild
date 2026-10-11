@@ -23,3 +23,9 @@ export type ChatRequest = components['schemas']['ChatRequest'];
 export type ChatRunView = components['schemas']['ChatRunView'];
 export type ChatRuntime = components['schemas']['ChatRuntime'];
 export type MessagePart = components['schemas']['MessagePart'];
+
+/** 资料库的正式业务内容；只读定义，不包含查询结果或执行能力。 */
+export type SemanticCatalog = components['schemas']['SemanticCatalog'];
+export type SemanticTopic = components['schemas']['SemanticTopic'];
+export type BusinessConcept = components['schemas']['BusinessConcept'];
+export type MetricDefinition = components['schemas']['MetricDefinition'];

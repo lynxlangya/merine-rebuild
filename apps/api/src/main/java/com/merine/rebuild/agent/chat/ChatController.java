@@ -90,7 +90,7 @@ final class ChatController {
                            HttpServletRequest http) {
         AuthenticatedAccount account = ChatIdentity.require(authentication);
         guard.require(authentication, PermissionCodes.CHAT_USE, "没有使用海防助手的权限");
-        ChatStart start = service.start(request, account);
+        ChatStart start = service.start(request, account, authentication, http.getSession(false));
         if (start instanceof ChatStart.Stream stream) {
             return ResponseEntity.ok().contentType(MediaType.TEXT_EVENT_STREAM).body(stream.emitter());
         }

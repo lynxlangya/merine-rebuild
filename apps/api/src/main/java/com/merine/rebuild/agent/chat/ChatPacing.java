@@ -1,6 +1,7 @@
 package com.merine.rebuild.agent.chat;
 
 import java.time.Instant;
+import java.time.Duration;
 
 /**
  * 脚本化替身的分步节奏：每一步之间检查停止、断连与执行期限。
@@ -44,6 +45,14 @@ final class ChatPacing {
         if (Instant.now().isAfter(deadline)) {
             throw new Stopped(Reason.TIMEOUT);
         }
+    }
+
+    /** 后续模型请求复用同一轮的剩余期限。 */
+    Duration remaining() {
+        check();
+        Duration remaining = Duration.between(Instant.now(), deadline);
+        if (remaining.isZero() || remaining.isNegative()) throw new Stopped(Reason.TIMEOUT);
+        return remaining;
     }
 
     void sleep(long millis) throws InterruptedException {

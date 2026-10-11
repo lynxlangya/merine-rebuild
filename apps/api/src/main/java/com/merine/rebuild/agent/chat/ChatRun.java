@@ -68,6 +68,7 @@ final class ChatRun {
     private volatile String errorMessage = "";
     private volatile Integer promptTokens;
     private volatile Integer completionTokens;
+    private boolean usageRecorded;
     private volatile boolean cancelRequested;
     private volatile PendingQuestion pendingQuestion;
     /** 活动名额只释放一次：写入线程先落终态时，收尾方也要能释放。 */
@@ -139,12 +140,19 @@ final class ChatRun {
         return completionTokens;
     }
 
-    void recordUsage(Integer prompt, Integer completion) {
-        this.promptTokens = prompt;
-        this.completionTokens = completion;
+    synchronized void recordUsage(Integer prompt, Integer completion) {
+        this.promptTokens = usageRecorded ? sumUsage(promptTokens, prompt) : prompt;
+        this.completionTokens = usageRecorded ? sumUsage(completionTokens, completion) : completion;
+        usageRecorded = true;
     }
 
-    /** 已定稿的纯文本（按部件顺序拼接）：真实模式只会有 TEXT 部件，落库用。 */
+    private static Integer sumUsage(Integer previous, Integer current) {
+        if (previous == null || current == null) return null;
+        long sum = (long) previous + current;
+        return sum > Integer.MAX_VALUE ? null : (int) sum;
+    }
+
+    /** 按部件顺序保存后台查询依据与模型解释；不保存系统指令或供应商内部协议。 */
     synchronized String plainText() {
         StringBuilder text = new StringBuilder();
         for (PartState part : parts) {
@@ -180,7 +188,7 @@ final class ChatRun {
     }
 
     /** 已累积的文本长度：用于输出上限判定，不依赖具体部件顺序。 */
-    int textChars() {
+    synchronized int textChars() {
         return parts.stream()
                 .filter(part -> part.part() instanceof MessagePart.Text)
                 .mapToInt(part -> ((MessagePart.Text) part.part()).text().length())
@@ -309,7 +317,7 @@ final class ChatRun {
         return joined.isBlank() ? freeText : joined + "（" + freeText + "）";
     }
 
-    ChatRunView view() {
+    synchronized ChatRunView view() {
         List<ChatRunView.ChatPartView> visible = parts.stream()
                 .filter(part -> part.part() != null)
                 .map(part -> new ChatRunView.ChatPartView(part.partId(), part.part(), part.status()))
