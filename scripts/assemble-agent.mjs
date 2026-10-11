@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   realpathSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -48,6 +49,22 @@ writeFileSync(
   join(output, 'package.json'),
   JSON.stringify({ name: 'merine-agent-runtime', private: true, type: 'module' }) + '\n',
 );
+// 查询工具只导入 MySQL 方言；生产包保留该构建和许可证，排除其余方言与 source maps。
+const parserStore = join(output, 'node_modules/.pnpm');
+for (const entry of readdirSync(parserStore)) {
+  if (!entry.startsWith('node-sql-parser@')) continue;
+  const parserRoot = join(parserStore, entry, 'node_modules/node-sql-parser');
+  const keep = new Set(['package.json', 'LICENSE', 'README.md', 'types.d.ts', 'build']);
+  for (const file of readdirSync(parserRoot)) {
+    if (!keep.has(file)) rmSync(join(parserRoot, file), { recursive: true, force: true });
+  }
+  for (const file of readdirSync(join(parserRoot, 'build'))) {
+    if (!['mysql.js', 'mysql.d.ts'].includes(file))
+      rmSync(join(parserRoot, 'build', file), { recursive: true, force: true });
+  }
+  // 保持包入口可解析，入口同样只导出 MySQL 方言。
+  writeFileSync(join(parserRoot, 'index.js'), "module.exports = require('./build/mysql.js');\n");
+}
 // 整包可搬迁：所有软链接必须有目标，且目标位于包内。
 function checkLinks(path) {
   for (const entry of readdirSync(path, { withFileTypes: true })) {

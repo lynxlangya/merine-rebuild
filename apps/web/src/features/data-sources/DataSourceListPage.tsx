@@ -9,7 +9,19 @@ import {
 } from '@ant-design/icons';
 import type { DataSourceView } from '@merine/api-contract';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Empty, Input, Pagination, Result, Skeleton, Tag, Tooltip } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Empty,
+  Input,
+  Pagination,
+  Result,
+  Skeleton,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useId, useState } from 'react';
 import { useAuth } from '../auth/public';
 import { DICTIONARY_CODES, DictTag, useDictionary } from '../dictionaries/public';
@@ -296,6 +308,12 @@ export function DataSourceListPage() {
                         )}
                       </div>
                       <div className={styles.cardBody}>
+                        <div className={styles.field}>
+                          <span className={styles.fieldLabel}>数据源 ID</span>
+                          <Typography.Text copyable={{ text: item.id ?? '' }} code>
+                            {item.id}
+                          </Typography.Text>
+                        </div>
                         <div className={styles.field}>
                           <span className={styles.fieldLabel}>连接</span>
                           <code className={styles.endpoint}>

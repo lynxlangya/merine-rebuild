@@ -2,6 +2,8 @@
 
 面向接手规划的评审者：本文件只描述当前**真实状态**与**待决问题**，不重复设计稿愿景。仓库根 [AGENTS.md](../../AGENTS.md) 是协作底线，本文件是快照。
 
+> 后续变更：用户已批准 Agent 服务端直连只读数据源；本文件以下内容保留为重构时快照。“凭据不下发 Agent”和“查询链路待设计”已由[只读查询首版](agent-readonly-query.md)更新。该首版仅做编译检查，未进行查询行为验收。
+
 ## 1. 项目定位
 
 - 学习型全栈项目：海防研判工作台，React + TypeScript + Ant Design / Java 21 + Spring Security + MyBatis / MySQL，模块化单体。

@@ -493,6 +493,7 @@
     { "path": "./packages/lsp/lsp" },
     { "path": "./packages/lsp/lsp-stdio" },
     { "path": "./packages/lsp/tool-lsp" },
+    { "path": "./packages/merine/query" },
     { "path": "./apps/cli" }
   ]
 }
