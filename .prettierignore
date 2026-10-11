@@ -3,6 +3,9 @@
 docs/sys-design/
 docs/archive/
 
+# apps/agent 是 DeepSeek Harness 上游源码检出，保持上游格式，不纳入本项目格式化检查。
+apps/agent/
+
 pnpm-lock.yaml
 packages/api-contract/openapi.json
 packages/api-contract/src/schema.d.ts
