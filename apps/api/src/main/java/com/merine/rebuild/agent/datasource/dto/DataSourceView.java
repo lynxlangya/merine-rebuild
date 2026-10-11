@@ -24,5 +24,6 @@ public record DataSourceView(
         DataSourceCheckOutcome lastCheckStatus,
         String lastCheckMessage,
         Instant updatedAt,
-        int version) {
+        int version,
+        int semanticVersion) {
 }

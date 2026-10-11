@@ -16,7 +16,8 @@ public interface DataSourceMapper {
     String COLUMNS = "id, name, remark, db_type AS dbType, host, port, "
             + "database_name AS databaseName, username, status, last_check_at AS lastCheckAt, "
             + "last_check_status AS lastCheckStatus, last_check_message AS lastCheckMessage, "
-            + "checked_version AS checkedVersion, updated_at AS updatedAt, version";
+            + "checked_version AS checkedVersion, updated_at AS updatedAt, version, "
+            + "semantic_version AS semanticVersion";
 
     @Select("SELECT " + COLUMNS + " FROM ai_data_source "
             + "WHERE name LIKE CONCAT('%', #{search}, '%') ORDER BY updated_at DESC, id LIMIT #{limit} OFFSET #{offset}")
@@ -46,7 +47,8 @@ public interface DataSourceMapper {
     /** 检查路径：只在服务端内部取密文与连接参数，不进入响应。 */
     @Select("""
         SELECT id, name, db_type AS dbType, host, port, database_name AS databaseName,
-               username, password_cipher AS passwordCipher, status, version, updated_at AS updatedAt
+               username, password_cipher AS passwordCipher, status, version, semantic_version AS semanticVersion,
+               updated_at AS updatedAt
           FROM ai_data_source WHERE id = #{id}
         """)
     DataSourceSecretRow findSecret(String id);
@@ -128,4 +130,61 @@ public interface DataSourceMapper {
 
     /** 整体替换前批量插入；foreach 放 XML。 */
     void insertViews(@Param("dataSourceId") String dataSourceId, @Param("views") List<String> views);
+
+    /** 白名单集合实际变化后：清除检查结果、强制停用并递增配置版本；调用方已锁行。 */
+    @Update("""
+        UPDATE ai_data_source
+           SET status = 'DISABLED', last_check_at = NULL, last_check_status = NULL,
+               last_check_message = '', checked_version = NULL,
+               version = version + 1, updated_at = CURRENT_TIMESTAMP(6)
+         WHERE id = #{id} AND version = #{version}
+        """)
+    int bumpAfterViewChange(@Param("id") String id, @Param("version") int version);
+
+    /** 数据目标或身份变化时清空该数据源的全部说明覆盖；范围与说明一起重置。 */
+    @Delete("DELETE FROM ai_data_source_view_meta WHERE data_source_id = #{dataSourceId}")
+    int deleteViewMeta(String dataSourceId);
+
+    @Delete("DELETE FROM ai_data_source_view_column_meta WHERE data_source_id = #{dataSourceId}")
+    int deleteColumnMetaBySource(String dataSourceId);
+
+    @Delete("DELETE FROM ai_data_source_view_column_meta "
+            + "WHERE data_source_id = #{dataSourceId} AND view_name = #{viewName}")
+    int deleteColumnMeta(@Param("dataSourceId") String dataSourceId, @Param("viewName") String viewName);
+
+    @Select("""
+        SELECT data_source_id AS dataSourceId, view_name AS viewName,
+               display_name AS displayName, description
+          FROM ai_data_source_view_meta WHERE data_source_id = #{dataSourceId} ORDER BY view_name
+        """)
+    List<ViewMetaRow> viewMetaOf(String dataSourceId);
+
+    @Select("""
+        SELECT data_source_id AS dataSourceId, view_name AS viewName, column_name AS columnName, description
+          FROM ai_data_source_view_column_meta WHERE data_source_id = #{dataSourceId}
+         ORDER BY view_name, column_name
+        """)
+    List<ViewColumnMetaRow> columnMetaOfSource(String dataSourceId);
+
+    @Insert("""
+        INSERT INTO ai_data_source_view_meta(data_source_id, view_name, display_name, description, updated_at)
+        VALUES(#{dataSourceId}, #{viewName}, #{displayName}, #{description}, CURRENT_TIMESTAMP(6))
+        ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), description = VALUES(description),
+                                updated_at = CURRENT_TIMESTAMP(6)
+        """)
+    int upsertViewMeta(@Param("dataSourceId") String dataSourceId, @Param("viewName") String viewName,
+                       @Param("displayName") String displayName, @Param("description") String description);
+
+    /** 覆盖集合整体替换：先由调用方删除旧行，再批量插入非空覆盖；foreach 放 XML。 */
+    void insertColumnMeta(@Param("dataSourceId") String dataSourceId,
+                          @Param("columns") List<ViewColumnMetaRow> columns);
+
+    /** 语义保存：仅当连接配置版本与语义版本都未变化时递增语义版本。 */
+    @Update("""
+        UPDATE ai_data_source
+           SET semantic_version = semantic_version + 1, updated_at = CURRENT_TIMESTAMP(6)
+         WHERE id = #{id} AND version = #{version} AND semantic_version = #{semanticVersion}
+        """)
+    int bumpSemanticVersion(@Param("id") String id, @Param("version") int version,
+                            @Param("semanticVersion") int semanticVersion);
 }

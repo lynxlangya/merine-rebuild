@@ -13,5 +13,6 @@ public record DataSourceCheckResult(
         DataSourceCheckOutcome outcome,
         String message,
         Instant checkedAt,
-        List<String> detectedViews) {
+        List<String> detectedViews,
+        List<DataSourceViewColumn> viewColumns) {
 }

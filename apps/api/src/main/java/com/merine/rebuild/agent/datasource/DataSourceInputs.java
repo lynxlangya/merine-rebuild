@@ -34,7 +34,8 @@ final class DataSourceInputs {
                 identifier(input.databaseName(), "databaseName", "数据库名"),
                 username(input.username()),
                 password(input.password()),
-                views(input.views(), properties),
+                // 兼容旧客户端：只校验格式，不写白名单（唯一写入口在查询范围用例）。
+                normalizeViews(input.views(), properties),
                 input.version());
     }
 
@@ -50,7 +51,7 @@ final class DataSourceInputs {
                 identifier(input.databaseName(), "databaseName", "数据库名"),
                 username(input.username()),
                 password(input.password()),
-                views(input.views(), properties));
+                normalizeViews(input.views(), properties));
     }
 
     static String requirePassword(String password) {
@@ -118,7 +119,8 @@ final class DataSourceInputs {
         return raw;
     }
 
-    private static List<String> views(List<String> raw, DataSourceProperties properties) {
+    /** 视图白名单规范化：去重、逐项校验；范围变更的唯一入口在查询范围用例。 */
+    static List<String> normalizeViews(List<String> raw, DataSourceProperties properties) {
         if (raw == null) return List.of();
         if (raw.size() > properties.maxViews()) {
             throw invalid("views", "勾选视图不能超过 " + properties.maxViews() + " 个");

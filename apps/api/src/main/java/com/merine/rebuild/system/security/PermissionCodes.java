@@ -107,6 +107,9 @@ public final class PermissionCodes {
     public static final String DATASOURCE_UPDATE = "agent:datasource:update";
     public static final String DATASOURCE_TOGGLE_STATUS = "agent:datasource:toggle-status";
     public static final String DATASOURCE_TEST = "agent:datasource:test";
+    /** 查询范围：允许查询的视图白名单与视图/字段说明；探测候选与新增字段说明另需数据源测试权限。 */
+    public static final String SCOPE_READ = "agent:scope:read";
+    public static final String SCOPE_UPDATE = "agent:scope:update";
     /** 使用海防助手发起对话；先只授予系统管理员角色，真实调用会产生费用。 */
     public static final String CHAT_USE = "agent:chat:use";
 
@@ -118,6 +121,7 @@ public final class PermissionCodes {
         return List.of(
                 PROVIDER_READ, PROVIDER_CREATE, PROVIDER_UPDATE, PROVIDER_DELETE, CHAT_USE,
                 DATASOURCE_READ, DATASOURCE_CREATE, DATASOURCE_UPDATE, DATASOURCE_TOGGLE_STATUS, DATASOURCE_TEST,
+                SCOPE_READ, SCOPE_UPDATE,
                 USER_READ, USER_CREATE, USER_UPDATE, USER_TOGGLE_STATUS, USER_RESET_PASSWORD,
                 ROLE_READ, ROLE_CREATE, ROLE_UPDATE, ROLE_TOGGLE_STATUS, ROLE_DELETE,
                 MENU_READ, MENU_CREATE, MENU_UPDATE, MENU_DELETE, MENU_RESTORE,

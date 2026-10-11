@@ -26,6 +26,12 @@ public class PermissionGuard {
         }
     }
 
+    /** 条件权限判断：与 require 用同一份登录码，供“按需时仍须某权限”的复合操作使用。 */
+    public boolean has(Authentication authentication, String permissionCode) {
+        return authentication != null && authentication.isAuthenticated()
+                && hasAuthority(authentication, permissionCode);
+    }
+
     /**
      * 选项类查询可能同时服务两个用例（例如单位选项既给单位管理也给用户表单），
      * 任一权限码命中即放行；拒绝文案仍由调用方写清当前操作。

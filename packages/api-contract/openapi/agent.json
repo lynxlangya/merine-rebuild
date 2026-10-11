@@ -229,6 +229,21 @@
         "required": ["code", "data", "message", "requestId"],
         "type": "object"
       },
+      "ApiResponseQueryScopeDetail": {
+        "properties": {
+          "code": { "type": "string" },
+          "data": { "$ref": "#/components/schemas/QueryScopeDetail" },
+          "fieldErrors": {
+            "description": "字段级校验错误；无字段错误时为 null",
+            "items": { "$ref": "#/components/schemas/FieldError" },
+            "type": "array"
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        },
+        "required": ["code", "data", "message", "requestId"],
+        "type": "object"
+      },
       "ApiResponseSemanticCatalog": {
         "properties": {
           "code": { "type": "string" },
@@ -670,6 +685,10 @@
               "VIEW_DENIED"
             ],
             "type": "string"
+          },
+          "viewColumns": {
+            "items": { "$ref": "#/components/schemas/DataSourceViewColumn" },
+            "type": "array"
           }
         },
         "type": "object"
@@ -703,11 +722,21 @@
           "name": { "type": "string" },
           "port": { "format": "int32", "type": "integer" },
           "remark": { "type": "string" },
+          "semanticVersion": { "format": "int32", "type": "integer" },
           "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" },
           "updatedAt": { "format": "date-time", "type": "string" },
           "username": { "type": "string" },
           "version": { "format": "int32", "type": "integer" },
           "views": { "items": { "type": "string" }, "type": "array" }
+        },
+        "type": "object"
+      },
+      "DataSourceViewColumn": {
+        "properties": {
+          "comment": { "type": "string" },
+          "name": { "type": "string" },
+          "nullable": { "type": "boolean" },
+          "type": { "type": "string" }
         },
         "type": "object"
       },
@@ -1109,6 +1138,21 @@
         "required": ["modelId", "reasoningEfforts"],
         "type": "object"
       },
+      "QueryScopeColumn": {
+        "properties": {
+          "description": { "maxLength": 300, "minLength": 0, "type": "string" },
+          "name": { "maxLength": 64, "minLength": 0, "type": "string" }
+        },
+        "required": ["name"],
+        "type": "object"
+      },
+      "QueryScopeDetail": {
+        "properties": {
+          "meta": { "items": { "$ref": "#/components/schemas/ScopeViewMeta" }, "type": "array" },
+          "source": { "$ref": "#/components/schemas/DataSourceView" }
+        },
+        "type": "object"
+      },
       "Question": {
         "allOf": [
           {
@@ -1158,6 +1202,19 @@
         "required": ["title"],
         "type": "object"
       },
+      "ReplaceQueryScopeViews": {
+        "properties": {
+          "version": { "format": "int32", "minimum": 0, "type": "integer" },
+          "views": {
+            "items": { "maxLength": 64, "minLength": 0, "type": "string" },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": ["version", "views"],
+        "type": "object"
+      },
       "SaveDataSource": {
         "properties": {
           "databaseName": { "maxLength": 64, "minLength": 0, "type": "string" },
@@ -1176,7 +1233,9 @@
           "username": { "maxLength": 64, "minLength": 0, "type": "string" },
           "version": { "format": "int32", "minimum": 0, "type": "integer" },
           "views": {
-            "items": { "maxLength": 64, "minLength": 0, "type": "string" },
+            "deprecated": true,
+            "description": "已忽略：连接保存不修改允许查询的视图，请使用查询范围页",
+            "items": { "deprecated": true, "maxLength": 64, "minLength": 0, "type": "string" },
             "maxItems": 50,
             "minItems": 0,
             "type": "array"
@@ -1246,6 +1305,39 @@
           "status": { "enum": ["ENABLED", "DISABLED"], "type": "string" }
         },
         "required": ["modelId", "status"],
+        "type": "object"
+      },
+      "SaveQueryScopeMetadata": {
+        "properties": {
+          "columns": {
+            "items": { "$ref": "#/components/schemas/QueryScopeColumn" },
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array"
+          },
+          "description": { "maxLength": 2000, "minLength": 0, "type": "string" },
+          "displayName": { "maxLength": 80, "minLength": 0, "type": "string" },
+          "semanticVersion": { "format": "int32", "minimum": 0, "type": "integer" },
+          "version": { "format": "int32", "minimum": 0, "type": "integer" },
+          "view": { "maxLength": 64, "minLength": 0, "type": "string" }
+        },
+        "required": ["semanticVersion", "version", "view"],
+        "type": "object"
+      },
+      "ScopeColumnMeta": {
+        "properties": { "description": { "type": "string" }, "name": { "type": "string" } },
+        "type": "object"
+      },
+      "ScopeViewMeta": {
+        "properties": {
+          "columns": {
+            "items": { "$ref": "#/components/schemas/ScopeColumnMeta" },
+            "type": "array"
+          },
+          "description": { "type": "string" },
+          "displayName": { "type": "string" },
+          "view": { "type": "string" }
+        },
         "type": "object"
       },
       "SemanticCatalog": {
@@ -2123,6 +2215,140 @@
         "tags": ["模型供应商"]
       }
     },
+    "/api/agent/query-scopes": {
+      "get": {
+        "operationId": "queryScopeList",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": { "default": "", "maxLength": 80, "minLength": 0, "type": "string" }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": { "default": 1, "format": "int32", "minimum": 1, "type": "integer" }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "format": "int32",
+              "maximum": 60,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponsePageResultDataSourceView" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["查询范围管理"]
+      }
+    },
+    "/api/agent/query-scopes/{id}": {
+      "get": {
+        "operationId": "queryScopeDetail",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseQueryScopeDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["查询范围管理"]
+      }
+    },
+    "/api/agent/query-scopes/{id}/inspect": {
+      "post": {
+        "operationId": "queryScopeInspect",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } },
+          {
+            "in": "query",
+            "name": "view",
+            "required": false,
+            "schema": { "maxLength": 64, "minLength": 0, "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseDataSourceCheckResult" }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["查询范围管理"]
+      }
+    },
+    "/api/agent/query-scopes/{id}/metadata": {
+      "put": {
+        "operationId": "queryScopeSaveMetadata",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SaveQueryScopeMetadata" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseQueryScopeDetail" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["查询范围管理"]
+      }
+    },
+    "/api/agent/query-scopes/{id}/views": {
+      "put": {
+        "operationId": "queryScopeReplaceViews",
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReplaceQueryScopeViews" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseDataSourceView" } }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": ["查询范围管理"]
+      }
+    },
     "/api/agent/semantics": {
       "get": {
         "operationId": "semanticCatalogGet",
@@ -2144,6 +2370,10 @@
     {
       "description": "Agent 受控查询的数据源配置；密码只写不读，检查只读授权",
       "name": "数据源管理"
+    },
+    {
+      "description": "维护允许查询的视图范围与视图/字段说明；列表不连接目标库",
+      "name": "查询范围管理"
     },
     {
       "description": "配置管理；密钥只写不读，仅「获取模型列表」会带密钥出站",

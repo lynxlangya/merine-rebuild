@@ -5,8 +5,13 @@ import com.merine.rebuild.agent.datasource.dto.DataSourceCheckOutcome;
 import com.merine.rebuild.agent.datasource.dto.DataSourceRequests.Save;
 import com.merine.rebuild.agent.datasource.dto.DataSourceRequests.State;
 import com.merine.rebuild.agent.datasource.dto.DataSourceView;
+import com.merine.rebuild.agent.datasource.dto.QueryScopeDetail;
+import com.merine.rebuild.agent.datasource.dto.QueryScopeRequests.SaveMetadata;
+import com.merine.rebuild.agent.datasource.dto.ScopeViewMeta;
 import com.merine.rebuild.agent.datasource.persistence.DataSourceMapper;
 import com.merine.rebuild.agent.datasource.persistence.DataSourceRow;
+import com.merine.rebuild.agent.datasource.persistence.ViewColumnMetaRow;
+import com.merine.rebuild.agent.datasource.persistence.ViewMetaRow;
 import com.merine.rebuild.system.audit.AuditEvent;
 import com.merine.rebuild.system.audit.AuditTrail;
 import java.time.Instant;
@@ -26,6 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class DataSourceStore {
     private static final Logger log = LoggerFactory.getLogger(DataSourceStore.class);
+
+    /** 服务间桥读取的一致快照：连接配置、白名单、说明与两类版本要么都有效，要么拒绝。 */
+    public record DataSourceScopeSnapshot(DataSourceRow source, List<String> views,
+                                          List<ScopeViewMeta> meta) {
+    }
 
     private final DataSourceMapper mapper;
     private final AgentSecretCipher cipher;
@@ -52,9 +62,8 @@ public class DataSourceStore {
         } catch (DuplicateKeyException error) {
             throw DataSourceErrors.nameExists();
         }
-        replaceViews(id, input.views());
         log.info("DataSource created: id={}", id);
-        DataSourceView created = DataSourceViews.of(mapper.find(id), input.views());
+        DataSourceView created = DataSourceViews.of(mapper.find(id), List.of());
         audit.recordCurrent(AuditEvent.succeeded("agent", "datasource:create", "DATASOURCE", id,
                 created.name(), "新建数据源「%s」（%s:%d/%s，默认停用）".formatted(
                         created.name(), created.host(), created.port(), created.databaseName())));
@@ -62,8 +71,10 @@ public class DataSourceStore {
     }
 
     /**
-     * 编辑：连接参数、密码或视图范围变化时清除旧检查结果并强制停用；
-     * 只改名称/备注时保留状态与检查结论。锁行 + 版本条件保证并发编辑只有一个生效。
+     * 编辑：数据目标/身份或密码变化时清除旧检查结果并强制停用；
+     * 数据目标或身份变化还会清空允许视图与说明（新库同名视图可能不是同一个对象），
+     * 仅轮换密码保留范围与说明，只改名称/备注保留状态与检查结论。
+     * 锁行 + 版本条件保证并发编辑只有一个生效。
      */
     @Transactional
     public DataSourceView update(String id, Save input) {
@@ -71,22 +82,29 @@ public class DataSourceStore {
         if (input.version() == null || input.version() != current.version()) {
             throw DataSourceErrors.conflict();
         }
-        List<String> oldViews = DataSourceViews.names(mapper.viewsOf(id));
-        boolean changed = connectionChanged(current, input, oldViews);
+        boolean targetChanged = targetChanged(current, input);
+        boolean connectionChanged = targetChanged || input.password() != null;
         String encrypted = input.password() == null ? null
                 : cipher.encrypt(secretAad(id), input.password());
-        int updated = changed
+        int updated = connectionChanged
                 ? mapper.replaceConnection(id, input, encrypted, current.version())
                 : mapper.updateMetadata(id, input, current.version());
         if (updated != 1) throw DataSourceErrors.conflict();
-        if (changed) replaceViews(id, input.views());
-        log.info("DataSource updated: id={} connectionChanged={}", id, changed);
+        if (targetChanged) {
+            mapper.deleteViews(id);
+            mapper.deleteViewMeta(id);
+            mapper.deleteColumnMetaBySource(id);
+        }
+        log.info("DataSource updated: id={} targetChanged={} connectionChanged={}", id, targetChanged,
+                connectionChanged);
         DataSourceView view = DataSourceViews.of(mapper.find(id),
                 DataSourceViews.names(mapper.viewsOf(id)));
         audit.recordCurrent(AuditEvent.succeeded("agent", "datasource:update", "DATASOURCE", id,
-                view.name(), "修改数据源「%s」：%s".formatted(view.name(), changed
-                        ? "连接参数或视图范围变化，旧检查结果已清除并停用"
-                        : "仅修改名称或备注")));
+                view.name(), "修改数据源「%s」：%s".formatted(view.name(), targetChanged
+                        ? "数据目标或身份变化，检查结果、允许视图与说明已清除并停用"
+                        : connectionChanged
+                                ? "连接参数变化，旧检查结果已清除并停用；范围与说明保留"
+                                : "仅修改名称或备注")));
         return view;
     }
 
@@ -141,19 +159,117 @@ public class DataSourceStore {
         return current;
     }
 
-    /** 视图白名单整体替换：删除旧集合后按当前提交重建，操作在上层事务与行锁内完成。 */
-    private void replaceViews(String dataSourceId, List<String> views) {
-        mapper.deleteViews(dataSourceId);
-        if (!views.isEmpty()) mapper.insertViews(dataSourceId, views);
+    /**
+     * 服务间桥的一致快照：网络授权复检在事务外完成后调用，这里只锁父行做短事务读取；
+     * 连接版本或语义版本在检查期间变化即报冲突，调用方重新描述，不返回新旧混合的目录。
+     */
+    @Transactional
+    public DataSourceScopeSnapshot snapshot(String id, int expectedVersion, int expectedSemanticVersion) {
+        DataSourceRow row = lockOrThrow(id);
+        if (row.version() != expectedVersion || row.semanticVersion() != expectedSemanticVersion
+                || row.status() != State.ENABLED) {
+            throw DataSourceErrors.conflict();
+        }
+        List<String> views = DataSourceViews.names(mapper.viewsOf(id));
+        if (views.isEmpty()) throw DataSourceErrors.noViews();
+        // 只下发当前白名单内的说明；已移出范围的旧覆盖保留在库内但不进入模型目录。
+        List<ScopeViewMeta> meta = DataSourceViews.scopeMeta(mapper.viewMetaOf(id),
+                        mapper.columnMetaOfSource(id)).stream()
+                .filter(item -> views.contains(item.view()))
+                .toList();
+        return new DataSourceScopeSnapshot(row, views, meta);
     }
 
-    private static boolean connectionChanged(DataSourceRow current, Save input, List<String> oldViews) {
+    /** 数据目标或数据库身份是否变化；密码轮换不算。 */
+    private static boolean targetChanged(DataSourceRow current, Save input) {
         return current.dbType() != input.dbType()
                 || !current.host().equals(input.host())
                 || current.port() != input.port()
                 || !current.databaseName().equals(input.databaseName())
-                || !current.username().equals(input.username())
-                || input.password() != null
-                || !new HashSet<>(oldViews).equals(new HashSet<>(input.views()));
+                || !current.username().equals(input.username());
+    }
+
+    /** 视图白名单整体替换：唯一写入口；集合实际变化时清除检查结果并强制停用。 */
+    @Transactional
+    public DataSourceView replaceViews(String id, int version, List<String> views) {
+        DataSourceRow current = lockOrThrow(id);
+        if (current.version() != version) throw DataSourceErrors.conflict();
+        List<String> oldViews = DataSourceViews.names(mapper.viewsOf(id));
+        if (new HashSet<>(oldViews).equals(new HashSet<>(views))) {
+            return DataSourceViews.of(current, oldViews);
+        }
+        mapper.deleteViews(id);
+        if (!views.isEmpty()) mapper.insertViews(id, views);
+        if (mapper.bumpAfterViewChange(id, version) != 1) throw DataSourceErrors.conflict();
+        log.info("DataSource views replaced: id={} views={}", id, views.size());
+        DataSourceView updated = DataSourceViews.of(mapper.find(id),
+                DataSourceViews.names(mapper.viewsOf(id)));
+        audit.recordCurrent(AuditEvent.succeeded("agent", "scope:update-views", "DATASOURCE", id,
+                updated.name(), "更新数据源「%s」允许查询的视图：%d 个；旧检查结果已清除并停用"
+                        .formatted(updated.name(), views.size())));
+        return updated;
+    }
+
+    /**
+     * 指定视图的说明覆盖段整体替换：连接配置版本与语义版本都要未变化，
+     * 递增语义版本但不使检查失效；内容未变化时不递增、不写成功审计。
+     */
+    @Transactional
+    public QueryScopeDetail saveViewMetadata(String id, SaveMetadata input, List<ViewColumnMetaRow> columns) {
+        DataSourceRow current = lockOrThrow(id);
+        if (current.version() != input.version() || current.semanticVersion() != input.semanticVersion()) {
+            throw DataSourceErrors.conflict();
+        }
+        String displayName = input.displayName() == null ? "" : input.displayName().trim();
+        String description = input.description() == null ? "" : input.description().trim();
+        List<ViewMetaRow> existingViews = mapper.viewMetaOf(id);
+        List<ViewColumnMetaRow> existingColumns = mapper.columnMetaOfSource(id).stream()
+                .filter(row -> row.viewName().equals(input.view()))
+                .toList();
+        ViewMetaRow existing = existingViews.stream()
+                .filter(row -> row.viewName().equals(input.view()))
+                .findFirst()
+                .orElse(null);
+        boolean unchanged = existing != null
+                && existing.displayName().equals(displayName)
+                && existing.description().equals(description)
+                && sameColumns(existingColumns, columns);
+        if (unchanged) {
+            return QueryScopeDetail.of(DataSourceViews.of(mapper.find(id),
+                    DataSourceViews.names(mapper.viewsOf(id))),
+                    DataSourceViews.scopeMeta(existingViews, mapper.columnMetaOfSource(id)));
+        }
+        mapper.upsertViewMeta(id, input.view(), displayName, description);
+        mapper.deleteColumnMeta(id, input.view());
+        if (!columns.isEmpty()) mapper.insertColumnMeta(id, columns);
+        if (mapper.bumpSemanticVersion(id, input.version(), input.semanticVersion()) != 1) {
+            throw DataSourceErrors.conflict();
+        }
+        log.info("DataSource view metadata saved: id={} view={} columns={}", id, input.view(),
+                columns.size());
+        DataSourceRow saved = mapper.find(id);
+        audit.recordCurrent(AuditEvent.succeeded("agent", "scope:update-metadata", "DATASOURCE", id,
+                saved.name(), "更新数据源「%s」视图「%s」的说明：显示名%s、用途说明%s、字段说明 %d 个"
+                        .formatted(saved.name(), input.view(), displayName.isEmpty() ? "已清空" : "已填写",
+                                description.isEmpty() ? "已清空" : "已填写", columns.size())));
+        return QueryScopeDetail.of(DataSourceViews.of(saved, DataSourceViews.names(mapper.viewsOf(id))),
+                DataSourceViews.scopeMeta(mapper.viewMetaOf(id), mapper.columnMetaOfSource(id)));
+    }
+
+    private static boolean sameColumns(List<ViewColumnMetaRow> existing, List<ViewColumnMetaRow> submitted) {
+        if (existing.size() != submitted.size()) return false;
+        List<ViewColumnMetaRow> sortedExisting = existing.stream()
+                .sorted((left, right) -> left.columnName().compareTo(right.columnName()))
+                .toList();
+        List<ViewColumnMetaRow> sortedSubmitted = submitted.stream()
+                .sorted((left, right) -> left.columnName().compareTo(right.columnName()))
+                .toList();
+        for (int index = 0; index < sortedExisting.size(); index += 1) {
+            if (!sortedExisting.get(index).columnName().equals(sortedSubmitted.get(index).columnName())
+                    || !sortedExisting.get(index).description().equals(sortedSubmitted.get(index).description())) {
+                return false;
+            }
+        }
+        return true;
     }
 }

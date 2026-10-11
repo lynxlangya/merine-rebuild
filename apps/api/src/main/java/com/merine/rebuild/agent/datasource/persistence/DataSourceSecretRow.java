@@ -19,5 +19,6 @@ public record DataSourceSecretRow(
         String passwordCipher,
         State status,
         int version,
+        int semanticVersion,
         Instant updatedAt) {
 }

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.ObjectMapper;
 
 /** 单操作员服务间桥：固定一个数据源，不接受模型指定 ID，不执行 SQL。默认关闭。 */
 @Hidden
@@ -17,15 +18,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AgentDataSourceBridge {
     public static final String PATH = "/internal/agent/data-source";
     private final AgentConnectionGrantService service;
+    private final ObjectMapper json;
     private final String token;
     private final String sourceId;
     private final String scope;
 
-    public AgentDataSourceBridge(AgentConnectionGrantService service,
+    public AgentDataSourceBridge(AgentConnectionGrantService service, ObjectMapper json,
                                  @Value("${MERINE_AGENT_BRIDGE_TOKEN:}") String token,
                                  @Value("${MERINE_AGENT_DATA_SOURCE_ID:}") String sourceId,
                                  @Value("${MERINE_AGENT_QUERY_SCOPE:单操作员固定视图范围；未绑定平台用户单位}") String scope) {
         this.service = service;
+        this.json = json;
         this.token = token;
         this.sourceId = sourceId;
         this.scope = scope;
@@ -40,7 +43,18 @@ public class AgentDataSourceBridge {
                         authorization.getBytes(StandardCharsets.UTF_8))) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "AGENT_BRIDGE_DENIED", "服务凭据无效或连接桥未启用");
         }
+        var grant = service.grant(sourceId, scope);
+        // 下发前按实际序列化结果检查总量：超限明确失败，不静默裁掉说明或视图。
+        byte[] payload;
+        try {
+            payload = json.writeValueAsBytes(grant);
+        } catch (RuntimeException error) {
+            throw DataSourceErrors.scopeResponseTooLarge();
+        }
+        if (payload.length > QueryScopeService.MAX_BRIDGE_BYTES) {
+            throw DataSourceErrors.scopeResponseTooLarge();
+        }
         return ResponseEntity.ok().header("Cache-Control", "no-store").header("Pragma", "no-cache")
-                .body(service.grant(sourceId, scope));
+                .body(grant);
     }
 }

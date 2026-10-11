@@ -4,6 +4,7 @@ import com.merine.rebuild.agent.datasource.DataSourceAuthorizationEvaluator.Deci
 import com.merine.rebuild.agent.datasource.DataSourceAuthorizationEvaluator.Privilege;
 import com.merine.rebuild.agent.datasource.dto.DataSourceCheckOutcome;
 import com.merine.rebuild.agent.datasource.dto.DataSourceCheckResult;
+import com.merine.rebuild.agent.datasource.dto.DataSourceViewColumn;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -45,6 +46,12 @@ class DataSourceReadOnlyInspector {
 
     DataSourceCheckResult inspect(DataSourceTargetGuard.ResolvedTarget target, String database,
                                   String username, String password, List<String> selectedViews) {
+        return inspect(target, database, username, password, selectedViews, null);
+    }
+
+    DataSourceCheckResult inspect(DataSourceTargetGuard.ResolvedTarget target, String database,
+                                  String username, String password, List<String> selectedViews,
+                                  String describeView) {
         try (Connection connection = DataSourceConnections.open(
                 properties, target, database, username, password)) {
             // 辅助信号：即使驱动据此拒绝写语句，也不把它当安全边界。
@@ -85,8 +92,26 @@ class DataSourceReadOnlyInspector {
             }
             Decision decision = DataSourceAuthorizationEvaluator.evaluate(
                     metadataComplete, roles, privileges, database, detectedViews, selectedViews);
+            if (describeView != null) {
+                if (!detectedViews.contains(describeView)) {
+                    return new DataSourceCheckResult(DataSourceCheckOutcome.VIEW_DENIED,
+                            "视图「" + describeView + "」不存在或当前账号没有 SELECT 授权；勾选不会修改数据库授权",
+                            Instant.now(), detectedViews, List.of());
+                }
+                if (decision.outcome() == DataSourceCheckOutcome.PASSED) {
+                    try {
+                        return new DataSourceCheckResult(decision.outcome(), decision.message(),
+                                Instant.now(), detectedViews, describeColumns(connection, database, describeView));
+                    } catch (SQLException error) {
+                        log.debug("DataSource column metadata unavailable: sqlState={} errorCode={}",
+                                error.getSQLState(), error.getErrorCode());
+                        return result(DataSourceCheckOutcome.AUTHORIZATION_UNCONFIRMED,
+                                "无法读取视图字段元数据，请稍后重试", detectedViews);
+                    }
+                }
+            }
             return new DataSourceCheckResult(decision.outcome(), decision.message(), Instant.now(),
-                    detectedViews);
+                    detectedViews, List.of());
         } catch (SQLException error) {
             log.debug("DataSource check failed: sqlState={} errorCode={}",
                     error.getSQLState(), error.getErrorCode());
@@ -233,6 +258,19 @@ class DataSourceReadOnlyInspector {
                 .toList();
     }
 
+    /** 字段元数据只读 information_schema；最多 100 列，与 Agent 的可查询列上限一致。 */
+    private List<DataSourceViewColumn> describeColumns(Connection connection, String database, String view)
+            throws SQLException {
+        return query(connection, """
+                SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_COMMENT
+                  FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                 ORDER BY ORDINAL_POSITION LIMIT 100
+                """, database, view, row -> new DataSourceViewColumn(row.getString(1), row.getString(2),
+                "YES".equalsIgnoreCase(row.getString(3)),
+                row.getString(4) == null ? "" : row.getString(4)));
+    }
+
     private String singleString(Connection connection, String sql) throws SQLException {
         List<String> values = query(connection, sql, row -> row.getString(1));
         return values.isEmpty() ? null : values.getFirst();
@@ -262,13 +300,27 @@ class DataSourceReadOnlyInspector {
         }
     }
 
+    private <T> List<T> query(Connection connection, String sql, String first, String second,
+                              RowMapper<T> mapper) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setQueryTimeout(queryTimeoutSeconds());
+            statement.setString(1, first);
+            statement.setString(2, second);
+            try (ResultSet result = statement.executeQuery()) {
+                List<T> rows = new ArrayList<>();
+                while (result.next()) rows.add(mapper.map(result));
+                return rows;
+            }
+        }
+    }
+
     private int queryTimeoutSeconds() {
         return Math.max(1, properties.socketTimeoutMs() / 1000);
     }
 
     private static DataSourceCheckResult result(DataSourceCheckOutcome outcome, String message,
                                                 List<String> detectedViews) {
-        return new DataSourceCheckResult(outcome, message, Instant.now(), detectedViews);
+        return new DataSourceCheckResult(outcome, message, Instant.now(), detectedViews, List.of());
     }
 
     /** 只按错误类型给固定文案，不回显驱动异常原文：其中可能带连接串或输入片段。 */

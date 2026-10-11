@@ -18,4 +18,12 @@
     </foreach>
   </insert>
 
+  <insert id="insertColumnMeta">
+    INSERT INTO ai_data_source_view_column_meta(data_source_id, view_name, column_name, description)
+    VALUES
+    <foreach item="item" collection="columns" separator=",">
+      (#{item.dataSourceId}, #{item.viewName}, #{item.columnName}, #{item.description})
+    </foreach>
+  </insert>
+
 </mapper>

@@ -24,6 +24,15 @@ export type SaveDataSource = components['schemas']['SaveDataSource'];
 export type CheckDataSourceDraft = components['schemas']['CheckDataSourceDraft'];
 export type DataSourceCheckResult = components['schemas']['DataSourceCheckResult'];
 export type DataSourceStatusChange = components['schemas']['DataSourceStatusChange'];
+export type DataSourceViewColumn = components['schemas']['DataSourceViewColumn'];
+
+/** 查询范围管理：范围与说明分开保存，保存范围会停用数据源等待复检。 */
+export type QueryScopeDetail = components['schemas']['QueryScopeDetail'];
+export type ScopeViewMeta = components['schemas']['ScopeViewMeta'];
+export type ScopeColumnMeta = components['schemas']['ScopeColumnMeta'];
+export type QueryScopeColumn = components['schemas']['QueryScopeColumn'];
+export type ReplaceQueryScopeViews = components['schemas']['ReplaceQueryScopeViews'];
+export type SaveQueryScopeMetadata = components['schemas']['SaveQueryScopeMetadata'];
 
 /** 本地演示对话的契约类型：SSE data 载荷联合、请求、执行快照与消息部件联合。 */
 export type ChatEvent = components['schemas']['ChatStreamEvent'];

@@ -24,5 +24,6 @@ public record DataSourceRow(
         String lastCheckMessage,
         Integer checkedVersion,
         Instant updatedAt,
-        int version) {
+        int version,
+        int semanticVersion) {
 }

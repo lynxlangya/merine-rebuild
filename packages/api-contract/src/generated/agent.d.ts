@@ -366,6 +366,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/agent/query-scopes': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['queryScopeList'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/query-scopes/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations['queryScopeDetail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/query-scopes/{id}/inspect': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations['queryScopeInspect'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/query-scopes/{id}/metadata': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['queryScopeSaveMetadata'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/agent/query-scopes/{id}/views': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put: operations['queryScopeReplaceViews'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/agent/semantics': {
     parameters: {
       query?: never;
@@ -502,6 +582,14 @@ export interface components {
     ApiResponseProviderModelCatalog: {
       code: string;
       data: components['schemas']['ProviderModelCatalog'];
+      /** @description 字段级校验错误；无字段错误时为 null */
+      fieldErrors?: components['schemas']['FieldError'][];
+      message: string;
+      requestId: string;
+    };
+    ApiResponseQueryScopeDetail: {
+      code: string;
+      data: components['schemas']['QueryScopeDetail'];
       /** @description 字段级校验错误；无字段错误时为 null */
       fieldErrors?: components['schemas']['FieldError'][];
       message: string;
@@ -790,6 +878,7 @@ export interface components {
         | 'WRITE_PRIVILEGE'
         | 'AUTHORIZATION_UNCONFIRMED'
         | 'VIEW_DENIED';
+      viewColumns?: components['schemas']['DataSourceViewColumn'][];
     };
     DataSourceStatusChange: {
       /** @enum {string} */
@@ -817,6 +906,8 @@ export interface components {
       /** Format: int32 */
       port?: number;
       remark?: string;
+      /** Format: int32 */
+      semanticVersion?: number;
       /** @enum {string} */
       status?: 'ENABLED' | 'DISABLED';
       /** Format: date-time */
@@ -825,6 +916,12 @@ export interface components {
       /** Format: int32 */
       version?: number;
       views?: string[];
+    };
+    DataSourceViewColumn: {
+      comment?: string;
+      name?: string;
+      nullable?: boolean;
+      type?: string;
     };
     DiscoverProviderModels: {
       apiKey?: string;
@@ -1062,6 +1159,14 @@ export interface components {
       modelId: string;
       reasoningEfforts: ('NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'XHIGH' | 'MAX')[];
     };
+    QueryScopeColumn: {
+      description?: string;
+      name: string;
+    };
+    QueryScopeDetail: {
+      meta?: components['schemas']['ScopeViewMeta'][];
+      source?: components['schemas']['DataSourceView'];
+    };
     Question: {
       allowOther?: boolean;
       /** Format: int32 */
@@ -1100,6 +1205,11 @@ export interface components {
       /** Format: int32 */
       version?: number;
     };
+    ReplaceQueryScopeViews: {
+      /** Format: int32 */
+      version: number;
+      views: string[];
+    };
     SaveDataSource: {
       databaseName: string;
       /** @enum {string} */
@@ -1114,6 +1224,10 @@ export interface components {
       username: string;
       /** Format: int32 */
       version?: number;
+      /**
+       * @deprecated
+       * @description 已忽略：连接保存不修改允许查询的视图，请使用查询范围页
+       */
       views?: string[];
     };
     SaveModelProvider: {
@@ -1147,6 +1261,26 @@ export interface components {
       remark?: string;
       /** @enum {string} */
       status: 'ENABLED' | 'DISABLED';
+    };
+    SaveQueryScopeMetadata: {
+      columns?: components['schemas']['QueryScopeColumn'][];
+      description?: string;
+      displayName?: string;
+      /** Format: int32 */
+      semanticVersion: number;
+      /** Format: int32 */
+      version: number;
+      view: string;
+    };
+    ScopeColumnMeta: {
+      description?: string;
+      name?: string;
+    };
+    ScopeViewMeta: {
+      columns?: components['schemas']['ScopeColumnMeta'][];
+      description?: string;
+      displayName?: string;
+      view?: string;
     };
     SemanticCatalog: {
       /** Format: int32 */
@@ -1905,6 +2039,128 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseVoid'];
+        };
+      };
+    };
+  };
+  queryScopeList: {
+    parameters: {
+      query?: {
+        search?: string;
+        page?: number;
+        pageSize?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponsePageResultDataSourceView'];
+        };
+      };
+    };
+  };
+  queryScopeDetail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseQueryScopeDetail'];
+        };
+      };
+    };
+  };
+  queryScopeInspect: {
+    parameters: {
+      query?: {
+        view?: string;
+      };
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDataSourceCheckResult'];
+        };
+      };
+    };
+  };
+  queryScopeSaveMetadata: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SaveQueryScopeMetadata'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseQueryScopeDetail'];
+        };
+      };
+    };
+  };
+  queryScopeReplaceViews: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReplaceQueryScopeViews'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          '*/*': components['schemas']['ApiResponseDataSourceView'];
         };
       };
     };
