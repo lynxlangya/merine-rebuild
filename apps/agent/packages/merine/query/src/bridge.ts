@@ -5,9 +5,11 @@ import { checkServerIdentity, type TLSSocket } from 'node:tls'
 import { createConnection, type Connection } from 'mysql2/promise'
 
 export interface Grant {
+  contractVersion: number
   id: string
   name: string
   version: number
+  semanticVersion: number
   address: string
   host: string
   port: number
@@ -17,7 +19,26 @@ export interface Grant {
   tls: boolean
   views: string[]
   scope: string
+  viewMeta: ScopeViewMeta[]
 }
+
+/** 视图级说明覆盖值；Java 只下发当前白名单内的项。 */
+export interface ScopeViewMeta {
+  view: string
+  displayName: string
+  description: string
+  columns: ScopeColumnMeta[]
+}
+
+/** 字段说明覆盖值；空串表示回退目标库列注释。 */
+export interface ScopeColumnMeta {
+  name: string
+  description: string
+}
+
+/** 服务间桥协议版本；Java 与 Agent 不一致时明确拒绝，不降级为任意 SQL 或旧定义。 */
+const CONTRACT_VERSION = 2
+const identifier = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/
 interface BridgeConfig {
   url: string
   token: string
@@ -113,6 +134,40 @@ export async function loadGrant(signal: AbortSignal): Promise<{ grant: Grant; fo
     !g.views.every((v) => typeof v === 'string' && /^[a-zA-Z0-9_]+$/.test(v))
   )
     throw new Error('连接桥响应不符合服务端契约')
+  if (g.contractVersion !== CONTRACT_VERSION)
+    throw new Error('连接桥协议版本不匹配：请同步升级 Agent 与后端，旧版连接桥已不被支持')
+  if (!Number.isInteger(g.semanticVersion) || g.semanticVersion < 0)
+    throw new Error('连接桥响应不符合服务端契约')
+  if (!Array.isArray(g.viewMeta) || g.viewMeta.length > 50)
+    throw new Error('连接桥响应不符合服务端契约')
+  for (const item of g.viewMeta) {
+    if (
+      !item ||
+      typeof item.view !== 'string' ||
+      !identifier.test(item.view) ||
+      !g.views.includes(item.view) ||
+      typeof item.displayName !== 'string' ||
+      item.displayName.length > 80 ||
+      typeof item.description !== 'string' ||
+      item.description.length > 2000 ||
+      !Array.isArray(item.columns) ||
+      item.columns.length > 100
+    )
+      throw new Error('连接桥响应不符合服务端契约')
+    const names = new Set<string>()
+    for (const column of item.columns) {
+      if (
+        !column ||
+        typeof column.name !== 'string' ||
+        !identifier.test(column.name) ||
+        names.has(column.name) ||
+        typeof column.description !== 'string' ||
+        column.description.length > 300
+      )
+        throw new Error('连接桥响应不符合服务端契约')
+      names.add(column.name)
+    }
+  }
   return { grant: g, ...(config.localForwardPort === undefined ? {} : { forward: config.localForwardPort }) }
 }
 

@@ -11,8 +11,8 @@
 ## 已实现的入口
 
 - `get_business_time`：服务器时间、北京时间本月及最近一个日历月的 UTC 边界。
-- `describe_business_data`：当前数据源名称、范围、允许视图及字段；包含 `ai_task_summary` 时提供办结任务业务定义。
-- `query_business_data(sql)`：一个视图的字段选择、筛选、COUNT/SUM/AVG/MIN/MAX、分组、排序。
+- `describe_business_data`：当前数据源、范围、允许视图、字段与说明来源（应用覆盖 > 数据库列注释 > 未提供），并返回目录摘要 `catalogRevision`；不再硬编码业务定义，说明由「查询范围」页维护。
+- `query_business_data(sql, catalogRevision)`：一个视图的字段选择、筛选、COUNT/SUM/AVG/MIN/MAX、分组、排序。必须携带最近一次描述返回的 `catalogRevision`；说明或字段在描述后变化会拒绝执行，要求重新描述。
 - 不支持 SELECT *、多语句、跨库、JOIN、子查询、CTE、变量、锁、文件操作、存储过程及任意函数。解析器通过也不意味着授权：执行的是工具按白名单 AST 重建的 SQL，不是模型原文。
 - 每次操作重新从 Java 获取启用配置，Java 重新检查只读授权。配置停用后拒绝新查询；已开始查询最长受本轮超时约束，不做即时撤回。
 - 每个 Agent 进程最多一项查询；SQL 5 秒执行上限、含连接桥的操作 15 秒超时；最多 200 行/20 列，每格 2048 字符，数据总量 64 KiB。截断明确标识。
@@ -55,8 +55,13 @@ GRANT SELECT, SHOW VIEW ON merine_rebuild.ai_task_summary TO 'merine_agent_ro'@'
 
 - 地址 `mysql`，端口 `3306`（Java 在项目 Docker 网络内）。
 - 数据库 `merine_rebuild`；填上一步的只读账号和密码。
-- 检查通过后，勾选 `ai_task_summary`，保存并启用。
-- 复制卡片中的“数据源 ID”。
+- 检查通过后保存（默认停用）。复制卡片中的“数据源 ID”。
+
+随后进入「智能体管理 → 查询范围」：
+
+- 选择该数据源，点「刷新可读视图」，勾选 `ai_task_summary` 并保存范围（保存会停用数据源，属预期）。
+- 在“视图与字段说明”中选择该视图，填写显示名、用途/指标说明与字段覆盖说明；字段默认说明取数据库列注释。任务定义迁移模板：每行代表整项任务（`task_id` 唯一），总体办结条件为 `status = 'COMPLETED'` 且 `completed_at_utc IS NOT NULL`；`issued_at_utc` 是发起时间，不得代替办结时间；时间字段 UTC，统计表达按北京时间。
+- 回数据源管理复检并启用；此后修改说明只递增语义版本，不会停用数据源。
 
 ### 4. 绑定 Agent 与该数据源
 
@@ -90,7 +95,7 @@ docker compose --project-name merine-rebuild-dev --env-file .env -f infra/compos
 
 内部 GET `/internal/agent/data-source` 使用独立的 64 位十六进制随机 Bearer 令牌，不接受浏览器 Session、不接受请求指定数据源 ID。Java 环境变量 `MERINE_AGENT_BRIDGE_TOKEN` 与 `MERINE_AGENT_DATA_SOURCE_ID` 指定唯一来源；可用 `MERINE_AGENT_QUERY_SCOPE` 描述固定范围（描述不是权限过滤）。它不对普通前端开放，不进入前端 OpenAPI 类型；Agent 对响应逐字段校验。
 
-200 JSON：`id/name/version/address/host/port/database/username/password/tls/views/scope`。密码仅供服务端连接。响应禁止缓存；未启用或令牌错误为 401，数据源不可用/授权不通过按现有数据源错误返回；Agent 不透传原始错误正文。
+200 JSON：`contractVersion: 2`、`id/name/version/semanticVersion/address/host/port/database/username/password/tls/views/scope/viewMeta`。其中 `viewMeta` 只包含当前白名单内的视图说明（显示名、用途、字段覆盖值），连接、范围、说明与两类版本来自同一个加锁快照；下发总量超过 64 KiB 时拒绝而不是截断。密码仅供服务端连接。响应禁止缓存；未启用或令牌错误为 401，数据源不可用/授权不通过按现有数据源错误返回；Agent 不透传原始错误正文。协议版本不一致时 Agent 明确拒绝，不回退旧定义或任意 SQL。
 
 生产必须通过独立内网 HTTPS 地址访问该端点，不能在面向浏览器的反向代理开放 `/internal/`。数据库连接固定到 Java 已解析并检查的地址，远程强制 TLS 并校验证书主机名；内部 CA 使用部署信任链，不关闭验证。本机端口映射仅是开发便利，生产配置应移除。上线前仍需多用户身份与数据范围隔离、统一审计和凭据轮换设计。
 
