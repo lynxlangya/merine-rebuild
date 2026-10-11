@@ -245,6 +245,9 @@ case "${1:-help}" in
     printf '\n构建海防助手 Agent（apps/agent）...\n'
     agent_ctl build
     ;;
+  package)
+    exec "$ROOT/scripts/package.sh"
+    ;;
   prod-build)
     # 只构建交付镜像，不动正在运行的开发栈
     require_env
@@ -297,7 +300,7 @@ case "${1:-help}" in
     compose_prod down
     ;;
   *)
-    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|seed-maritime|menus|test-db|status|logs [service]|restart [api|web]|agent <start|stop|restart|status|logs>|down|check|build|prod-build|prod-up|prod-seed|prod-down}\n'
+    printf 'Usage: ./scripts/dev.sh {setup|up|deps|migrate|seed|seed-maritime|menus|test-db|status|logs [service]|restart [api|web]|agent <start|stop|restart|status|logs>|down|check|build|package|prod-build|prod-up|prod-seed|prod-down}\n'
     printf 'up starts the local development stack; down preserves all named volumes.\n'
     printf 'up/down/restart also start/stop the local Agent (apps/agent, port 3080); agent passes through its subcommands.\n'
     printf 'restart recompiles and restarts api/web (Java changes are not hot-reloaded).\n'

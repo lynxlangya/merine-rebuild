@@ -134,6 +134,7 @@ docker compose --env-file .env -f infra/compose.yaml exec -T \
 
 - `check`：建好测试库并跑 TypeScript、Node 内置前端回归测试、格式检查与 Maven 验证（含认证、用户管理与单位管理回归测试）。
 - `build`：前端生产构建与后端 jar 打包（`project.build.outputTimestamp` 固定产物时间戳，同一份源码重复构建哈希一致）。同时构建项目内的海防助手 Agent 产物（`apps/agent`，需要本机 Node 22.19+ 与已安装的 Agent 依赖）。交付镜像见下面的「交付形态演练」。
+- `package`：在构建通过后，将 API、Web 和精简 Agent 三份压缩包输出到根目录 `dist/api`、`dist/web`、`dist/agent`。Agent 在 Linux x86_64 容器内组装生产依赖并进行断网冒烟，开发工作区与当前实例不变。内容、运行要求与裁剪边界见[产物说明](infra/PACKAGES.md)。
 - `test-db`：准备隔离的测试库 `merine_rebuild_test` 并应用同一套迁移；重复执行是幂等的，不动开发库。
 - `contract:generate`：从当前源码启动的本地后端自动发现 OpenAPI 分组，更新 `packages/api-contract/openapi/*.json` 与 `src/generated/*.d.ts`。页面仍通过 `@merine/api-contract` 统一导入类型，生成文件不手改。本地开发通过 dev 入口建立临时会话，导出后注销；非 dev 环境需提供 `API_LOGIN_NAME` / `API_PASSWORD`。接口文档访问不额外要求系统管理角色。
 - `contract:test`：验证分组发现、完整覆盖、重复接口、协议一致性和引用完整性的生成工具回归，已接入 `check`。
