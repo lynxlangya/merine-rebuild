@@ -27,6 +27,7 @@ import { CodeBlock } from './CodeBlock.tsx'
 import { parseFileLink } from './file-link.ts'
 import { renderTexToReact } from './katex.tsx'
 import { LinkIconMedium, classifyLinkPath } from '../LinkIcon.tsx'
+import { MermaidBlock } from './MermaidBlock.tsx'
 import { useMarkdownDelegate } from './MarkdownDelegate.tsx'
 import { HoverCard } from '../HoverCard.tsx'
 import { ImageLightbox } from '../ImageLightbox.tsx'
@@ -390,9 +391,8 @@ function renderCode(node: Md.Code, key: Key, context: MarkdownRenderContext): Re
     // its text extraction saw the code block's trailing newline.
     return <Fragment key={key}>{renderTexToReact(`${node.value}\n`, true)}</Fragment>
   }
-  return (
+  const block = (
     <CodeBlock
-      key={key}
       // The replaced hast pipeline appended one synthetic newline that
       // CodeBlock's display trim removes; feeding the bare value would make
       // that trim eat a REAL trailing blank line inside the fence instead.
@@ -409,6 +409,11 @@ function renderCode(node: Md.Code, key: Key, context: MarkdownRenderContext): Re
       toolbarLabels={context.labels.code.toolbarLabels}
     />
   )
+  if (!context.streaming && lang === 'mermaid') {
+    // ```mermaid 围栏定稿后渲染为图；流式期间仍显示源码，语法错误时回退源码块。
+    return <MermaidBlock key={key} code={node.value} fallback={block} />
+  }
+  return <Fragment key={key}>{block}</Fragment>
 }
 
 /** A list is loose when it or any of its items is spread; every item then keeps its paragraphs. */

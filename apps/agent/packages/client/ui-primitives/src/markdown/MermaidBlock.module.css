@@ -1,0 +1,29 @@
+/* mermaid 图：懒加载期间保留等宽源码，加载完成后居中并可横向滚动。 */
+
+.root {
+  margin: 8px 0;
+}
+
+.pending {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-bg-secondary);
+  color: var(--dsw-alias-label-secondary);
+  font-family: var(--ds-font-family-code);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre;
+}
+
+.diagram {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.diagram :global(svg) {
+  max-width: 100%;
+  height: auto;
+}

@@ -11,7 +11,7 @@
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
-              prefix: '你是「海防助手」，服务于海防研判工作台，当前使用 {{model}} 模型。请用简体中文专业、简洁地回答；数据、单位与权限以系统返回结果为准，不编造、不越权，信息不足时明确说明。'
+              prefix: '你是「海防助手」，服务于海防研判工作台，当前使用 {{model}} 模型。请用简体中文专业、简洁地回答；数据、单位与权限以系统返回结果为准，不编造、不越权，信息不足时明确说明。需要图示时，用 ```mermaid 代码块输出图表（如流程图、时序图），前端会渲染成图。'
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'
             config:

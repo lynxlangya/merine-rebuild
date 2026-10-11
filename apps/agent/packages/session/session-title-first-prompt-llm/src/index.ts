@@ -96,16 +96,25 @@ function frameMessages(messages: readonly SessionTitleUserMessage[]): string {
 /** Asterisk emphasis wrapping a whole line, such as `**Title**`. */
 const EMPHASIS_WRAPPER = /^(?<marker>\*{1,3})(?<inner>\S(?:.*\S)?)\k<marker>$/u
 
+/** 思考型供应商可能把推理写进正文；只要出现思考标记，标题只取最后一个闭合标签之后的内容。 */
+function titleText(text: string): string {
+  if (!/<think(?:ing)?>|<\/think(?:ing)?>/iu.test(text)) return text
+  let cut = -1
+  for (const match of text.matchAll(/<\/think(?:ing)?>/giu)) cut = (match.index ?? 0) + match[0].length
+  // 只有开标签、没有闭标签：整段都是未完的推理，没有可用的标题文本。
+  return cut >= 0 ? text.slice(cut) : ''
+}
+
 /**
- * Take the title from model output: the first non-empty line, without
- * asterisk emphasis that wraps that whole line. Models that disregard the
- * one-line instruction put the title first and commentary after it. A line
- * that is entirely `*` emphasis loses the marker pair even when the model
- * meant it literally; the inner-marker check keeps emphasis inside a longer
- * line, and the system instruction forbids Markdown.
+ * Take the title from model output: the first non-empty line after any
+ * thinking block, without asterisk emphasis that wraps that whole line.
+ * Models that disregard the one-line instruction put the title first and
+ * commentary after it. A line that is entirely `*` emphasis loses the marker
+ * pair even when the model meant it literally; the inner-marker check keeps
+ * emphasis inside a longer line, and the system instruction forbids Markdown.
  */
 function titleFromOutput(text: string): string {
-  const line = text.split(/\r?\n/u).map(item => item.trim()).find(item => item.length > 0) ?? ''
+  const line = titleText(text).split(/\r?\n/u).map(item => item.trim()).find(item => item.length > 0) ?? ''
   const groups = EMPHASIS_WRAPPER.exec(line)?.groups
   const marker = groups?.['marker']
   const inner = groups?.['inner']

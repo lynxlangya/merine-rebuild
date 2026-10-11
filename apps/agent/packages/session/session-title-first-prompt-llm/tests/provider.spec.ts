@@ -178,6 +178,9 @@ describe('first-prompt LLM title provider', () => {
     [['Fix *args* handling'], 'Fix *args* handling'],
     [['*args'], '*args'],
     [['****'], '****'],
+    // 思考型供应商把推理放在正文：应跳过思考块取真实标题。
+    [['Thinking Process:\n<think>分析用户需求</think>\n\n最近一个月办结按日期统计'], '最近一个月办结按日期统计'],
+    [['Thinking Process:\n分析用户需求\n</think>\n\n任务办结趋势'], '任务办结趋势'],
   ])('takes the title from the first non-empty output line %j', async (deltas, title) => {
     const { ctx } = await harness([
       { type: 'block-start', index: 0, blockType: 'text' },
@@ -190,6 +193,19 @@ describe('first-prompt LLM title provider', () => {
     await ctx.sessionTitle.refresh(session)
 
     expect(ctx.sessionTitle.get(session)?.title).toBe(title)
+  })
+
+  it('keeps the fallback title when the output is only thinking', async () => {
+    const { ctx } = await harness([
+      { type: 'block-start', index: 0, blockType: 'text' },
+      { type: 'text-delta', index: 0, text: '<think>只有推理，没有标题</think>' },
+      { type: 'finish', reason: { kind: 'stop' } },
+    ])
+    const session = ctx.sessions.create(SessionId('first-parse-thinking-only'))
+    appendHumanPrompt(session, 'first input')
+
+    await expect(ctx.sessionTitle.refresh(session)).rejects.toThrow('title model produced no text')
+    expect(ctx.sessionTitle.get(session)?.title).toBe('first input')
   })
 
   it('rejects tool-calls and max-tokens termination even when the blocks contain only text', async () => {
