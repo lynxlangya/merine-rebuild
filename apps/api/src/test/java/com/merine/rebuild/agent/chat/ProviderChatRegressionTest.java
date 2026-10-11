@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.merine.rebuild.agent.chat.dto.ChatErrorCode;
 import com.merine.rebuild.agent.chat.dto.ChatEvent;
-import com.merine.rebuild.agent.provider.ProviderKeyCipher;
+import com.merine.rebuild.agent.AgentSecretCipher;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -42,7 +42,7 @@ class ProviderChatRegressionTest extends ChatHttpSupport {
     private static final String KEY = "synthetic-upstream-key";
 
     @Autowired
-    ProviderKeyCipher cipher;
+    AgentSecretCipher cipher;
 
     private HttpServer upstream;
     private volatile int upstreamStatus = 200;
@@ -125,7 +125,7 @@ class ProviderChatRegressionTest extends ChatHttpSupport {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"empty", "missing-finish", "resource-error", "unknown-finish", "late-content", "tool-without-tool", "bad-content", "reasoning-only"})
+    @ValueSource(strings = {"empty", "missing-finish", "resource-error", "unknown-finish", "late-content", "bad-content", "reasoning-only"})
     void rejectsIncompleteOrInvalidSuccessfulHttpResponses(String scenario) throws Exception {
         String provider = seed("ENABLED", "ENABLED");
         upstreamBody = switch (scenario) {
@@ -134,7 +134,6 @@ class ProviderChatRegressionTest extends ChatHttpSupport {
             case "resource-error" -> chunk("半句") + finish().replace("stop", "insufficient_system_resource");
             case "unknown-finish" -> chunk("半句") + finish().replace("stop", "unexpected");
             case "late-content" -> chunk("正文") + finish() + chunk("迟到");
-            case "tool-without-tool" -> finish().replace("stop", "tool_calls");
             case "bad-content" -> "data: {\"choices\":[{\"delta\":{\"content\":42}}]}\n\n" + finish();
             case "reasoning-only" -> "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"PRIVATE\"}}]}\n\n" + finish();
             default -> throw new AssertionError(scenario);

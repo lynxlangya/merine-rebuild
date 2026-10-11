@@ -10,6 +10,8 @@ import { appRoutes, TaskHandlingPage, InformationFlowPage } from './routeRegistr
 import styles from './routes.module.css';
 
 // 助手整条链路独立成块：未进入 /agent 的用户不加载对话与部件渲染代码。
+// @deprecated 站内助手已由独立 Agent 服务（apps/agent，http://127.0.0.1:3080）替代；
+//             /agent 路由暂时保留，不再扩展新能力。
 const AgentLayout = lazy(() =>
   import('../features/agent/AgentLayout').then((module) => ({ default: module.AgentLayout })),
 );

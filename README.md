@@ -38,6 +38,7 @@ SEED_ROLE_NAME='系统管理员' SEED_DISPLAY_NAME='陈知远' ./scripts/dev.sh 
 | 海岛（登录后）         | http://127.0.0.1:5173/maritime/islands          |
 | 警务资源（登录后）     | http://127.0.0.1:5173/maritime/police-resources |
 | 信息流转（登录后）     | http://127.0.0.1:5173/collaboration/flows       |
+| 数据源管理（登录后）   | http://127.0.0.1:5173/agent/datasources         |
 | 工程诊断（联调探针）   | http://127.0.0.1:5173/dev/diagnostics           |
 | 业务接口（需登录）     | http://127.0.0.1:9002/api/bootstrap             |
 | 后端就绪探针           | http://127.0.0.1:9002/actuator/health/readiness |
@@ -183,13 +184,17 @@ Agent（`apps/agent`）是宿主机运行时，不打进交付镜像：`prod-bui
 
 ## 模型供应商配置
 
+> **已废弃**：站内助手已由独立的 Agent 服务（`apps/agent`，浏览器访问 `http://127.0.0.1:3080`）替代；下面描述的是暂留在 `/agent` 的旧页面，仅保留、不再扩展，其 Function Calling 能力已移除。
+
 模型供应商在**海防助手 → 用户菜单 →「设置」**（`/agent/settings`）中管理：卡片式配置、八家国内厂商模板与自定义配置、API Key 由后端加密保存，并可在一条连接下维护多个模型（模型标识、显示名、可用推理强度与启停，配好密钥后可用「获取模型列表」从上游拉取候选模型一次性导入，推理强度按官方文档的逐系列取值一起带回来）；后台原菜单已下线，`agent:provider:*` 权限码保留。海防助手已接入**真实模型对话**（DeepSeek，OpenAI 兼容流式）：输入区选择已启用模型与推理强度（可选级别由模型配置决定），流式渲染回答，停止、断连核对与同幂等键去重沿用既有协议；接口按 `agent:chat:use` 判定，首版只授予系统管理员。开发环境可用 `MERINE_AGENT_CHAT_MODE=DEMO` 切到本地脚本替身（同样支持表格、柱状图、来源、步骤与追问）。会话与消息已落库（只对本人可见，可重命名、删除、刷新恢复，打开时会按该会话最近使用的模型与档位回填输入区），每次执行留下用量与失败记录，助手图标栏「用量」页有指标卡、按天趋势、状态与模型分布及执行明细（`GET /api/agent/chat/runs`、`/runs/stats`，图表自绘无新增依赖）；附件、结构化业务部件与用量视图尚未实现。方案与边界见[海防助手对话与流式交互设计](docs/tasks/agent-chat-design-plan.md)。
 
 海防助手的身份与安全提示词保存在 `apps/api/src/main/resources/prompts/agent-system.txt`，业务语义使用说明在同目录的 `agent-semantics.txt`。后端启动时以 UTF-8 读取，并把资料库同一份已校验目录装入语义上下文；每次模型请求都在历史消息前加入一条包含这些内容的 `system` 消息（首问、连续追问与重试一致）。它们不由前端传入、不写入用户会话记录；提示词文件缺失或为空时启动失败。修改后执行 `./scripts/dev.sh restart api` 生效。提示词约束模型回答，接口权限与数据范围仍由后端校验。
 
 海防助手「资料库」（`/agent/library`）通过 `GET /api/agent/semantics` 展示固定业务概念和指标定义，沿用 `agent:chat:use` 权限。内容唯一来源是 `apps/api/src/main/resources/agent/semantics/catalog.json`，启动时校验并读取，修改后重启 API 生效；前端只展示，不复制业务文本。首版包含任务办理的四个概念与「办结任务数」定义，指标范围已确认为当前登录用户所属单位发起的任务，目录与该指标均为版本 3，已明确服务器时间与本月、上月、最近一个月的口径。定义各有稳定编号和版本；模型每轮收到完整固定定义，可以据此解释规则和引用版本，并保留每项定义的确认状态。尚无在线编辑或资料库检索工具。设计与实施记录见[业务语义与资料库首版](docs/tasks/agent-semantic-library-plan.md)。
 
-海防助手已接入首个 **Java 受控查询 + Function Calling** 工具：DeepSeek、千问连接可查询「本月／上月／最近一个月本单位发起的办结任务数」。工具只接受期间枚举，后端按当前有效会话确定单位，核验 `agent:chat:use` 与 `task:handling:read`，按已确认的 `task.completed-count` 版本 3 统计。查询函数必先读取服务器系统时间，按北京时间计算：本月从一日零点至查询时刻；上月为上一完整自然月；最近一个月从查询时刻倒推一个日历月。范围包含起点、不包含终点；不接受模型或客户端提交当前时间、日期、SQL、身份或任意单位。数字、期间、范围、来源和查询标识由后台直接展示并保留在会话历史，模型另作解释。每轮工具选择关闭思考；最终解释使用独立的普通对话请求，将后台结果作为结构化数据放入系统上下文，沿用所选推理强度，不携带原始工具调用历史或隐藏思维链。通常产生两次模型请求，用量累计，缺失保持未知。其他供应商当前不开放此工具；需要具体模型支持函数调用。实现与本地替身验收见[受控查询首版](docs/tasks/agent-controlled-query-plan.md)。
+站内助手原有的 **Java 受控查询 + Function Calling** 工具（`query_completed_task_count`）已移除：站内助手整页标记为废弃，不再扩展。与此同时，本机 Agent 通过环境变量注入只读账号、直连 `v_agent_task_completed` 视图的实验也已整体下线（只读视图、专用账号、注入脚本与业务包均已删除）。业务数据查询将在数据源管理之上重新设计：数据源只负责配置与只读授权检查，Agent 侧不得持有数据库凭据。历史实现与验收见[受控查询首版](docs/tasks/agent-controlled-query-plan.md)。
+
+**智能体数据源管理**（`/agent/datasources`）：首版只支持 MySQL，维护受控查询将来要用的连接配置；密码用 AES-256-GCM 加密保存（复用 `MODEL_PROVIDER_ENCRYPTION_KEY`，数据源密文以 `datasource:<id>` 为认证附加数据），列表与编辑都不回显。测试连接只读 MySQL 授权元数据（全局／库／表／列权限与可用角色）判定只读，白名单只有 USAGE/SELECT/SHOW VIEW；账号持有角色或元数据不完整时显示「授权无法确认」，有写权限显示「存在写权限」，两者都不能启用。目标地址按部署配置（`MERINE_AGENT_DATASOURCE_ALLOWED_NETWORKS`／`MERINE_AGENT_DATASOURCE_ALLOWED_PORTS`）校验 DNS 解析后的实际地址，非回环目标强制 TLS；服务端不保存长期检查连接、不自动重试。勾选视图只约束本平台，不会修改数据库授权。当前它只负责配置与检查：检查通过只代表配置当时可读，既不向 Agent 下发凭据，也不代表 Agent 已获授权查询业务数据；Agent 受控查询链路待重新设计。
 
 ## 本轮边界
 
@@ -203,6 +208,7 @@ Agent（`apps/agent`）是宿主机运行时，不打进交付镜像：`prod-bui
 - **字典管理** `/system/dictionaries`：左侧字典类型、右侧字典项；新建类型、加/改字典项、启停与改标签排序都在这里，三本系统枚举同样可维护；字典类型与字典项都只停用、不删除。
 - **任务处置** `/collaboration/tasks`：承接、办理、下发、退回重派、支队交接、正式结果和总体办结；详见[任务设计及验收](docs/tasks/task-handling-design-plan.md)。
 - **信息流转** `/collaboration/flows`：草稿、范围冻结、发送、每次送达签收、反馈、继续共享和源头补充更正；详见[信息流转设计及验收](docs/tasks/information-flow-design-plan.md)。
+- **数据源管理** `/agent/datasources`：Agent 受控查询的 MySQL 连接配置、密码加密保存、只读授权检查与视图白名单；检查后仍会在启用时重新检查。站内助手的办结任务数工具只通过“启用 + 白名单命中”的数据源执行，无可用来源时不开放工具。
 - **工程诊断** `/dev/diagnostics`：页面 → API → MySQL 的最小读写链路与探针记录。
 
 **涉海要素第一版**：三个菜单对应 `archive_port`、`archive_wharf`、`archive_anchorage`、`archive_island`、`archive_police_station`、`archive_port_officer` 六张档案表。支持分页查询、详情、新增、编辑、启停与删除，以及港口 → 码头 → 派出所 / 主要责任民警和反向责任查询。按页面及对象维护权限统一授权，不按单位过滤；派出所档案独立于单位树和登录账号。被引用的港口、派出所、民警不能删除；停用保留已有关系，新关联只允许启用档案，版本冲突返回409。

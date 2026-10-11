@@ -45,7 +45,7 @@ final class ChatService {
     private final ChatHistoryService history;
     private final ChatProperties props;
     private final ScriptedChatStub stub;
-    private final ToolCallingChat toolChat;
+    private final ProviderChatClient client;
     private final ProviderTargetLookup providers;
     private final ObjectMapper json;
     private final ScheduledExecutorService scheduler;
@@ -55,7 +55,7 @@ final class ChatService {
                 ChatHistoryService history,
                 ChatProperties props,
                 ObjectProvider<ScriptedChatStub> stubProvider,
-                ToolCallingChat toolChat,
+                ProviderChatClient client,
                 ProviderTargetLookup providers,
                 ObjectMapper json,
                 @Qualifier("chatRunScheduler") ScheduledExecutorService scheduler,
@@ -64,7 +64,7 @@ final class ChatService {
         this.history = history;
         this.props = props;
         this.stub = stubProvider.getIfAvailable();
-        this.toolChat = toolChat;
+        this.client = client;
         this.providers = providers;
         this.json = json;
         this.scheduler = scheduler;
@@ -128,7 +128,7 @@ final class ChatService {
         SseEmitter emitter = new SseEmitter(props.runTimeout().toMillis() + 10_000L);
         ChatStreamWriter writer = new ChatStreamWriter(run, emitter, json, props);
         try {
-            executor.execute(() -> stream(run, writer, request, answering, target, authentication, session));
+            executor.execute(() -> stream(run, writer, request, answering, target));
         } catch (RuntimeException error) {
             registry.discard(run);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "CHAT_EXECUTOR_UNAVAILABLE",
@@ -163,7 +163,7 @@ final class ChatService {
     }
 
     private void stream(ChatRun run, ChatStreamWriter writer, ChatRequest request, boolean answering,
-                        ProviderTarget target, Authentication authentication, HttpSession session) {
+                        ProviderTarget target) {
         long heartbeatMillis = Math.max(1_000L, props.heartbeatInterval().toMillis());
         ScheduledFuture<?> heartbeat = scheduler.scheduleAtFixedRate(writer::heartbeat,
                 heartbeatMillis, heartbeatMillis, TimeUnit.MILLISECONDS);
@@ -177,17 +177,11 @@ final class ChatService {
                 if (props.mode() == ChatProperties.ChatMode.DEMO) {
                     stub.run(writer, pacing, request, answering);
                 } else {
-                    toolChat.stream(writer, pacing, request, target, authentication, session);
+                    client.stream(writer, pacing, request, target);
                 }
             } catch (ChatUpstreamException upstream) {
                 // 上游已明确失败：不写成功终态，只发 ERROR 事件。
                 writer.fail(upstream.code(), upstream.getMessage(), upstream.retryable());
-                return;
-            } catch (ApiException business) {
-                String message = business.status() == HttpStatus.UNAUTHORIZED
-                        ? "登录身份已失效，请重新登录后查询"
-                        : business.status() == HttpStatus.FORBIDDEN ? "没有查询该业务数据的权限" : "业务查询未完成";
-                writer.fail(ChatErrorCode.INTERNAL, message, false);
                 return;
             }
             writer.messageDone(ChatEvent.MessageStatus.SUCCEEDED);

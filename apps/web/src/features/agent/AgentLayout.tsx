@@ -1,3 +1,7 @@
+/**
+ * @deprecated 站内助手已由独立 Agent 服务（apps/agent，http://127.0.0.1:3080）替代；
+ *             本布局仅服务暂留的 /agent 页面，不再扩展功能。
+ */
 import { BarChartOutlined, HomeOutlined, ReadOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import { Suspense } from 'react';

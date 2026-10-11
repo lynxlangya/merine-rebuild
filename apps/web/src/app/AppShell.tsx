@@ -278,12 +278,12 @@ export function AppShell() {
                 />
               </Tooltip>
             </div>
-            <Tooltip title="打开海防助手（新标签页）">
+            <Tooltip title="打开海防助手（独立 Agent，新标签页）">
               <Button
                 type="text"
-                aria-label="打开海防助手（新标签页）"
+                aria-label="打开海防助手（独立 Agent，新标签页）"
                 icon={<RobotOutlined />}
-                href="/agent"
+                href="http://127.0.0.1:3080"
                 target="_blank"
                 rel="noopener noreferrer"
               />

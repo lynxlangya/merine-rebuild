@@ -4,9 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 /** task 表的唯一 SQL 写入入口；跨模块仅只读用户与单位的当前身份事实。 */
 @Mapper
@@ -50,15 +48,6 @@ public interface TaskMapper {
                      String note, Instant occurredAt) { }
 
     UnitRow actorUnit(@Param("userId") long userId);
-    /** 仅统计本单位发起的整项任务；固定条件与绑定值，不关联分支或接受 SQL 片段。 */
-    @Select("""
-            SELECT COUNT(*) FROM task_order
-             WHERE issuer_unit_id = #{unitId} AND status = 'COMPLETED'
-               AND completed_at >= #{startAt} AND completed_at < #{endAt}
-            """)
-    @Options(timeout = 5)
-    long completedIssuedCount(@Param("unitId") long unitId, @Param("startAt") Instant startAt,
-                              @Param("endAt") Instant endAt);
     UnitRow unitByCode(@Param("code") String code);
     UnitRow lockUnitById(@Param("id") long id);
     OrderRow order(@Param("id") long id);

@@ -190,7 +190,7 @@ class ChatProtocolTest {
     void writerEnforcesFrozenPartLimits() {
         ChatProperties small = new ChatProperties(ChatProperties.ChatMode.PROVIDER, 40, 8000, 128000, /*maxPartsPerMessage*/ 1, 1, 1,
                 200, 1, 8, 500, 1, 10, 50, Duration.ofMinutes(30),
-                Duration.ofMinutes(5), Duration.ofSeconds(15), true, 2, 2048);
+                Duration.ofMinutes(5), Duration.ofSeconds(15), true);
         ChatRun run = run();
         var writer = new ChatStreamWriter(run, new org.springframework.web.servlet.mvc.method.annotation.SseEmitter(10_000L),
                 JsonMapper.builder().build(), small);
@@ -229,6 +229,6 @@ class ChatProtocolTest {
                                         Duration ttl) {
         return new ChatProperties(ChatProperties.ChatMode.PROVIDER, 40, 8000, 128000, 32, 100, 12, 200, 12, 8, 500,
                 maxActivePerUser, maxActiveGlobal, maxRecords, ttl,
-                Duration.ofMinutes(5), Duration.ofSeconds(15), true, 2, 2048);
+                Duration.ofMinutes(5), Duration.ofSeconds(15), true);
     }
 }

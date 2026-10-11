@@ -3,7 +3,6 @@ package com.merine.rebuild.agent.chat;
 import com.merine.rebuild.agent.chat.dto.ChatErrorCode;
 import com.merine.rebuild.agent.chat.dto.ChatRequest;
 import com.merine.rebuild.agent.provider.ProviderTarget;
-import com.merine.rebuild.agent.provider.dto.ProviderRequests.Vendor;
 import com.merine.rebuild.agent.semantics.SemanticPromptContext;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,14 +32,11 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-/** 模型 HTTP/SSE 适配；工具选择与最终回答有各自请求，凭据和思维链不下发。 */
+/** 模型 HTTP/SSE 适配；只做普通流式回答，凭据和思维链不下发。 */
 @Component
 final class ProviderChatClient {
     private static final Logger log = LoggerFactory.getLogger(ProviderChatClient.class);
     private static final String TEXT_PART_ID = "p-t1";
-    private static final int MAX_ERROR_BYTES = 8192;
-    private enum RequestPhase { CHAT, TOOL_SELECTION, RESULT_EXPLANATION }
-    private enum RejectionReason { REASONING_HISTORY, TOOL_HISTORY, UNKNOWN }
     private final ObjectMapper json;
     private final HttpClient http;
     private final ChatProperties props;
@@ -59,8 +55,6 @@ final class ProviderChatClient {
                 .version(HttpClient.Version.HTTP_1_1).build();
     }
 
-    record ToolSelection(List<ProviderToolCall> calls) {}
-
     static String readSystemPrompt(Resource resource) {
         try {
             String prompt = resource.getContentAsString(StandardCharsets.UTF_8).strip();
@@ -71,38 +65,11 @@ final class ProviderChatClient {
         }
     }
 
-    ToolSelection selectTools(ChatStreamWriter writer, ChatPacing pacing, ChatRequest request,
-                              ProviderTarget target, AgentQueryTools tools) throws InterruptedException {
-        Map<String, Object> body = body(target, messages(request, tools.instructions()), true);
-        body.put("tools", tools.definitions());
-        body.put("tool_choice", "auto");
-        int[] contentChars = {0};
-        ProviderToolCallCollector calls = new ProviderToolCallCollector(props);
-        read(body, target, pacing, writer, RequestPhase.TOOL_SELECTION, text -> {
-            if (text.length() > props.maxTotalChars() - contentChars[0]) throw protocol("模型输出超过上限");
-            contentChars[0] += text.length(); // 选择阶段只保留调用，普通文本不展示也不回传。
-        }, calls);
-        return new ToolSelection(calls.completed());
-    }
-
     void stream(ChatStreamWriter writer, ChatPacing pacing, ChatRequest request, ProviderTarget target)
             throws InterruptedException {
-        streamAnswer(writer, pacing, request, target, List.of(), "");
-    }
-
-    void streamAnswer(ChatStreamWriter writer, ChatPacing pacing, ChatRequest request,
-                      ProviderTarget target, List<String> queryResults, String instructions)
-            throws InterruptedException {
-        String context = instructions;
-        if (!queryResults.isEmpty()) {
-            String data = json.writeValueAsString(Map.of("results", queryResults.stream().map(json::readTree).toList()))
-                    .replace("<", "\\u003c").replace(">", "\\u003e");
-            context += "\n\n<server_query_results>\n" + data + "\n</server_query_results>";
-        }
-        // 独立解释请求只含文本历史和后台数据；不把非思考工具回合混入供应商的思考历史。
-        Map<String, Object> body = body(target, messages(request, context), false);
+        Map<String, Object> body = body(target, messages(request));
         if (!writer.startPart(TEXT_PART_ID, "TEXT")) throw new ChatPacing.Stopped(ChatPacing.Reason.DISCONNECTED);
-        read(body, target, pacing, writer, queryResults.isEmpty() ? RequestPhase.CHAT : RequestPhase.RESULT_EXPLANATION, text -> {
+        read(body, target, pacing, writer, text -> {
             // 上游单块可能包含整篇回答；下游事件大小必须落在浏览器解析上限内。
             for (int offset = 0; offset < text.length(); offset += 4096) {
                 pacing.check();
@@ -110,14 +77,13 @@ final class ProviderChatClient {
                     throw new ChatPacing.Stopped(ChatPacing.Reason.DISCONNECTED);
                 }
             }
-        }, null);
+        });
         if (!writer.donePart(TEXT_PART_ID)) throw new ChatPacing.Stopped(ChatPacing.Reason.DISCONNECTED);
     }
 
-    private List<Map<String, Object>> messages(ChatRequest request, String instructions) {
-        List<Map<String, Object>> messages = new ArrayList<>(request.messages().size() + 4);
-        messages.add(Map.of("role", "system", "content", systemPrompt
-                + (instructions.isEmpty() ? "" : "\n\n" + instructions)));
+    private List<Map<String, Object>> messages(ChatRequest request) {
+        List<Map<String, Object>> messages = new ArrayList<>(request.messages().size() + 1);
+        messages.add(Map.of("role", "system", "content", systemPrompt));
         for (ChatRequest.ChatTurn turn : request.messages()) {
             messages.add(Map.of("role", turn.role() == ChatRequest.ChatRole.USER ? "user" : "assistant",
                     "content", turn.text()));
@@ -125,31 +91,20 @@ final class ProviderChatClient {
         return messages;
     }
 
-    private Map<String, Object> body(ProviderTarget target, List<Map<String, Object>> messages,
-                                   boolean selectingTools) {
+    private Map<String, Object> body(ProviderTarget target, List<Map<String, Object>> messages) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", target.modelId());
         body.put("stream", true);
         body.put("messages", messages);
         if (props.requestUsage()) body.put("stream_options", Map.of("include_usage", true));
-        if (selectingTools) {
-            // DeepSeek 选择工具时关闭思考；本阶段与最终解释均不回放工具历史。
-            if (target.vendor() == Vendor.DEEPSEEK) {
-                body.put("thinking", Map.of("type", "disabled"));
-                body.put("reasoning_effort", "none");
-            } else if (target.reasoningEffort() != null) {
-                // 千问平台也托管强制思考模型（如 GLM-5.3），不能按供应商统一关思考。
-                body.put("reasoning_effort", target.reasoningEffort().name().toLowerCase(java.util.Locale.ROOT));
-            }
-        } else if (target.reasoningEffort() != null) {
+        if (target.reasoningEffort() != null) {
             body.put("reasoning_effort", target.reasoningEffort().name().toLowerCase(java.util.Locale.ROOT));
         }
         return body;
     }
 
     private void read(Map<String, Object> body, ProviderTarget target, ChatPacing pacing,
-                      ChatStreamWriter writer, RequestPhase phase, Consumer<String> text, ProviderToolCallCollector calls)
-            throws InterruptedException {
+                      ChatStreamWriter writer, Consumer<String> text) throws InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(target.baseUrl() + "/chat/completions"))
                 .timeout(pacing.remaining()).header("Content-Type", "application/json")
                 .header("Accept", "text/event-stream").header("Authorization", "Bearer " + target.apiKey())
@@ -175,7 +130,6 @@ final class ProviderChatClient {
             throw new ChatUpstreamException(ChatErrorCode.MODEL_UNAVAILABLE, "无法连接模型服务，请稍后重试", true);
         } finally {
             if (!headersReceived) {
-                // 失败的第二次请求也计为用量未知，不能把第一次的用量当整轮合计。
                 writer.recordUsage(null, null);
                 responseFuture.thenAccept(received -> close(received.body()));
                 if (!responseFuture.isDone()) responseFuture.cancel(true);
@@ -194,12 +148,9 @@ final class ProviderChatClient {
         try (input; var reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             if (response.statusCode() >= 400) {
                 int status = response.statusCode();
-                RejectionReason reason = status == 400 || status == 422
-                        ? rejectionReason(input, pacing) : RejectionReason.UNKNOWN;
-                // 固定分类替代原始上游详情；响应可能回显密钥、提示词和业务数据，任何级别均不记录它。
-                log.warn("Model request failed: messageId={} phase={} status={} reason={}",
-                        writer.run().messageId(), phase, status, reason);
-                throw upstreamStatus(status, phase, reason);
+                // 响应可能回显密钥、提示词和业务数据，任何级别均不记录它。
+                log.warn("Model request failed: messageId={} status={}", writer.run().messageId(), status);
+                throw upstreamStatus(status);
             }
             if (!response.headers().firstValue("Content-Type").orElse("").startsWith("text/event-stream")) {
                 throw protocol("模型返回了不支持的响应格式");
@@ -247,20 +198,14 @@ final class ProviderChatClient {
                     visibleText |= !content.asText().isBlank();
                     text.accept(content.asText());
                 }
-                if (delta.hasNonNull("tool_calls")) {
-                    if (calls == null) throw protocol("模型请求了本阶段未开放的工具");
-                    calls.append(delta.path("tool_calls"));
-                }
                 if (choice.hasNonNull("finish_reason")) {
-                    String finish = choice.path("finish_reason").asText("");
-                    if (finish.equals("tool_calls") && calls != null) calls.finish();
-                    else if (!finish.equals("stop")) throw protocol("模型回复未正常结束");
+                    if (!choice.path("finish_reason").asText("").equals("stop")) throw protocol("模型回复未正常结束");
                     finished = true;
                 }
             }
             pacing.check();
             if (!done || !finished) throw protocol("模型数据流提前断开，回答未完成");
-            if (calls == null && !visibleText) throw protocol("模型未返回可展示的回答");
+            if (!visibleText) throw protocol("模型未返回可展示的回答");
         } catch (IOException disconnected) {
             pacing.check();
             throw new ChatUpstreamException(ChatErrorCode.MODEL_UNAVAILABLE, "模型连接中断，请稍后重试", true);
@@ -321,24 +266,7 @@ final class ProviderChatClient {
         return new ChatUpstreamException(ChatErrorCode.UPSTREAM_PROTOCOL_ERROR, message, false);
     }
 
-    private RejectionReason rejectionReason(InputStream input, ChatPacing pacing) {
-        RejectionReason reason = RejectionReason.UNKNOWN;
-        try {
-            byte[] error = input.readNBytes(MAX_ERROR_BYTES + 1);
-            if (error.length <= MAX_ERROR_BYTES) {
-                String message = json.readTree(error).path("error").path("message").asText("")
-                        .toLowerCase(java.util.Locale.ROOT);
-                if (message.contains("reasoning_content")) reason = RejectionReason.REASONING_HISTORY;
-                else if (message.contains("tool_calls") || message.contains("tool_call_id")) reason = RejectionReason.TOOL_HISTORY;
-            }
-        } catch (IOException | RuntimeException unreadable) {
-            // 空、畸形或读取失败的错误体仍按原 HTTP 状态处理；不记录解析异常或原文。
-        }
-        pacing.check(); // 读取错误体同样受总期限、停止与断连约束。
-        return reason;
-    }
-
-    private static ChatUpstreamException upstreamStatus(int status, RequestPhase phase, RejectionReason reason) {
+    private static ChatUpstreamException upstreamStatus(int status) {
         if (status == 401 || status == 403) return new ChatUpstreamException(ChatErrorCode.MODEL_AUTH_FAILED,
                 "供应商拒绝了这次调用，请检查 API Key 与账号权限", false);
         if (status == 429) return new ChatUpstreamException(ChatErrorCode.MODEL_RATE_LIMITED,
@@ -347,15 +275,8 @@ final class ProviderChatClient {
                 "模型服务暂不可用，请稍后重试", true);
         if (status == 404) return new ChatUpstreamException(ChatErrorCode.MODEL_REQUEST_REJECTED,
                 "模型服务没有这个接口或模型，请核对请求地址与模型标识", false);
-        if (status == 400 || status == 422) {
-            String message = phase == RequestPhase.RESULT_EXPLANATION
-                    ? "后台查询已完成，但模型拒绝了结果解释请求，请核对供应商兼容配置"
-                    : "模型服务拒绝了这次请求，请检查模型标识与所选推理强度是否受支持";
-            if (reason != RejectionReason.UNKNOWN) message = phase == RequestPhase.RESULT_EXPLANATION
-                    ? "后台查询结果已保留，模型未接受结果解释的上下文格式，请核对供应商兼容配置"
-                    : "模型未接受工具回合的上下文格式，请核对供应商兼容配置";
-            return new ChatUpstreamException(ChatErrorCode.MODEL_REQUEST_REJECTED, message, false);
-        }
+        if (status == 400 || status == 422) return new ChatUpstreamException(ChatErrorCode.MODEL_REQUEST_REJECTED,
+                "模型服务拒绝了这次请求，请检查模型标识与所选推理强度是否受支持", false);
         return protocol("模型服务返回了无法处理的响应（HTTP " + status + "）");
     }
 }
