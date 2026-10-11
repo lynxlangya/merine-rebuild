@@ -10,7 +10,7 @@ DSH_HOME=/var/lib/merine-agent ./start.sh --port 3080
 ```
 
 使用非 root 账号，确保该账号可写独立的 DSH_HOME。启动日志中的登录链接含访问凭据，勿公开。
-默认监听本机，远程访问需另行配置受保护的 HTTPS 反向代理；不要直接暴露端口。
+默认监听本机，远程访问需另行配置受保护的 HTTPS 反向代理；不要直接暴露端口。具体 nginx 配置、`--public-url`/`--trusted-host` 参数与部署替换清单见包内 `project/deploy/nginx-reverse-proxy.md`。
 模型配置在首次启动后设置。本包不包含开发环境密钥、会话、资料或业务数据。
 
 已排除 Office 转换/预览、语音、实验插件、终端操作、Shell 工具、本机应用/目录选择、遥测、日志上传和网络搜索/抓取。
