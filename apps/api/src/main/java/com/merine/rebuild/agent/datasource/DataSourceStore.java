@@ -72,7 +72,8 @@ public class DataSourceStore {
 
     /**
      * 编辑：数据目标/身份或密码变化时清除旧检查结果并强制停用；
-     * 数据目标或身份变化还会清空允许视图与说明（新库同名视图可能不是同一个对象），
+     * 数据目标或身份变化必须同时提供新密码（旧凭据不能带到新服务器），
+     * 并清空允许视图与说明（新库同名视图可能不是同一个对象）；
      * 仅轮换密码保留范围与说明，只改名称/备注保留状态与检查结论。
      * 锁行 + 版本条件保证并发编辑只有一个生效。
      */
@@ -83,6 +84,10 @@ public class DataSourceStore {
             throw DataSourceErrors.conflict();
         }
         boolean targetChanged = targetChanged(current, input);
+        if (targetChanged && input.password() == null) {
+            // 换目标或换账号时必须重新提供密码，避免旧凭据被带到新服务器。
+            throw DataSourceInputs.invalid("password", "修改主机、端口、数据库或账号时必须重新填写数据库密码");
+        }
         boolean connectionChanged = targetChanged || input.password() != null;
         String encrypted = input.password() == null ? null
                 : cipher.encrypt(secretAad(id), input.password());

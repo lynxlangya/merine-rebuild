@@ -29,7 +29,7 @@ export function createDataSource(input: SaveDataSource) {
   });
 }
 
-/** 编辑：密码留空表示保留；连接参数或视图变化会让旧检查结果失效。 */
+/** 编辑：目标与账号未变更时密码留空表示保留；连接参数变化会让旧检查结果失效。 */
 export function updateDataSource(id: string, input: SaveDataSource) {
   return request<DataSourceView>(`/api/agent/datasources/${encodeURIComponent(id)}`, {
     method: 'PUT',

@@ -70,7 +70,7 @@ async function schema(connection: Connection, grant: Grant): Promise<LiveSchema>
   const result: LiveSchema = Object.create(null) as LiveSchema
   for (const view of grant.views) {
     const [rows] = await connection.execute<RowDataPacket[]>(
-      'SELECT COLUMN_NAME, DATA_TYPE, COALESCE(COLUMN_COMMENT, \'\') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? ORDER BY ORDINAL_POSITION',
+      'SELECT c.COLUMN_NAME, c.DATA_TYPE, COALESCE(c.COLUMN_COMMENT, \'\') FROM information_schema.COLUMNS c JOIN information_schema.VIEWS v ON v.TABLE_SCHEMA = c.TABLE_SCHEMA AND v.TABLE_NAME = c.TABLE_NAME WHERE c.TABLE_SCHEMA=? AND c.TABLE_NAME=? ORDER BY c.ORDINAL_POSITION',
       [grant.database, view],
     )
     const fields = rows.map((row) => ({

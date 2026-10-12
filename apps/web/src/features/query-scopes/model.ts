@@ -132,3 +132,31 @@ export function effectiveDescription(row: ScopeColumnRow): { text: string; sourc
   if (comment) return { text: comment, source: '数据库注释' };
   return { text: '未提供说明', source: '—' };
 }
+
+/** 说明草稿为空时直接使用当前服务端值，避免切换视图后的回填竞态。 */
+export interface MetadataDraft {
+  displayName: string;
+  description: string;
+  overrides: Record<string, string>;
+}
+
+export function metadataForm(meta?: ScopeViewMeta): MetadataDraft {
+  return {
+    displayName: meta?.displayName ?? '',
+    description: meta?.description ?? '',
+    overrides: Object.fromEntries(
+      (meta?.columns ?? []).map((item) => [item.name ?? '', item.description ?? '']),
+    ),
+  };
+}
+
+export function metadataChanged(form: MetadataDraft, meta?: ScopeViewMeta): boolean {
+  const saved = metadataForm(meta);
+  return (
+    form.displayName !== saved.displayName ||
+    form.description !== saved.description ||
+    [...new Set([...Object.keys(form.overrides), ...Object.keys(saved.overrides)])].some(
+      (name) => (form.overrides[name] ?? '') !== (saved.overrides[name] ?? ''),
+    )
+  );
+}

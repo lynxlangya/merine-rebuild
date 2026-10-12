@@ -185,6 +185,12 @@ Ant Design 浮层由组件库主题管理，不必逐个覆盖成上述阴影；
 | 字典 | [字典页](apps/web/src/features/dictionaries/DictionaryListPage.tsx)：左栏 280–340px 的选择列表，右栏弹性宽度；视口 ≤1150px 上下排列 | 名称/状态与编码/项数分两行；长编码省略，右侧显示完整编码；字典项表格在面板内横向滚动 |
 | 菜单 | [菜单页](apps/web/src/features/menus/MenuListPage.tsx)：层级表格与维护抽屉                                                          | 区分目录、页面、页签、按钮；路由绑定与权限码分别表达                                 |
 
+数据源与查询范围采用卡片目录，搜索与刷新集中在紧凑工具栏，不套通用表格：
+
+- [数据源管理](apps/web/src/features/data-sources/DataSourceListPage.tsx)：连接卡片突出数据库、地址、账号、查询视图数和最近只读检查；编辑、检查、启停常驻，配置 ID 与版本放进次级信息入口。
+- [查询范围](apps/web/src/features/query-scopes/QueryScopePage.tsx)：以“数据库 → 允许视图”目录展示已保存范围；没有视图时提供配置入口，超过四个视图时进入详情查看完整目录，[范围详情](apps/web/src/features/query-scopes/QueryScopeDetailPage.tsx)采用左侧可搜索视图目录、右侧单视图编辑区；范围勾选放在独立弹窗，字段表合并为字段/当前说明/自定义说明，保存与还原常驻。
+- 两页共用卡片集合样式，状态依据服务端结果和状态字典。说明文字集中在必要操作提醒中；进入列表不自动探测目标库，不将启用或检查通过描述为 Agent 已绑定。
+
 改变左侧对象时清理不属于新对象的选中项和草稿。详情加载失败要显示失败，不能仍用上一个对象的数据冒充当前对象。
 
 ### 5.4 登录、首页与诊断

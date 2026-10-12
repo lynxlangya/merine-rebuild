@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 class DataSourceTargetGuardTest {
     private static DataSourceTargetGuard guard(List<String> networks) {
         return new DataSourceTargetGuard(new DataSourceProperties(
-                networks, List.of(3306), 1000, 2000, 2, 100, 50));
+                networks, List.of(3306), 1000, 2000, 2, 100, 50,
+                DataSourceProperties.TlsMode.REQUIRED));
     }
 
     @Test

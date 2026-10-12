@@ -46,7 +46,7 @@ public class DataSourceChecker {
             target = guard.resolve(host, port);
         } catch (TargetDeniedException denied) {
             return new DataSourceCheckResult(DataSourceCheckOutcome.CONNECTION_FAILED,
-                    denied.getMessage(), Instant.now(), List.of(), List.of());
+                    denied.getMessage(), Instant.now(), List.of(), List.of(), null);
         }
         boolean acquired;
         try {

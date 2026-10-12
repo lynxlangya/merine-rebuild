@@ -171,7 +171,8 @@ export function compileQuery(sql: string, schemas: Record<string, string[]>): { 
   let query = `SELECT ${distinct ? 'DISTINCT ' : ''}${selected.map((c) => `${c.expr} AS ${quote(c.alias)}`).join(', ')} FROM ${quote(view)}`
   if (ast.where) query += ' WHERE ' + expression(ast.where)
   if (ast.groupby) {
-    if (ast.groupby.modifiers?.length || !Array.isArray(ast.groupby.columns) || !ast.groupby.columns.length) fail()
+    // 本版解析器对普通 GROUP BY 也会给出 [null] 占位；只有真实的修饰符（如 WITH ROLLUP）才拒绝。
+    if (ast.groupby.modifiers?.some(Boolean) || !Array.isArray(ast.groupby.columns) || !ast.groupby.columns.length) fail()
     query += ' GROUP BY ' + ast.groupby.columns.map((c: unknown) => expression(c, true)).join(', ')
   }
   if (ast.having) query += ' HAVING ' + expression(ast.having, true)

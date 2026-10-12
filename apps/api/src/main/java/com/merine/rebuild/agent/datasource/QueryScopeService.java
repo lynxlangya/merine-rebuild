@@ -89,7 +89,7 @@ public class QueryScopeService {
         }
         List<String> views = DataSourceViews.names(mapper.viewsOf(id));
         DataSourceCheckResult result = checker.check(current.host(), current.port(), current.databaseName(),
-                current.username(), decrypt(current), views, describe);
+                current.username(), decrypt(current), views, describe).withSourceVersion(current.version());
         audit.recordCurrent(result.outcome() == DataSourceCheckOutcome.PASSED
                 ? AuditEvent.succeeded("agent", "scope:inspect", "DATASOURCE", id, current.name(),
                         describe == null

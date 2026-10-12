@@ -1,0 +1,415 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+  padding: 0 var(--sp-4) var(--sp-4);
+}
+
+.context,
+.contextMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.context {
+  justify-content: space-between;
+  min-height: 28px;
+}
+
+.contextMeta {
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.contextMeta :global(.ant-tag) {
+  margin: 0;
+}
+
+.statusNotice {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-3);
+  background: var(--tag-warning-bg);
+  color: var(--warning);
+  font-size: var(--fs-12);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 284px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.sidebar,
+.editor,
+.panel {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-4);
+}
+
+.sidebar {
+  position: sticky;
+  top: var(--sp-3);
+  overflow: hidden;
+}
+
+.sidebarHeader,
+.fieldToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.sidebarHeader {
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.sectionTitle h2,
+.sectionTitle h3 {
+  margin: 0;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-strong);
+}
+
+.sectionTitle span {
+  color: var(--muted);
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+}
+
+.viewSearch {
+  padding: 0 var(--sp-3) var(--sp-3);
+}
+
+.viewList {
+  max-height: min(650px, calc(100dvh - 270px));
+  overflow-y: auto;
+  margin: 0;
+  padding: 0 var(--sp-2) var(--sp-2);
+  list-style: none;
+}
+
+.viewList button {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-bottom: var(--sp-1);
+  padding: var(--sp-3);
+  border: 0;
+  border-radius: var(--r-3);
+  background: transparent;
+  color: var(--fg);
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--fs-13);
+  cursor: pointer;
+}
+
+.viewList button > :global(.anticon) {
+  padding-top: 3px;
+  color: var(--muted);
+}
+
+.viewList button > span:not(:global(.anticon)) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.viewList b {
+  font-weight: var(--fw-ui);
+  overflow-wrap: anywhere;
+}
+
+.viewList code,
+.rangeIdentity code {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  overflow-wrap: anywhere;
+}
+
+.viewList small {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+
+.viewList button:hover {
+  background: var(--row-hover);
+}
+
+.viewList button[aria-pressed='true'] {
+  background: var(--surface-selected);
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+.viewList button[aria-pressed='true'] > :global(.anticon) {
+  color: var(--accent);
+}
+
+.viewList button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.viewList button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.editor {
+  overflow: hidden;
+}
+
+.editorHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.editorHeader h2 {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  overflow-wrap: anywhere;
+}
+
+.code {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  overflow-wrap: anywhere;
+}
+
+.editorActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.unsaved {
+  color: var(--warning);
+  font-size: var(--fs-12);
+}
+
+.form {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-size: var(--fs-13);
+}
+
+.field > span {
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.form :global(.ant-input-textarea-show-count) {
+  margin-bottom: var(--sp-3);
+}
+
+/* 说明正文按正常正文字号与颜色显示：全局 AntD fontSize=13 会让用途说明显得偏小偏淡 */
+.form :global(.ant-input),
+.form :global(textarea.ant-input) {
+  color: var(--fg);
+  font-size: var(--fs-14);
+  line-height: var(--lh-body);
+}
+
+.form :global(.ant-input::placeholder),
+.form :global(textarea.ant-input::placeholder) {
+  color: var(--fg-placeholder);
+}
+
+.fieldToolbar {
+  border-top: 1px solid var(--border);
+  padding: var(--sp-3) var(--sp-5);
+}
+
+.fieldToolbar .sectionTitle {
+  margin-right: auto;
+}
+
+.fieldSearch {
+  width: 200px;
+}
+
+.minorHint {
+  margin: 0;
+  padding: 0 var(--sp-5) var(--sp-3);
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.fieldIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.fieldIdentity code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  overflow-wrap: anywhere;
+}
+
+.fieldIdentity span {
+  color: var(--muted);
+  font-size: var(--fs-11);
+}
+
+.fieldTable :global(.ant-table.ant-table-small .ant-table-thead > tr > th) {
+  padding: var(--sp-3);
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-ui);
+}
+
+.fieldTable :global(.ant-table.ant-table-small .ant-table-tbody > tr > td) {
+  padding: var(--sp-3);
+  vertical-align: top;
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.effective {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-1);
+}
+
+.effective :global(.ant-tag) {
+  margin: 0;
+  font-size: var(--fs-11);
+  color: var(--muted);
+}
+
+.empty,
+.panel {
+  padding: var(--sp-5);
+}
+
+.rangeWarning {
+  margin: var(--sp-3) 0;
+  color: var(--warning);
+  font-size: var(--fs-12);
+}
+
+.rangeTools,
+.rangeBulk,
+.rangeFooter {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.rangeTools > :global(.ant-input-search) {
+  flex: 1;
+  min-width: 0;
+}
+
+.rangeBulk {
+  margin: var(--sp-2) 0;
+}
+
+.rangeList {
+  max-height: min(460px, 50dvh);
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rangeList li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.rangeList :global(.ant-checkbox-wrapper) {
+  flex: 1;
+  min-width: 0;
+}
+
+.rangeIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--sp-1);
+}
+
+.rangeIdentity b {
+  font-weight: var(--fw-ui);
+  font-size: var(--fs-13);
+  overflow-wrap: anywhere;
+}
+
+.rangeList :global(.ant-tag) {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: var(--fs-11);
+}
+
+.rangeFooter > span {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+@media (max-width: 1100px) {
+  .workspace {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+}
+
+@media (max-width: 800px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  .viewList {
+    max-height: 260px;
+  }
+}

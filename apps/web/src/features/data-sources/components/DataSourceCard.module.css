@@ -1,0 +1,85 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-5) var(--sp-5);
+  flex: 1;
+}
+
+.connection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-4);
+  background: var(--surface-2);
+  border-radius: var(--r-3);
+}
+
+.database {
+  font-family: var(--font-mono);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 0;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+
+.account dt {
+  color: var(--muted);
+  font-size: var(--fs-12);
+}
+
+.account dd {
+  margin: 0;
+}
+
+.scopeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  font-size: var(--fs-13);
+}
+
+.scopeLink {
+  color: var(--accent);
+  font-weight: var(--fw-ui);
+}
+
+.check {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  margin-top: auto;
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.checkContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.checkLabel {
+  font-size: var(--fs-12);
+}
+
+.configInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: 320px;
+  overflow-wrap: anywhere;
+}

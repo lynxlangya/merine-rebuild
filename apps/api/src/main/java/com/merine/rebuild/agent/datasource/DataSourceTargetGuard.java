@@ -30,7 +30,7 @@ public class DataSourceTargetGuard {
     }
 
     /** 已解析并验证过的目标：连接必须使用这里的数字地址，不得再次解析主机名。 */
-    public record ResolvedTarget(InetAddress address, int port, boolean loopback) {
+    public record ResolvedTarget(InetAddress address, int port, boolean loopback, String host) {
         @Override
         public String toString() {
             return "ResolvedTarget[redacted]";
@@ -66,7 +66,7 @@ public class DataSourceTargetGuard {
             }
         }
         InetAddress chosen = addresses[0];
-        return new ResolvedTarget(chosen, port, chosen.isLoopbackAddress());
+        return new ResolvedTarget(chosen, port, chosen.isLoopbackAddress(), host);
     }
 
     /** IPv4/IPv6 网段；配置项只接受 IP 字面量或 CIDR，不接受域名，避免配置期隐式解析。 */

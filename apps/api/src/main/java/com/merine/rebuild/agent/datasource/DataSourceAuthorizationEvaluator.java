@@ -13,7 +13,8 @@ import java.util.stream.Collectors;
  *   <li>只允许 USAGE/SELECT/SHOW VIEW，其余权限（含可转授的 GRANT OPTION）一律视为写权限；</li>
  *   <li>账号持有任何可用角色时，因为当前连接读不到角色自身的授权行，直接判「授权无法确认」；</li>
  *   <li>元数据任一部分读取失败或无法归属，同样不能通过；</li>
- *   <li>勾选视图必须命中表级/库级/全局 SELECT，列级 SELECT 不算整视图可读。</li>
+ *   <li>勾选对象必须命中表级/库级/全局 SELECT，且必须是当前账号实际可读的 VIEW：
+ *       列级 SELECT 不算整视图可读，底表或其他对象名也不允许进入白名单。</li>
  * </ul>
  */
 final class DataSourceAuthorizationEvaluator {
@@ -52,9 +53,12 @@ final class DataSourceAuthorizationEvaluator {
                             + "；只读账号不得有写权限或转授权限");
         }
         for (String view : selectedViews) {
-            if (!hasSelect(privileges, database, view)) {
+            // 业务上只允许查询视图：必须同时命中信息模式发现的 VIEW 集合与 SELECT 授权，
+            // 避免账号拥有底表或库级 SELECT 时把底表当作“视图”加入白名单。
+            if (!detectedViews.contains(view) || !hasSelect(privileges, database, view)) {
                 return new Decision(DataSourceCheckOutcome.VIEW_DENIED,
-                        "勾选视图「" + view + "」不存在或当前账号没有 SELECT 授权；勾选不会修改数据库授权");
+                        "勾选对象「" + view + "」不是可查询的视图，或当前账号没有该视图的 SELECT 授权；"
+                                + "勾选、授权都不会修改数据库对象类型或权限");
             }
         }
         if (selectedViews.isEmpty() && detectedViews.isEmpty()) {

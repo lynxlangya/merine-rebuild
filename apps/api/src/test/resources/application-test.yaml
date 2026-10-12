@@ -20,3 +20,6 @@ merine:
       # 测试目标固定为编排内的 mysql 服务；生产与交付编排由部署显式配置。
       allowed-networks: 172.16.0.0/12,127.0.0.0/8,::1/128
       allowed-ports: 3306
+      # 测试容器使用自签证书，不在 JVM 信任库内；与本地开发一样显式选择“仅加密”。
+      # 生产默认 VERIFY_IDENTITY（证书链 + 目标身份校验），不得沿用该值。
+      tls-mode: REQUIRED

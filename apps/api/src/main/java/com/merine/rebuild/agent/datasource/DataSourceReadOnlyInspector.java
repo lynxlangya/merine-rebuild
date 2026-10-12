@@ -96,12 +96,12 @@ class DataSourceReadOnlyInspector {
                 if (!detectedViews.contains(describeView)) {
                     return new DataSourceCheckResult(DataSourceCheckOutcome.VIEW_DENIED,
                             "视图「" + describeView + "」不存在或当前账号没有 SELECT 授权；勾选不会修改数据库授权",
-                            Instant.now(), detectedViews, List.of());
+                            Instant.now(), detectedViews, List.of(), null);
                 }
                 if (decision.outcome() == DataSourceCheckOutcome.PASSED) {
                     try {
                         return new DataSourceCheckResult(decision.outcome(), decision.message(),
-                                Instant.now(), detectedViews, describeColumns(connection, database, describeView));
+                                Instant.now(), detectedViews, describeColumns(connection, database, describeView), null);
                     } catch (SQLException error) {
                         log.debug("DataSource column metadata unavailable: sqlState={} errorCode={}",
                                 error.getSQLState(), error.getErrorCode());
@@ -111,7 +111,7 @@ class DataSourceReadOnlyInspector {
                 }
             }
             return new DataSourceCheckResult(decision.outcome(), decision.message(), Instant.now(),
-                    detectedViews, List.of());
+                    detectedViews, List.of(), null);
         } catch (SQLException error) {
             log.debug("DataSource check failed: sqlState={} errorCode={}",
                     error.getSQLState(), error.getErrorCode());
@@ -320,7 +320,7 @@ class DataSourceReadOnlyInspector {
 
     private static DataSourceCheckResult result(DataSourceCheckOutcome outcome, String message,
                                                 List<String> detectedViews) {
-        return new DataSourceCheckResult(outcome, message, Instant.now(), detectedViews, List.of());
+        return new DataSourceCheckResult(outcome, message, Instant.now(), detectedViews, List.of(), null);
     }
 
     /** 只按错误类型给固定文案，不回显驱动异常原文：其中可能带连接串或输入片段。 */
@@ -330,10 +330,21 @@ class DataSourceReadOnlyInspector {
         if (code == 1045 || state.startsWith("28")) {
             return "数据库账号或密码不正确，或该账号不允许从本服务连接";
         }
+        if (hasTlsFailure(error)) {
+            return "无法建立受信任的 TLS 连接：证书链或目标身份校验未通过";
+        }
         if (code == 1044) return "数据库账号无权访问目标数据库，或数据库不存在";
         if (code == 1049) return "目标数据库不存在";
         if (state.startsWith("08")) return "无法连接数据库：网络不可达、端口未开放或连接超时";
         return "连接检查失败：无法完成目标数据库的只读授权检查";
+    }
+
+    /** 证书链/身份校验失败时驱动可能归入通用网络错误，向上找 SSL 异常给出专用文案。 */
+    private static boolean hasTlsFailure(Throwable error) {
+        for (Throwable current = error; current != null; current = current.getCause()) {
+            if (current instanceof javax.net.ssl.SSLException) return true;
+        }
+        return false;
     }
 
     @FunctionalInterface

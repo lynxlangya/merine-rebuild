@@ -19,7 +19,7 @@ import styles from './DataSourceFormDrawer.module.css';
  * 新增/编辑数据源。表单不碰启停状态：保存一律以「停用」落库，
  * 启用走列表里的「检查并启用」。允许查询的视图范围不在本表单维护，
  * 统一到「智能体管理 → 查询范围」页整表替换，避免两处写入口。
- * 唯一写入型字段是密码——编辑留空表示保持原值。
+ * 唯一写入型字段是密码——目标与账号未变更时留空表示保留原值。
  */
 export function DataSourceFormDrawer({
   target,
@@ -242,7 +242,7 @@ export function DataSourceFormDrawer({
           rules={target ? [] : [{ required: true, whitespace: true, message: '请填写数据库密码' }]}
           extra={
             target
-              ? '已保存密码不回显；留空保留原值，只改名称或备注时不会让检查结果失效。'
+              ? '已保存密码不回显；留空保留原值。修改主机、端口、数据库或账号时必须重新输入密码，不能用旧密码测试或保存新目标。'
               : '仅提交到本项目后端加密保存，不写入浏览器本地存储。'
           }
         >
@@ -267,7 +267,11 @@ export function DataSourceFormDrawer({
           >
             测试连接与检查授权
           </Button>
-          {target && <span className={styles.hint}>编辑态密码留空时，用已保存的密码发起检查</span>}
+          {target && (
+            <span className={styles.hint}>
+              密码留空时：只有主机、端口、数据库与账号未变更才复用已保存密码
+            </span>
+          )}
         </div>
         {checkResult && (
           <Alert

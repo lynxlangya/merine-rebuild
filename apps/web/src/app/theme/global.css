@@ -53,6 +53,40 @@ a {
   letter-spacing: var(--ls-mono);
 }
 
+/*
+ * 全局滚动条：细、近乎透明、贴边悬浮。
+ * 轨道完全透明，滑块用透明边框收窄并圆角，悬停时才略微加深；
+ * 组件需要隐藏滚动条（scrollbar-width: none / ::-webkit-scrollbar）时，
+ * 类选择器优先级更高，仍按组件自己的规则执行。
+ */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted) 26%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 22%, transparent);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted) 42%, transparent);
+  background-clip: content-box;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -101,21 +101,25 @@ public class DataSourceService {
     public DataSourceCheckResult checkSaved(String id) {
         DataSourceSecretRow current = requireSecret(id);
         List<String> views = DataSourceViews.names(mapper.viewsOf(id));
-        DataSourceCheckResult result = check(current, views);
+        DataSourceCheckResult result = check(current, views).withSourceVersion(current.version());
         store.recordCheck(id, current.version(), result.outcome(), result.message(), result.checkedAt());
         auditCheck(id, current.name(), result);
         return result;
     }
 
     /**
-     * 未保存配置的连接测试：不落库；带 id 且未填密码时复用已保存的密码。
-     * 同样受部署允许范围、超时与并发限制约束。
+     * 未保存配置的连接测试：不落库；带 id 且目标与身份完全一致、密码留空时复用已保存密码，
+     * 防止把保存的凭据用于另一台服务器或另一个账号。
      */
     public DataSourceCheckResult checkDraft(CheckDraft raw) {
         CheckDraft input = DataSourceInputs.normalizeCheck(raw, properties);
         String password = input.password();
         if (password == null && input.id() != null) {
-            password = decrypt(requireSecret(input.id()));
+            DataSourceSecretRow saved = requireSecret(input.id());
+            if (!sameTarget(saved, input)) {
+                throw DataSourceInputs.invalid("password", "连接目标或账号已修改，请重新输入数据库密码");
+            }
+            password = decrypt(saved);
         }
         if (password == null) throw DataSourceInputs.invalid("password", "请填写数据库密码");
         DataSourceCheckResult result = checker.check(input.host(), input.port(), input.databaseName(),
@@ -133,6 +137,15 @@ public class DataSourceService {
     private DataSourceCheckResult check(DataSourceSecretRow current, List<String> views) {
         return checker.check(current.host(), current.port(), current.databaseName(),
                 current.username(), decrypt(current), views);
+    }
+
+    /** 草稿检查复用保存密码的前置条件：连接目标与数据库身份完全一致。 */
+    private static boolean sameTarget(DataSourceSecretRow saved, CheckDraft input) {
+        return saved.dbType() == input.dbType()
+                && saved.host().equals(input.host())
+                && saved.port() == input.port()
+                && saved.databaseName().equals(input.databaseName())
+                && saved.username().equals(input.username());
     }
 
     private DataSourceSecretRow requireSecret(String id) {

@@ -91,6 +91,28 @@ docker compose --project-name merine-rebuild-dev --env-file .env -f infra/compos
 
 如果旧会话保存了自定义预设，它可能不包含新增工具；先新开标准会话。独立 Agent 仍使用进程令牌登录，与主站账号尚不同步。
 
+### 6. 首批业务视图与说明模板（任务 / 信息流转 / 涉海要素）
+
+V56 建立首批只读视图：`ai_task_summary`（扩充）、`ai_task_branch`、`ai_intel_topic`、`ai_intel_receipt`、`ai_port`、`ai_wharf`、`ai_anchorage`、`ai_island`、`ai_police_station`、`ai_port_officer`。视图定义在迁移里；只读账号授权与查询范围/说明配置独立执行：
+
+1. 给只读账号补充 `SELECT, SHOW VIEW`（只限于上列视图，不给底表或全库）：
+
+   ```sql
+   GRANT SELECT, SHOW VIEW ON merine_rebuild.ai_task_branch TO 'merine_agent_ro'@'%';
+   -- 其余视图同理逐条授权，不授予库级或底表权限
+   ```
+
+2. 用仓库里的模板与脚本合并白名单并补缺失说明（走现有管理接口，不直接写配置表）：
+
+   ```sh
+   node scripts/seed-query-scope.mjs <数据源ID>            # 演练：只输出计划与冲突
+   node scripts/seed-query-scope.mjs <数据源ID> --apply    # 合并范围与说明，复检并启用
+   ```
+
+   - 模板：`scripts/query-scope-seed.json`（每个视图的显示名、用途/指标说明与字段中文说明）。
+   - 脚本只补缺失：已有的人工说明一律保留，与模板不同的值只报告；模板字段必须真实存在。
+   - 新增视图会让数据源停用，脚本在有变更时自动复检并重新启用；重复执行为无变更。
+
 ## 服务间契约与部署边界
 
 内部 GET `/internal/agent/data-source` 使用独立的 64 位十六进制随机 Bearer 令牌，不接受浏览器 Session、不接受请求指定数据源 ID。Java 环境变量 `MERINE_AGENT_BRIDGE_TOKEN` 与 `MERINE_AGENT_DATA_SOURCE_ID` 指定唯一来源；可用 `MERINE_AGENT_QUERY_SCOPE` 描述固定范围（描述不是权限过滤）。它不对普通前端开放，不进入前端 OpenAPI 类型；Agent 对响应逐字段校验。
@@ -98,5 +120,11 @@ docker compose --project-name merine-rebuild-dev --env-file .env -f infra/compos
 200 JSON：`contractVersion: 2`、`id/name/version/semanticVersion/address/host/port/database/username/password/tls/views/scope/viewMeta`。其中 `viewMeta` 只包含当前白名单内的视图说明（显示名、用途、字段覆盖值），连接、范围、说明与两类版本来自同一个加锁快照；下发总量超过 64 KiB 时拒绝而不是截断。密码仅供服务端连接。响应禁止缓存；未启用或令牌错误为 401，数据源不可用/授权不通过按现有数据源错误返回；Agent 不透传原始错误正文。协议版本不一致时 Agent 明确拒绝，不回退旧定义或任意 SQL。
 
 生产必须通过独立内网 HTTPS 地址访问该端点，不能在面向浏览器的反向代理开放 `/internal/`。数据库连接固定到 Java 已解析并检查的地址，远程强制 TLS 并校验证书主机名；内部 CA 使用部署信任链，不关闭验证。本机端口映射仅是开发便利，生产配置应移除。上线前仍需多用户身份与数据范围隔离、统一审计和凭据轮换设计。
+
+### 数据源侧的安全边界（本轮收紧）
+
+- **只允许真实视图**：白名单候选必须同时命中“信息模式里确实存在且类型为 VIEW”和“当前账号有 SELECT”，底表或库级 SELECT 不能把底表带进查询范围；Agent 执行前也会再次按 `information_schema.VIEWS` 读取字段，非视图对象直接报错。
+- **凭据不与新目标混用**：编辑数据源时修改主机、端口、数据库或账号必须重新输入密码；「测试连接」只在目标与身份完全一致时才复用已保存密码，避免把旧凭据发往同网段的另一台服务器。
+- **Java→数据库 TLS**：非回环目标默认 `VERIFY_IDENTITY`，校验证书链并比对该连接使用的数字地址；需要 JVM 信任库包含私有 CA、目标证书包含对应 IP SAN。确实无法提供 IP SAN 时由部署方显式选择 `VERIFY_CA`；本机开发容器因 MySQL 自签证书显式使用 `REQUIRED`（`MERINE_AGENT_DATASOURCE_TLS_MODE`），生产不得沿用。TLS 失败会提示“无法建立受信任的 TLS 连接”，不会回退明文。
 
 源代码：`apps/agent/packages/merine/query`，主引擎不放海防业务逻辑。后续新增语义和视图映射优先扩展此业务包，不恢复旧站内助手。
