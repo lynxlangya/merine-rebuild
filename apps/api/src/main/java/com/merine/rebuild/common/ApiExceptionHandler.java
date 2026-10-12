@@ -37,7 +37,7 @@ public class ApiExceptionHandler {
      *
      * <p>SSE 客户端只声明 {@code Accept: text/event-stream} 时收不下 JSON 错误体，
      * 内容协商会让整个响应失败（表现为 500）；这类请求直接写出 JSON 错误（状态码与格式不变），
-     * 其余请求仍走正常的 ResponseEntity。只有 {@code agent:chat} 这个 SSE 端点会遇到这种声明。
+     * 其余请求仍走正常的 ResponseEntity。当前没有流式接口，保留该分支供后续流式端点使用。
      */
     private ResponseEntity<ApiResponse<Void>> respond(HttpStatus status, ApiResponse<Void> body,
                                                       HttpServletRequest request,

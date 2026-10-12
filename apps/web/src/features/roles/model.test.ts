@@ -155,11 +155,11 @@ describe('权限勾选树', () => {
   });
 
   it('全选所有启用权限，重复执行不会产生重复，且保留树外权限', () => {
-    const initial = new Set(['agent:chat:use']);
+    const initial = new Set(['agent:scope:read']);
     const all = selectAllPermissions(tree, initial);
-    assert.deepEqual(all, ['agent:chat:use', 'system:user:create', 'system:user:read']);
+    assert.deepEqual(all, ['agent:scope:read', 'system:user:create', 'system:user:read']);
     assert.deepEqual(selectAllPermissions(tree, new Set(all)), all);
-    assert.deepEqual([...initial], ['agent:chat:use']);
+    assert.deepEqual([...initial], ['agent:scope:read']);
   });
 
   it('全选不新增停用权限，不抹掉已有停用授权；单项可明确移除', () => {
@@ -176,7 +176,7 @@ describe('权限勾选树', () => {
 
   it('清空后所有权限均取消，不产生目录勾选或半选；空树全选保留原集合', () => {
     assert.deepEqual(deriveCheckState(tree, new Set()), { checked: [], halfChecked: [] });
-    assert.deepEqual(selectAllPermissions([], new Set(['agent:chat:use'])), ['agent:chat:use']);
+    assert.deepEqual(selectAllPermissions([], new Set(['agent:scope:read'])), ['agent:scope:read']);
   });
 });
 

@@ -1,7 +1,0 @@
-.fallback {
-  display: grid;
-  height: 100dvh;
-  place-items: center;
-  color: var(--muted);
-  font-size: var(--fs-13);
-}

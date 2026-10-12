@@ -7,21 +7,14 @@ import com.merine.rebuild.system.security.SystemAdminRegressionSupport;
 import java.util.*;
 import org.junit.jupiter.api.*;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * S3 埋点回归：模型连接（增/改/删）与涉海档案（六类 × 增/改/删 = 18 个写点）。
+ * S3 埋点回归：涉海档案（六类 × 增/改/删 = 18 个写点）。
  *
- * 「获取模型列表」的出站调用不做自动化验证（隔离环境没有可用 TLS 目标，接口层也只接 HTTPS），
- * 该写点的留痕按需人工验证，与 {@code ProviderDiscoveryRegressionTest} 的取舍一致。
  * 档案删掉后没有别的地方能核对名称，因此这里的重点断言是**名称快照在删除后仍在**。
  */
-@TestPropertySource(properties =
-        "merine.agent.provider-encryption-key=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
 class AuditS3RegressionTest extends SystemAdminRegressionSupport {
-    private static final String PROVIDER_KEY = "synthetic-audit-provider-key";
-    private static final String PROVIDER_NAME = "REGR-AUDIT-PROVIDER";
     private static final String ARCHIVE_PREFIX = "审计回归";
     private static final List<String> ARCHIVE_TABLES = List.of("archive_wharf", "archive_port_officer",
             "archive_island", "archive_anchorage", "archive_port", "archive_police_station");
@@ -36,9 +29,6 @@ class AuditS3RegressionTest extends SystemAdminRegressionSupport {
                 jdbcTemplate.update("DELETE FROM " + table + " WHERE name LIKE ?", ARCHIVE_PREFIX + "%");
             }
         }
-        jdbcTemplate.update("DELETE FROM ai_model_provider_model WHERE provider_id IN "
-                + "(SELECT id FROM ai_model_provider WHERE name LIKE 'REGR-AUDIT-PROVIDER%')");
-        jdbcTemplate.update("DELETE FROM ai_model_provider WHERE name LIKE 'REGR-AUDIT-PROVIDER%'");
         jdbcTemplate.update("DELETE FROM sys_user WHERE login_name LIKE 'regr.audit.maritime.%'");
         jdbcTemplate.update("DELETE FROM sys_audit_log");
     }
@@ -47,62 +37,6 @@ class AuditS3RegressionTest extends SystemAdminRegressionSupport {
         return jdbcTemplate.queryForList(
                 "SELECT result, module, target_type, target_id, target_label, summary FROM sys_audit_log "
                         + "WHERE action = ? ORDER BY id", action);
-    }
-
-    private Map<String, Object> providerInput(String name, int version, String apiKey,
-                                              List<Map<String, Object>> models) {
-        Map<String, Object> data = new HashMap<>(Map.of("vendor", "DEEPSEEK", "name", name,
-                "remark", "审计埋点隔离回归", "website", "https://platform.deepseek.com",
-                "baseUrl", "https://api.deepseek.com", "apiKey", apiKey, "status", "ENABLED",
-                "models", models, "version", version));
-        return data;
-    }
-
-    private Map<String, Object> model(String modelId) {
-        return new HashMap<>(Map.of("modelId", modelId, "displayName", modelId,
-                "reasoningEfforts", List.of("LOW", "HIGH"), "status", "ENABLED"));
-    }
-
-    @Test
-    void providerWritesAreRecordedAndNeverCarryKeyMaterial() throws Exception {
-        MockHttpSession session = adminSession();
-        MvcResult created = sendJson(post("/api/agent/providers")
-                .content(objectMapper.writeValueAsString(providerInput(PROVIDER_NAME, 0, PROVIDER_KEY,
-                        List.of(model("deepseek-flash"))))), session);
-        assertThat(created.getResponse().getStatus()).isEqualTo(201);
-        String id = jsonOf(bodyOf(created), "$.data.id");
-
-        var creates = auditRows("provider:create");
-        assertThat(creates).hasSize(1);
-        assertThat(creates.getFirst()).containsEntry("result", "SUCCEEDED")
-                .containsEntry("module", "agent").containsEntry("target_type", "PROVIDER")
-                .containsEntry("target_id", id).containsEntry("target_label", PROVIDER_NAME);
-        assertThat((String) creates.getFirst().get("summary"))
-                .contains("新建连接「" + PROVIDER_NAME + "」").contains("DEEPSEEK").contains("1 个模型");
-
-        // 编辑：换密钥 + 两个模型 + 改地址；摘要要说清改了什么，但不能出现密钥本身
-        MvcResult updated = sendJson(put("/api/agent/providers/" + id)
-                .content(objectMapper.writeValueAsString(providerInput(PROVIDER_NAME, 0,
-                        "synthetic-rotated-key",
-                        List.of(model("deepseek-flash"), model("deepseek-v4-pro"))))), session);
-        assertThat(updated.getResponse().getStatus()).isEqualTo(200);
-        var updates = auditRows("provider:update");
-        assertThat(updates).hasSize(1);
-        assertThat((String) updates.getFirst().get("summary"))
-                .contains("模型 1 → 2").contains("更换密钥");
-        assertThat(sendJson(delete("/api/agent/providers/" + id + "?version=1"), session)
-                .getResponse().getStatus()).isEqualTo(200);
-        var deletes = auditRows("provider:delete");
-        assertThat(deletes).hasSize(1);
-        assertThat(deletes.getFirst()).containsEntry("target_label", PROVIDER_NAME);
-        assertThat((String) deletes.getFirst().get("summary"))
-                .contains("删除连接「" + PROVIDER_NAME + "」").contains("https://api.deepseek.com");
-
-        // 负面清单：审计表里搜不到任何密钥材料（含被替换掉的旧密钥）
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM sys_audit_log WHERE CONCAT_WS(' ', actor_login, actor_name, "
-                        + "actor_unit_name, module, action, target_type, target_id, target_label, "
-                        + "summary, request_id) LIKE '%synthetic-%'", Integer.class)).isZero();
     }
 
     @Test

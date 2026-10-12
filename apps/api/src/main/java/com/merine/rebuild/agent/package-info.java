@@ -1,6 +1,7 @@
 /**
- * @deprecated 海防助手已迁移为独立的 Agent 服务（apps/agent，浏览器访问 127.0.0.1:3080）；
- *             该包仅保留旧的站内助手页面与接口，不再扩展新能力，后续在确认无引用后移除。
+ * 智能体数据源与查询范围：受控只读查询的数据源配置、视图白名单与语义说明。
+ *
+ * <p>站内助手（chat/provider/semantics）已整体移除，AI 对话由独立 Agent 服务（apps/agent）承担；
+ * 本包只保留 Java 侧的数据源管理、只读授权检查与服务间凭据桥。
  */
-@Deprecated
 package com.merine.rebuild.agent;

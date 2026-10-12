@@ -6,11 +6,6 @@
  * 每个受保护接口都在后端按同一份权限码独立判定。
  */
 export const PERMISSIONS = {
-  providerRead: 'agent:provider:read',
-  providerCreate: 'agent:provider:create',
-  providerUpdate: 'agent:provider:update',
-  providerDelete: 'agent:provider:delete',
-  chatUse: 'agent:chat:use',
   datasourceRead: 'agent:datasource:read',
   datasourceCreate: 'agent:datasource:create',
   datasourceUpdate: 'agent:datasource:update',

@@ -1,7 +1,6 @@
 package com.merine.rebuild.auth;
 
 import com.merine.rebuild.system.user.account.UserAccountLookup;
-import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,11 +75,6 @@ public class SecurityConfig {
                 // 退出用 DELETE /api/auth/session，由 AuthController 控制响应体
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry -> {
-                    // 已受理 SSE 的内部 ASYNC 收尾可能晚于退出登录；不能再把已提交响应改为 401。
-                    // 初始 REQUEST 仍须认证 + Controller 权限，工具执行另核验当前会话与数据范围。
-                    registry.requestMatchers(request -> request.getDispatcherType() == DispatcherType.ASYNC
-                            && "POST".equals(request.getMethod())
-                            && "/api/agent/chat".equals(request.getRequestURI())).permitAll();
                     registry.requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll();
                     registry.requestMatchers(HttpMethod.POST, "/api/auth/session").permitAll();
                     if (devLoginEnabled && environment.acceptsProfiles(Profiles.of("dev & !prod"))) {
