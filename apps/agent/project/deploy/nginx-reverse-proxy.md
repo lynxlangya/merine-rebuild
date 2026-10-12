@@ -16,6 +16,7 @@
   - `--public-url`：只影响打印的 URL、`DSH_WEB_URL` 与页面来源展示，**不放行任何请求**。
   - `--trusted-host`：浏览器实际使用的 authority（`host` 或 `host:port`；不带端口表示任意端口），**必须与实际访问地址一致**，否则 `/api` 全部 403。
   - 端口 3080 只对代理开放（本机回环或防火墙白名单），不要直接暴露到网络。
+
 - 内网 DNS（或 hosts）能把 `agent.example` 解析到代理。
 - nginx 与 Agent 同机：上游写 `http://127.0.0.1:3080`。nginx 在容器里：上游写宿主机地址（Linux 用 docker0 网关地址，Mac 用 `host.docker.internal`），不能写 `127.0.0.1`。
 
@@ -83,14 +84,14 @@ server {
 
 ## 3. 部署时要替换的清单
 
-| 项目 | 位置 | 说明 |
-| --- | --- | --- |
-| 域名/authority | nginx `server_name`、`--trusted-host`、`--public-url` | 三处必须一致 |
-| 证书路径 | nginx `ssl_certificate*`（或 `--tls-cert/--tls-key`） | 覆盖实际访问的主机名/IP |
-| 监听端口 | `start.sh --port`、nginx `proxy_pass` | 对外端口与内网端口分开 |
-| 子路径前缀 | `location`、`rewrite`、`proxy_cookie_path`、`--public-url` | 四者一致 |
-| 主站顶部入口 | `apps/web/src/app/AppShell.tsx` 的 `href`（当前硬编码 `http://127.0.0.1:3080`） | 改成部署地址（如 `https://agent.example/`）后重新构建主站 |
-| 持久目录 | `DSH_HOME` | 非 root 账号可写；升级只换代码不动该目录 |
+| 项目           | 位置                                                                            | 说明                                                      |
+| -------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 域名/authority | nginx `server_name`、`--trusted-host`、`--public-url`                           | 三处必须一致                                              |
+| 证书路径       | nginx `ssl_certificate*`（或 `--tls-cert/--tls-key`）                           | 覆盖实际访问的主机名/IP                                   |
+| 监听端口       | `start.sh --port`、nginx `proxy_pass`                                           | 对外端口与内网端口分开                                    |
+| 子路径前缀     | `location`、`rewrite`、`proxy_cookie_path`、`--public-url`                      | 四者一致                                                  |
+| 主站顶部入口   | `apps/web/src/app/AppShell.tsx` 的 `href`（当前硬编码 `http://127.0.0.1:3080`） | 改成部署地址（如 `https://agent.example/`）后重新构建主站 |
+| 持久目录       | `DSH_HOME`                                                                      | 非 root 账号可写；升级只换代码不动该目录                  |
 
 ## 4. 验证步骤
 
@@ -102,5 +103,5 @@ server {
 ## 5. 限制（不要在部署时绕过）
 
 - **单实例**：会话与运行登记在进程内/`DSH_HOME` 文件里，不要在同一个域名后挂多个实例做负载均衡。
-- **单操作员**：所有用户共享同一个身份与数据范围；按登录用户区分权限需要先完成「受控查询 + 身份」设计。
+- **单操作员**：所有用户共享同一个身份与数据范围；受控查询已接入，按登录用户区分权限仍需身份桥与单位范围隔离，见[当前运行说明](../../../../docs/tasks/agent-readonly-query.md)。
 - 启动日志中的登录链接含进程凭据，勿写入工单、聊天记录或公共文档；只发给使用者。

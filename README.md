@@ -182,12 +182,14 @@ Agent（`apps/agent`）是宿主机运行时，不打进交付镜像：`prod-bui
 - MySQL 数据保存在命名卷中。`down` 不删除卷；`down -v`、清库或恢复数据必须是明确的独立操作。
 - 源码挂载便于开发，Linux 的 `node_modules`、Maven 缓存和编译输出放在独立卷中，不混用宿主机依赖。
 
-## 站内助手与模型供应商（已移除）
+## AI：独立 Agent 与受控查询
 
 站内助手（旧 `/agent` 页面、Java 的 chat / provider / semantics、Function Calling）、模型供应商配置、助手会话与运行记录
 已于 2026-10-12 整体移除（迁移 `V57` 删除相关权限与数据表）。AI 对话由独立 Agent 服务承担：模型在 Agent 自己的
 「设置 → 模型」里配置，会话与运行数据保存在 `apps/agent/.dsh-home`；主站顶部「打开海防助手」跳转 `http://127.0.0.1:3080`。
-Java 侧只保留智能体数据源管理、查询范围与只读查询桥（见[只读查询说明](docs/tasks/agent-readonly-query.md)）。
+当前链路已由用户反馈基本跑通：**提问 → 获取服务器时间和业务目录 → 模型生成 SQL → Agent 校验并查询只读视图 → 模型解释结果**。Java 负责数据源、范围、语义配置与连接授权，模型不持有数据库密码。
+
+接手只需先读[当前运行说明](docs/tasks/agent-readonly-query.md)与[查询范围设计](docs/tasks/agent-query-scope-management-plan.md)；旧站内助手设计、执行提示和阶段快照已移至[历史归档](docs/archive/agent-legacy/README.md)。当前仍是单操作员固定范围，尚未完成主站身份同步与单位隔离。
 
 **智能体数据源与查询范围**（`/agent/datasources`、`/agent/query-scopes`）：数据源只支持 MySQL，密码用 AES-256-GCM 加密保存（复用 `MODEL_PROVIDER_ENCRYPTION_KEY`，数据源密文以 `datasource:<id>` 为认证附加数据），列表与编辑都不回显。测试连接只读 MySQL 授权元数据判定只读，白名单只有 USAGE/SELECT/SHOW VIEW；目标地址按部署配置校验 DNS 解析后的实际地址，非回环目标默认 `VERIFY_IDENTITY`。查询范围维护允许查询的视图（必须是真实 VIEW）与视图/字段中文说明；范围变化会停用数据源，复检通过并启用后才生效。独立 Agent 通过默认关闭的服务间凭据桥按次取得连接授权与目录快照（协议 v2，含 `semanticVersion`），Agent 解析并重建单视图 SELECT 后执行；密码只到 Agent 服务端内存，浏览器、模型与日志都不接触。单操作员试验范围与验收见[只读查询说明](docs/tasks/agent-readonly-query.md)。
 
@@ -222,7 +224,7 @@ Java 侧只保留智能体数据源管理、查询范围与只读查询桥（见
 
 **情报与任务关联已实现**：本单位追加研判、明确共享研判摘要、原子创建关联任务、独立原文授权和来源追溯；本版已移除大队间共享、任务结论回流及从结果发后续任务；详见[关联设计及验收](docs/tasks/information-task-link-design-plan.md)。
 
-**尚未实现的其它部分**：情报池、图谱查询、任务调度、AI 平台接入、Neo4j；用户列表导出。也没有连接旧数据库或外部业务服务。交付镜像只做到本地演练，生产化还缺 TLS、密钥管理、监控指标与多实例会话。
+**尚未实现的其它部分**：情报池、图谱查询、任务调度、AI 多用户身份与单位隔离、Neo4j；用户列表导出。也没有连接旧数据库或外部业务服务。交付镜像只做到本地演练，生产化还缺 TLS、密钥管理、监控指标与多实例会话。
 
 前端设计从 [DESIGN.md](DESIGN.md) 开始：配色、排版、尺寸、页面布局、组件交互与验收基线集中在这里；实现职责与状态管理见[前端规则](docs/rules/frontend.md)。[初始 UI 原型](docs/sys-design/index.html)**只是样式与交互参考**，不是本轮要实现的模块清单。
 

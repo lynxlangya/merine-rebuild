@@ -1,6 +1,8 @@
 # 智能体 / 智能问数方向评审简要（2026-10-11）
 
-用途：交给外部评审（Claude Code）判断当前方案能否继续、是否存在逻辑漏洞或结构性风险。本文只描述**当前真实状态与证据**；设计稿、重建计划中的能力不等于已实现。仓库根 [AGENTS.md](../../AGENTS.md) 是协作底线。
+> **历史归档（2026-10-12）**：这是当时的讨论或状态快照，不代表当前实现；文中的待办、完成度、未提交状态和授权描述均不作为现行任务。 当前入口：[独立 Agent 运行说明](../../tasks/agent-readonly-query.md)；范围与语义：[现行设计](../../tasks/agent-query-scope-management-plan.md)。以下保留历史原文。
+
+用途：交给外部评审（Claude Code）判断当前方案能否继续、是否存在逻辑漏洞或结构性风险。本文只描述**当前真实状态与证据**；设计稿、重建计划中的能力不等于已实现。仓库根 [AGENTS.md](../../../AGENTS.md) 是协作底线。
 
 ## 1. 业务定位
 
@@ -137,5 +139,5 @@ node scripts/seed-query-scope.mjs <数据源ID>          # 查询范围配置演
 node scripts/seed-query-scope.mjs <数据源ID> --apply  # 合并范围与说明、复检启用
 ```
 
-- 关键文档：[只读查询运行说明](agent-readonly-query.md)、[查询范围设计](agent-query-scope-management-plan.md)、[项目现状](project-status-2026-10-11.md)、[生产反代配置](../../apps/agent/project/deploy/nginx-reverse-proxy.md)。
+- 关键文档：[只读查询运行说明](../../tasks/agent-readonly-query.md)、[查询范围设计](../../tasks/agent-query-scope-management-plan.md)、[项目现状](project-status-2026-10-11.md)、[生产反代配置](../../../apps/agent/project/deploy/nginx-reverse-proxy.md)。
 - 关键代码：`apps/api/.../agent/datasource/`、`apps/agent/packages/merine/query/src/`、`apps/web/src/features/query-scopes/`。

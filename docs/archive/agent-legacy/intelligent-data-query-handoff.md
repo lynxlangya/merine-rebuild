@@ -1,5 +1,7 @@
 # 智能问数：从 Merine Daas 到 Rebuild 的讨论交接
 
+> **历史归档（2026-10-12）**：这是当时的讨论或状态快照，不代表当前实现；文中的待办、完成度、未提交状态和授权描述均不作为现行任务。 当前入口：[独立 Agent 运行说明](../../tasks/agent-readonly-query.md)；范围与语义：[现行设计](../../tasks/agent-query-scope-management-plan.md)。以下保留历史原文。
+
 整理日期：2026-10-09。本文总结用户与 Codex 在 `merine-daas` 会话中的讨论，供 Rebuild Codex 直接承接。它是需求背景与方案共识，不是已完成实现，也不是完整的接口或数据库设计。
 
 ## 1. 接手时先理解这件事
@@ -150,7 +152,7 @@ flowchart LR
 
 可先用替身验证界面和查询编排，但必须标明“替身验证”。用户最终希望真实模型参与的完整链路跑通，不能只用固定映射或 mock 宣称完成智能问数。
 
-相关入口：[AGENTS](../../AGENTS.md)、[README](../../README.md)、[模块与目录规则](../rules/structure.md)、[后端规则](../rules/backend.md)、[数据库规则](../rules/database.md)、[测试规则](../rules/testing.md)。按实际任务读取，勿将所有文档当作统一前置通读清单。
+相关入口：[AGENTS](../../../AGENTS.md)、[README](../../../README.md)、[模块与目录规则](../../rules/structure.md)、[后端规则](../../rules/backend.md)、[数据库规则](../../rules/database.md)、[测试规则](../../rules/testing.md)。按实际任务读取，勿将所有文档当作统一前置通读清单。
 
 ## 8. 首期范围：给出建议，但先在 Rebuild 讨论确定
 
@@ -213,4 +215,4 @@ flowchart LR
 
 可在 Rebuild 新会话中直接发送：
 
-> 请先阅读 `AGENTS.md` 和 `docs/tasks/intelligent-data-query-handoff.md`，承接此前智能问数讨论。目标是先在 Rebuild 做一版完整可验证的试验，再将经验用于正式海防项目。请结合本项目当前代码，优先梳理首期专题、指标定义、模型接入与受控查询链路，给出推荐的最小落地方案和待确认的业务问题，接着与我讨论。当前先确定方案，不要把文中的示例当作已经定稿的实现要求。
+> 请先阅读 `AGENTS.md` 和 `docs/archive/agent-legacy/intelligent-data-query-handoff.md`，承接此前智能问数讨论。目标是先在 Rebuild 做一版完整可验证的试验，再将经验用于正式海防项目。请结合本项目当前代码，优先梳理首期专题、指标定义、模型接入与受控查询链路，给出推荐的最小落地方案和待确认的业务问题，接着与我讨论。当前先确定方案，不要把文中的示例当作已经定稿的实现要求。

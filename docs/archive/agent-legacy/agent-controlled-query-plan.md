@@ -1,5 +1,7 @@
 # 海防助手受控查询与 Function Calling 首版
 
+> **已废弃（2026-10-12）**：旧站内助手及其 Java 对话、模型供应商、固定资料库、Function Calling 路线已退役（V57）；文中执行提示、接口、权限和路径仅用于历史追溯，不应继续实现或恢复。 当前入口：[独立 Agent 运行说明](../../tasks/agent-readonly-query.md)；范围与语义：[现行设计](../../tasks/agent-query-scope-management-plan.md)。以下保留历史原文。
+
 > **已废弃（2026-10-11）**：站内助手的 Function Calling 与本机 Agent 的直连视图/环境变量实验均已移除；独立 Agent 的业务查询将在「智能体管理 → 数据源管理」的配置与检查之上重新设计。本文档仅作历史记录，不再代表当前实现。
 
 日期：2026-10-10。用户确认采用现有 Java 后台的受控查询能力与 Function Calling；MCP、Skills 留待实际复用和专题流程需要时再建设。先记录方案，再开发、验证。

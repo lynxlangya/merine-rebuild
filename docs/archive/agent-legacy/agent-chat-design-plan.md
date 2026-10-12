@@ -1,5 +1,7 @@
 # 海防助手对话与流式交互设计（评审稿）
 
+> **已废弃（2026-10-12）**：旧站内助手及其 Java 对话、模型供应商、固定资料库、Function Calling 路线已退役（V57）；文中执行提示、接口、权限和路径仅用于历史追溯，不应继续实现或恢复。 当前入口：[独立 Agent 运行说明](../../tasks/agent-readonly-query.md)；范围与语义：[现行设计](../../tasks/agent-query-scope-management-plan.md)。以下保留历史原文。
+
 文档状态：**待评审**，尚未实现、未新增依赖。调研日期 2026-10-09，包版本事实均标注核对日期。
 评审对象：本文档 + 第 4、5 节的协议与部件模型 + 第 14 节的开放问题。
 阅读标记：`【事实】` 已在仓库或 npm 核对；`【建议】` 本方案主张；`【待决策】` 需要评审或项目所有者拍板。
@@ -14,7 +16,7 @@
 2. 一条对话由「用户消息 → 服务端 SSE 流 → 助手消息（多个部件）」组成；部件类型包括文本、表格、图表、来源、步骤、追问、提示。
 3. 模型可以在一轮结束时**追问**：给出选项或输入框，用户回答后再开一段新流（回合式，不挂着连接等输入）。
 4. 第一版**不落库**：历史由前端随请求携带；服务端只保留有上限、有 TTL 的内存执行记录（去重、停止确认、断连核对），重启即丢失并如实显示未知（见 §17）。
-5. 这一版覆盖的只是「对话外壳 + 协议 + 部件渲染」；真正的问数/指标能力由另外的受控查询设计承接（见 `docs/tasks/intelligent-data-query-handoff.md`）。
+5. 这一版覆盖的只是「对话外壳 + 协议 + 部件渲染」；真正的问数/指标能力由另外的受控查询设计承接（见 `docs/archive/agent-legacy/intelligent-data-query-handoff.md`）。
 
 需要评审重点回答的问题集中在第 14 节。
 
@@ -59,7 +61,7 @@ Merine Rebuild 是海边防业务的全栈学习型项目，模块化单体：
 ### 1.4 既有设计输入
 
 - `docs/sys-design/implementation-notes.md` §4「AI 生成与复核」：状态机为 排队 → 生成中 → 已完成 / 失败 / 请求取消 → 已取消；断连 → 结果待确认；只显示可观察步骤；失败与取消保留已接收内容。
-- `docs/tasks/intelligent-data-query-handoff.md`：问数主线（模型理解 → 澄清 → 受控查询 → 可核对答案 → 连续追问），明确「有影响结果的歧义时给选项或请用户补充」「连续追问不能丢已确认条件」。
+- `docs/archive/agent-legacy/intelligent-data-query-handoff.md`：问数主线（模型理解 → 澄清 → 受控查询 → 可核对答案 → 连续追问），明确「有影响结果的歧义时给选项或请用户补充」「连续追问不能丢已确认条件」。
 - `docs/rules/frontend.md`：TanStack Query 管服务端状态、写请求不自动重试、401 统一处理、禁用按钮说明原因等。
 
 ---
@@ -910,7 +912,7 @@ Object chat(@Valid @RequestBody ChatRequest request, Authentication auth) {
 - 助手使用侧选项接口：`GET /api/agent/providers/options`（登录即可）
 - 契约：`packages/api-contract/openapi/agent.json`、`src/generated/agent.d.ts`、`src/agent.ts`
 - 部署：`infra/docker/nginx/default.conf`、`infra/compose.yaml`、`infra/compose.prod.yaml`
-- 相关设计：`docs/tasks/intelligent-data-query-handoff.md`、`docs/tasks/model-provider-management.md`、`docs/sys-design/implementation-notes.md` §4
+- 相关设计：`docs/archive/agent-legacy/intelligent-data-query-handoff.md`、`docs/archive/agent-legacy/model-provider-management.md`、`docs/sys-design/implementation-notes.md` §4
 - 规范：`AGENTS.md`、`docs/rules/{frontend,backend,database,testing,structure}.md`、`DESIGN.md`
 
 ---
@@ -924,13 +926,13 @@ Object chat(@Valid @RequestBody ChatRequest request, Authentication auth) {
 ```text
 角色：你是本次方案评审的技术评审者，不是实现者。本轮只做只读评审与提示词产出：不写业务代码、不改仓库文件、不安装依赖、不提交。
 
-目标：在真实仓库里核对《海防助手对话与流式交互设计》（docs/tasks/agent-chat-design-plan.md），找出事实错误、设计漏洞与遗漏，然后基于你的评审结论，重写「给实现者的执行提示」（原草案在文档 §16.2）。
+目标：在真实仓库里核对《海防助手对话与流式交互设计》（docs/archive/agent-legacy/agent-chat-design-plan.md），找出事实错误、设计漏洞与遗漏，然后基于你的评审结论，重写「给实现者的执行提示」（原草案在文档 §16.2）。
 
 第一步：读全这些文件
 - AGENTS.md（硬约束：依赖审批、权限在后端、契约一致、数据可靠、测试按风险、环境隔离）
-- docs/tasks/agent-chat-design-plan.md（评审对象，全文）
+- docs/archive/agent-legacy/agent-chat-design-plan.md（评审对象，全文）
 - docs/rules/frontend.md、backend.md、database.md、testing.md、structure.md
-- docs/tasks/intelligent-data-query-handoff.md、docs/tasks/model-provider-management.md、docs/sys-design/implementation-notes.md（§4 AI 生成与复核）
+- docs/archive/agent-legacy/intelligent-data-query-handoff.md、docs/archive/agent-legacy/model-provider-management.md、docs/sys-design/implementation-notes.md（§4 AI 生成与复核）
 - 现状代码：apps/web/src/features/agent/、apps/api/src/main/java/com/merine/rebuild/agent/、apps/api/src/main/resources/application.yaml、packages/api-contract/、infra/docker/nginx/default.conf、infra/compose.yaml
 
 第二步：事实核对（只读）
@@ -999,9 +1001,9 @@ Q14 补齐必要失败路径，不做导出、@提及、分支和成功答案重
 先读：
 AGENTS.md、DESIGN.md；
 docs/rules/frontend.md、backend.md、database.md、testing.md、structure.md；
-docs/tasks/agent-chat-design-plan.md全文、本次评审结论；
-docs/tasks/intelligent-data-query-handoff.md；
-docs/tasks/model-provider-management.md；
+docs/archive/agent-legacy/agent-chat-design-plan.md全文、本次评审结论；
+docs/archive/agent-legacy/intelligent-data-query-handoff.md；
+docs/archive/agent-legacy/model-provider-management.md；
 docs/sys-design/implementation-notes.md §4；
 随后核对当前agent前后端、shared/http.ts、认证链、契约脚本和代理配置。
 
@@ -1051,7 +1053,7 @@ docs/sys-design/implementation-notes.md §4；
 任务1：先确定并实现最小协议
 落点：
 apps/api/src/main/java/com/merine/rebuild/agent/chat/dto/
-docs/tasks/agent-chat-design-plan.md中与本期直接相关的协议和阶段章节
+docs/archive/agent-legacy/agent-chat-design-plan.md中与本期直接相关的协议和阶段章节
 apps/api/src/test/java/com/merine/rebuild/agent/chat/
 
 要求：
