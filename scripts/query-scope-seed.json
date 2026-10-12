@@ -6,9 +6,18 @@
       "displayName": "任务汇总",
       "description": "任务处置汇总，一项任务一行（task_id 唯一）。总体办结口径：status = 'COMPLETED' 且 completed_at_utc 非空，按总体办结时间统计；分支反馈、承办答复或撤回都不等于总体办结。时间字段为 UTC；本月与最近一个月先用 get_business_time 获取边界。范围是部署固定只读视图，不代表登录用户的单位。",
       "columns": [
-        { "name": "task_id", "description": "任务唯一标识，一任务一行；按任务计数时以此去重" },
-        { "name": "task_no", "description": "任务编号，全局唯一业务编号" },
-        { "name": "title", "description": "任务标题，发送后不可修改" },
+        {
+          "name": "task_id",
+          "description": "任务唯一标识，一任务一行；按任务计数时以此去重"
+        },
+        {
+          "name": "task_no",
+          "description": "任务编号，全局唯一业务编号"
+        },
+        {
+          "name": "title",
+          "description": "任务标题，发送后不可修改"
+        },
         {
           "name": "status",
           "description": "整单状态代码：OPEN 办理中，AWAITING_CLOSE 全部分支已答复或撤回、待发起单位办结，COMPLETED 已办结"
@@ -25,7 +34,10 @@
           "name": "issued_at_utc",
           "description": "任务发起（创建）时刻 UTC；新增任务统计按此字段"
         },
-        { "name": "initial_due_at_utc", "description": "初次整单截止时刻 UTC，不可改写" },
+        {
+          "name": "initial_due_at_utc",
+          "description": "初次整单截止时刻 UTC，不可改写"
+        },
         {
           "name": "current_due_at_utc",
           "description": "当前整单截止时刻 UTC，经发起单位批准延期后更新"
@@ -57,14 +69,26 @@
       "displayName": "任务责任分支",
       "description": "任务责任分支，一条分支一行（branch_id 唯一）。当前承办只取活跃承办段（PENDING_ACCEPT 待承接或 IN_PROGRESS 办理中）；已答复或已撤回的分支当前承办字段为 NULL，历史承办段不在本视图。分支答复不代表整单办结。",
       "columns": [
-        { "name": "branch_id", "description": "责任分支唯一标识" },
+        {
+          "name": "branch_id",
+          "description": "责任分支唯一标识"
+        },
         {
           "name": "parent_branch_id",
           "description": "向下下发来源分支 ID；初次下发为 NULL，表示没有父分支"
         },
-        { "name": "task_id", "description": "所属任务 ID，关联 ai_task_summary.task_id" },
-        { "name": "task_no", "description": "所属任务编号" },
-        { "name": "task_title", "description": "所属任务标题" },
+        {
+          "name": "task_id",
+          "description": "所属任务 ID，关联 ai_task_summary.task_id"
+        },
+        {
+          "name": "task_no",
+          "description": "所属任务编号"
+        },
+        {
+          "name": "task_title",
+          "description": "所属任务标题"
+        },
         {
           "name": "branch_status",
           "description": "分支状态代码：OPEN 办理中，COMPLETED 已有唯一正式结果，RECALLED 退回后已说明原因撤回"
@@ -85,7 +109,10 @@
           "name": "current_assignment_status",
           "description": "当前活跃承办段状态：PENDING_ACCEPT 待承接，IN_PROGRESS 办理中；无活跃承办段为 NULL"
         },
-        { "name": "accepted_at_utc", "description": "当前承办段承接时刻 UTC；尚未承接为 NULL" },
+        {
+          "name": "accepted_at_utc",
+          "description": "当前承办段承接时刻 UTC；尚未承接为 NULL"
+        },
         {
           "name": "due_at_utc",
           "description": "当前承办段办理期限 UTC；判断超期用它比较服务器 UTC 当前时间"
@@ -98,7 +125,10 @@
           "name": "result_outcome_code",
           "description": "已有正式结果代码：FULFILLED 目标达成，PARTIAL 部分完成，OUT_OF_JURISDICTION 转出辖区，UNABLE_TO_VERIFY 无法核实，NOT_FOUND 经核查未发现；无结果为 NULL"
         },
-        { "name": "result_submitted_at_utc", "description": "正式结果提交时刻 UTC；无结果为 NULL" }
+        {
+          "name": "result_submitted_at_utc",
+          "description": "正式结果提交时刻 UTC；无结果为 NULL"
+        }
       ]
     },
     {
@@ -106,9 +136,18 @@
       "displayName": "信息主档",
       "description": "信息流转的原始信息主档，一条原始信息一行（topic_id 唯一），包含草稿与已发出。信息条数按 topic_id 去重；草稿不计入已发出信息。首版不含情报正文、共享摘要与内部研判。",
       "columns": [
-        { "name": "topic_id", "description": "原始信息唯一标识；统计信息条数时以此去重" },
-        { "name": "topic_no", "description": "信息编号，稳定唯一业务编号" },
-        { "name": "title", "description": "信息标题，发布后不可修改" },
+        {
+          "name": "topic_id",
+          "description": "原始信息唯一标识；统计信息条数时以此去重"
+        },
+        {
+          "name": "topic_no",
+          "description": "信息编号，稳定唯一业务编号"
+        },
+        {
+          "name": "title",
+          "description": "信息标题，发布后不可修改"
+        },
         {
           "name": "status",
           "description": "信息状态代码：DRAFT 草稿（尚未发出），PUBLISHED 已发出（已首次发布）"
@@ -121,7 +160,10 @@
           "name": "origin_unit_name",
           "description": "原始发起单位名称快照，历史事实，不随单位改名变化；仅供展示"
         },
-        { "name": "created_at_utc", "description": "信息创建（起草）时刻 UTC" },
+        {
+          "name": "created_at_utc",
+          "description": "信息创建（起草）时刻 UTC"
+        },
         {
           "name": "first_published_at_utc",
           "description": "首次发送时刻 UTC；草稿为 NULL。继续共享不改变首次发布时间，首次发布统计用此字段"
@@ -133,7 +175,10 @@
       "displayName": "信息送达记录",
       "description": "信息送达记录，一条接收记录一行（receipt_id 唯一）。送达次数按 receipt_id 计数；发送批次数按 send_id 去重；收到不等于已签收，签收数量按 signed_at_utc 非空计数。同一信息多次发送或转发会产生多条送达记录，信息条数不能与收发次数混用。实际发送/收到按 sent_at_utc，签收按 signed_at_utc。",
       "columns": [
-        { "name": "receipt_id", "description": "接收记录唯一标识；统计送达次数时以此计数" },
+        {
+          "name": "receipt_id",
+          "description": "接收记录唯一标识；统计送达次数时以此计数"
+        },
         {
           "name": "send_id",
           "description": "本次发送批次 ID；一次发送给多个单位共用同一批次，统计发送批次数时按此去重"
@@ -146,20 +191,38 @@
           "name": "topic_id",
           "description": "所属原始信息 ID，关联 ai_intel_topic.topic_id；统计信息条数时对它去重"
         },
-        { "name": "topic_no", "description": "所属信息编号" },
-        { "name": "title", "description": "所属信息标题" },
+        {
+          "name": "topic_no",
+          "description": "所属信息编号"
+        },
+        {
+          "name": "title",
+          "description": "所属信息标题"
+        },
         {
           "name": "origin_unit_id",
           "description": "原始发起单位 ID；继续共享的送达记录也用原始发起单位，不随转发变化"
         },
-        { "name": "origin_unit_name", "description": "原始发起单位名称快照，历史事实" },
+        {
+          "name": "origin_unit_name",
+          "description": "原始发起单位名称快照，历史事实"
+        },
         {
           "name": "sender_unit_id",
           "description": "本次发送单位 ID（可能是源头或转发单位）；按发送方筛选用此列"
         },
-        { "name": "sender_unit_name", "description": "本次发送单位名称快照，历史事实" },
-        { "name": "receiver_unit_id", "description": "接收单位 ID；按接收方筛选用此列" },
-        { "name": "receiver_unit_name", "description": "接收单位名称快照，历史事实" },
+        {
+          "name": "sender_unit_name",
+          "description": "本次发送单位名称快照，历史事实"
+        },
+        {
+          "name": "receiver_unit_id",
+          "description": "接收单位 ID；按接收方筛选用此列"
+        },
+        {
+          "name": "receiver_unit_name",
+          "description": "接收单位名称快照，历史事实"
+        },
         {
           "name": "sent_at_utc",
           "description": "本次发送时刻 UTC；按期间统计实际发送或收到用此字段"
@@ -187,18 +250,42 @@
       "displayName": "港口档案",
       "description": "涉海基础档案·港口，一条港口档案一行（port_id 唯一）。状态停用表示档案不再启用，历史关系仍保留。范围是部署固定只读视图，不代表登录用户单位。",
       "columns": [
-        { "name": "port_id", "description": "港口档案唯一标识" },
-        { "name": "name", "description": "港口显示名称，不作为唯一标识" },
-        { "name": "region", "description": "所在区域（公开地理或行政区域文字）" },
-        { "name": "location", "description": "位置描述；NULL 表示未提供" },
-        { "name": "purpose", "description": "用途说明；NULL 表示未提供" },
+        {
+          "name": "port_id",
+          "description": "港口档案唯一标识"
+        },
+        {
+          "name": "name",
+          "description": "港口显示名称，不作为唯一标识"
+        },
+        {
+          "name": "region",
+          "description": "所在区域（公开地理或行政区域文字）"
+        },
+        {
+          "name": "location",
+          "description": "位置描述；NULL 表示未提供"
+        },
+        {
+          "name": "purpose",
+          "description": "用途说明；NULL 表示未提供"
+        },
         {
           "name": "status",
           "description": "档案状态代码：ENABLED 启用，DISABLED 停用（停用保留既有关系）"
         },
-        { "name": "status_label", "description": "状态中文标签，来自字典 common.status（可维护）" },
-        { "name": "created_at_utc", "description": "创建时刻 UTC" },
-        { "name": "updated_at_utc", "description": "最近修改时刻 UTC" }
+        {
+          "name": "status_label",
+          "description": "状态中文标签，来自字典 common.status（可维护）"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "最近修改时刻 UTC"
+        }
       ]
     },
     {
@@ -206,15 +293,42 @@
       "displayName": "锚地档案",
       "description": "涉海基础档案·锚地，一条锚地档案一行（anchorage_id 唯一）。状态停用表示档案不再启用。",
       "columns": [
-        { "name": "anchorage_id", "description": "锚地档案唯一标识" },
-        { "name": "name", "description": "锚地显示名称，不作为唯一标识" },
-        { "name": "region", "description": "所在区域" },
-        { "name": "location", "description": "位置描述；NULL 表示未提供" },
-        { "name": "purpose", "description": "用途说明；NULL 表示未提供" },
-        { "name": "status", "description": "档案状态代码：ENABLED 启用，DISABLED 停用" },
-        { "name": "status_label", "description": "状态中文标签，来自字典 common.status（可维护）" },
-        { "name": "created_at_utc", "description": "创建时刻 UTC" },
-        { "name": "updated_at_utc", "description": "最近修改时刻 UTC" }
+        {
+          "name": "anchorage_id",
+          "description": "锚地档案唯一标识"
+        },
+        {
+          "name": "name",
+          "description": "锚地显示名称，不作为唯一标识"
+        },
+        {
+          "name": "region",
+          "description": "所在区域"
+        },
+        {
+          "name": "location",
+          "description": "位置描述；NULL 表示未提供"
+        },
+        {
+          "name": "purpose",
+          "description": "用途说明；NULL 表示未提供"
+        },
+        {
+          "name": "status",
+          "description": "档案状态代码：ENABLED 启用，DISABLED 停用"
+        },
+        {
+          "name": "status_label",
+          "description": "状态中文标签，来自字典 common.status（可维护）"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "最近修改时刻 UTC"
+        }
       ]
     },
     {
@@ -222,10 +336,22 @@
       "displayName": "海岛档案",
       "description": "涉海基础档案·海岛，一条海岛档案一行（island_id 唯一）。居住类型是档案属性，不代表实时人口。",
       "columns": [
-        { "name": "island_id", "description": "海岛档案唯一标识" },
-        { "name": "name", "description": "海岛显示名称，不作为唯一标识" },
-        { "name": "region", "description": "所在区域" },
-        { "name": "location", "description": "位置描述；NULL 表示未提供" },
+        {
+          "name": "island_id",
+          "description": "海岛档案唯一标识"
+        },
+        {
+          "name": "name",
+          "description": "海岛显示名称，不作为唯一标识"
+        },
+        {
+          "name": "region",
+          "description": "所在区域"
+        },
+        {
+          "name": "location",
+          "description": "位置描述；NULL 表示未提供"
+        },
         {
           "name": "inhabitation_type",
           "description": "居住类型代码：INHABITED 有人岛，UNINHABITED 无人岛"
@@ -234,10 +360,22 @@
           "name": "inhabitation_label",
           "description": "居住类型中文标签，来自字典 maritime.island.inhabitation（可维护）；历史资料保留资料时点，不代表当前情况"
         },
-        { "name": "status", "description": "档案状态代码：ENABLED 启用，DISABLED 停用" },
-        { "name": "status_label", "description": "状态中文标签，来自字典 common.status（可维护）" },
-        { "name": "created_at_utc", "description": "创建时刻 UTC" },
-        { "name": "updated_at_utc", "description": "最近修改时刻 UTC" }
+        {
+          "name": "status",
+          "description": "档案状态代码：ENABLED 启用，DISABLED 停用"
+        },
+        {
+          "name": "status_label",
+          "description": "状态中文标签，来自字典 common.status（可维护）"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "最近修改时刻 UTC"
+        }
       ]
     },
     {
@@ -245,23 +383,50 @@
       "displayName": "派出所档案",
       "description": "涉海基础档案·派出所，一条派出所档案一行（police_station_id 唯一）。所属单位来自档案绑定的组织单位。",
       "columns": [
-        { "name": "police_station_id", "description": "派出所档案唯一标识" },
-        { "name": "name", "description": "派出所显示名称，不作为唯一标识" },
-        { "name": "region", "description": "所在区域" },
-        { "name": "location", "description": "位置描述；NULL 表示未提供" },
+        {
+          "name": "police_station_id",
+          "description": "派出所档案唯一标识"
+        },
+        {
+          "name": "name",
+          "description": "派出所显示名称，不作为唯一标识"
+        },
+        {
+          "name": "region",
+          "description": "所在区域"
+        },
+        {
+          "name": "location",
+          "description": "位置描述；NULL 表示未提供"
+        },
         {
           "name": "status",
           "description": "档案状态代码：ENABLED 启用，DISABLED 停用（停用保留既有关系）"
         },
-        { "name": "status_label", "description": "状态中文标签，来自字典 common.status（可维护）" },
+        {
+          "name": "status_label",
+          "description": "状态中文标签，来自字典 common.status（可维护）"
+        },
         {
           "name": "unit_id",
           "description": "所属支队或大队 ID（sys_unit）；关联单位缺失时为 NULL"
         },
-        { "name": "unit_code", "description": "所属单位编码；关联缺失时为 NULL" },
-        { "name": "unit_name", "description": "所属单位当前名称；与档案名称不同，表示组织归属" },
-        { "name": "created_at_utc", "description": "创建时刻 UTC" },
-        { "name": "updated_at_utc", "description": "最近修改时刻 UTC" }
+        {
+          "name": "unit_code",
+          "description": "所属单位编码；关联缺失时为 NULL"
+        },
+        {
+          "name": "unit_name",
+          "description": "所属单位当前名称；与档案名称不同，表示组织归属"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "最近修改时刻 UTC"
+        }
       ]
     },
     {
@@ -269,9 +434,18 @@
       "displayName": "民警档案",
       "description": "涉海基础档案·民警，一条成员档案一行（officer_id 唯一）。姓名与所属单位来自关联账号，与页面同源；不包含登录名、手机号、证件号等内部字段。",
       "columns": [
-        { "name": "officer_id", "description": "民警档案唯一标识" },
-        { "name": "name", "description": "民警姓名（关联账号的显示名），本项目为合成数据" },
-        { "name": "user_id", "description": "关联账号 ID（sys_user）；不提供登录名" },
+        {
+          "name": "officer_id",
+          "description": "民警档案唯一标识"
+        },
+        {
+          "name": "name",
+          "description": "民警姓名（关联账号的显示名），本项目为合成数据"
+        },
+        {
+          "name": "user_id",
+          "description": "关联账号 ID（sys_user）；不提供登录名"
+        },
         {
           "name": "user_status",
           "description": "关联账号启停状态代码：ENABLED 启用，DISABLED 停用"
@@ -284,9 +458,18 @@
           "name": "unit_id",
           "description": "所属单位 ID（取关联账号的所属单位）；单位锁定或缺失时为 NULL"
         },
-        { "name": "unit_code", "description": "所属单位编码；缺失时为 NULL" },
-        { "name": "unit_name", "description": "所属单位当前名称" },
-        { "name": "police_station_id", "description": "所属派出所档案 ID" },
+        {
+          "name": "unit_code",
+          "description": "所属单位编码；缺失时为 NULL"
+        },
+        {
+          "name": "unit_name",
+          "description": "所属单位当前名称"
+        },
+        {
+          "name": "police_station_id",
+          "description": "所属派出所档案 ID"
+        },
         {
           "name": "police_station_name",
           "description": "所属派出所当前名称；关联缺失或停用时仍保留本行"
@@ -299,14 +482,26 @@
           "name": "police_station_status_label",
           "description": "派出所状态中文标签；关联缺失为 NULL"
         },
-        { "name": "duty", "description": "职务说明；NULL 表示未提供" },
-        { "name": "status", "description": "民警档案状态代码：ENABLED 启用，DISABLED 停用" },
+        {
+          "name": "duty",
+          "description": "职务说明；NULL 表示未提供"
+        },
+        {
+          "name": "status",
+          "description": "民警档案状态代码：ENABLED 启用，DISABLED 停用"
+        },
         {
           "name": "status_label",
           "description": "档案状态中文标签，来自字典 common.status（可维护）"
         },
-        { "name": "created_at_utc", "description": "创建时刻 UTC" },
-        { "name": "updated_at_utc", "description": "最近修改时刻 UTC" }
+        {
+          "name": "created_at_utc",
+          "description": "创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "最近修改时刻 UTC"
+        }
       ]
     },
     {
@@ -314,17 +509,38 @@
       "displayName": "码头档案",
       "description": "涉海基础档案·码头，一条码头档案一行（wharf_id 唯一）。所有关联都是 LEFT JOIN：独立码头（port_id 为空）、未指定责任民警（officer_id 为空）或关联对象停用时记录仍保留。关联为空与关联停用是两种情况，按状态列区分。",
       "columns": [
-        { "name": "wharf_id", "description": "码头档案唯一标识" },
-        { "name": "name", "description": "码头显示名称，不作为唯一标识" },
-        { "name": "region", "description": "所在区域" },
-        { "name": "location", "description": "位置描述；NULL 表示未提供" },
-        { "name": "purpose", "description": "用途说明；NULL 表示未提供" },
-        { "name": "status", "description": "码头档案状态代码：ENABLED 启用，DISABLED 停用" },
+        {
+          "name": "wharf_id",
+          "description": "码头档案唯一标识"
+        },
+        {
+          "name": "name",
+          "description": "码头显示名称，不作为唯一标识"
+        },
+        {
+          "name": "region",
+          "description": "所在区域"
+        },
+        {
+          "name": "location",
+          "description": "位置描述；NULL 表示未提供"
+        },
+        {
+          "name": "purpose",
+          "description": "用途说明；NULL 表示未提供"
+        },
+        {
+          "name": "status",
+          "description": "码头档案状态代码：ENABLED 启用，DISABLED 停用"
+        },
         {
           "name": "status_label",
           "description": "码头状态中文标签，来自字典 common.status（可维护）"
         },
-        { "name": "port_id", "description": "所属港口 ID；独立码头为 NULL" },
+        {
+          "name": "port_id",
+          "description": "所属港口 ID；独立码头为 NULL"
+        },
         {
           "name": "port_name",
           "description": "所属港口当前名称；未关联为 NULL，港口停用时仍给出名称"
@@ -333,8 +549,14 @@
           "name": "port_status",
           "description": "所属港口档案状态代码；未关联为 NULL，DISABLED 表示港口已停用"
         },
-        { "name": "port_status_label", "description": "港口状态中文标签；未关联为 NULL" },
-        { "name": "police_station_id", "description": "管辖派出所档案 ID；未指定为 NULL" },
+        {
+          "name": "port_status_label",
+          "description": "港口状态中文标签；未关联为 NULL"
+        },
+        {
+          "name": "police_station_id",
+          "description": "管辖派出所档案 ID；未指定为 NULL"
+        },
         {
           "name": "police_station_name",
           "description": "管辖派出所当前名称；未指定或派出所停用时仍给出名称"
@@ -347,7 +569,10 @@
           "name": "police_station_status_label",
           "description": "派出所状态中文标签；未指定为 NULL"
         },
-        { "name": "officer_id", "description": "责任民警档案 ID；未指定为 NULL" },
+        {
+          "name": "officer_id",
+          "description": "责任民警档案 ID；未指定为 NULL"
+        },
         {
           "name": "officer_name",
           "description": "责任民警姓名（关联账号显示名）；未指定或账号缺失时为 NULL"
@@ -356,9 +581,408 @@
           "name": "officer_status",
           "description": "责任民警档案状态代码；未指定为 NULL，DISABLED 表示档案已停用"
         },
-        { "name": "officer_status_label", "description": "民警档案状态中文标签；未指定为 NULL" },
-        { "name": "created_at_utc", "description": "创建时刻 UTC" },
-        { "name": "updated_at_utc", "description": "最近修改时刻 UTC" }
+        {
+          "name": "officer_status_label",
+          "description": "民警档案状态中文标签；未指定为 NULL"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "最近修改时刻 UTC"
+        }
+      ]
+    },
+    {
+      "view": "ai_sys_user",
+      "displayName": "用户账号",
+      "description": "系统用户账号，一行一个用户（user_id 唯一）；不含密码哈希。所属单位与角色是当前状态；精确按角色筛选或统计用户数请用 ai_sys_user_role。本视图面向本地合成数据的学习与调研。",
+      "columns": [
+        {
+          "name": "user_id",
+          "description": "用户唯一标识；按用户计数或去重以此为准"
+        },
+        {
+          "name": "login_name",
+          "description": "登录名，区分大小写、全局唯一、停用后不复用；不提供密码或哈希"
+        },
+        {
+          "name": "display_name",
+          "description": "显示名；本地环境为合成姓名"
+        },
+        {
+          "name": "status",
+          "description": "账号状态代码：ENABLED 启用，DISABLED 停用"
+        },
+        {
+          "name": "status_label",
+          "description": "账号状态中文标签，来自字典 common.status（可维护）"
+        },
+        {
+          "name": "unit_id",
+          "description": "所属单位 ID；用户数据范围以此为起点"
+        },
+        {
+          "name": "unit_code",
+          "description": "所属单位编码；单位缺失为 NULL"
+        },
+        {
+          "name": "unit_name",
+          "description": "所属单位当前名称，非历史快照"
+        },
+        {
+          "name": "unit_level",
+          "description": "单位层级代码：1 总队，2 支队，3 大队；单位缺失为 NULL"
+        },
+        {
+          "name": "unit_level_label",
+          "description": "单位层级中文标签，来自字典 system.unit.level（可维护）"
+        },
+        {
+          "name": "unit_area_code",
+          "description": "单位行政区划代码；单位缺失为 NULL"
+        },
+        {
+          "name": "unit_status",
+          "description": "所属单位状态代码；单位缺失为 NULL，DISABLED 表示单位已停用"
+        },
+        {
+          "name": "unit_status_label",
+          "description": "所属单位状态中文标签；单位缺失为 NULL"
+        },
+        {
+          "name": "role_count",
+          "description": "直接授予的角色数量；不能据此推断功能权限"
+        },
+        {
+          "name": "role_names",
+          "description": "角色名称列表（顿号连接），仅供展示；角色很多时不保证完整，精确筛选请用 ai_sys_user_role"
+        },
+        {
+          "name": "last_login_at_utc",
+          "description": "最近一次成功登录时刻 UTC；从未登录为 NULL"
+        },
+        {
+          "name": "authorization_version",
+          "description": "授权版本；角色或数据范围变化时加一，持旧版本的会话会被判定失效"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "账号创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "账号最近修改时刻 UTC"
+        }
+      ]
+    },
+    {
+      "view": "ai_sys_user_role",
+      "displayName": "用户角色关系",
+      "description": "用户与角色的授予关系，一行一个「用户 × 角色」（user_id + role_id 唯一）；用于按角色或按用户精确筛选与统计。",
+      "columns": [
+        {
+          "name": "user_id",
+          "description": "被授予的用户 ID"
+        },
+        {
+          "name": "login_name",
+          "description": "用户登录名"
+        },
+        {
+          "name": "display_name",
+          "description": "用户显示名"
+        },
+        {
+          "name": "user_status",
+          "description": "用户账号状态代码：ENABLED 启用，DISABLED 停用"
+        },
+        {
+          "name": "unit_id",
+          "description": "用户所属单位 ID"
+        },
+        {
+          "name": "unit_code",
+          "description": "用户所属单位编码"
+        },
+        {
+          "name": "unit_name",
+          "description": "用户所属单位当前名称"
+        },
+        {
+          "name": "role_id",
+          "description": "角色 ID"
+        },
+        {
+          "name": "role_code",
+          "description": "角色稳定编码，授权判定的依据"
+        },
+        {
+          "name": "role_name",
+          "description": "角色显示名，可修改"
+        },
+        {
+          "name": "role_status",
+          "description": "角色状态代码：ENABLED 启用，DISABLED 停用"
+        },
+        {
+          "name": "role_status_label",
+          "description": "角色状态中文标签，来自字典 common.status（可维护）"
+        },
+        {
+          "name": "granted_at_utc",
+          "description": "授予时刻 UTC"
+        }
+      ]
+    },
+    {
+      "view": "ai_sys_role",
+      "displayName": "角色定义",
+      "description": "系统角色定义，一行一个角色（role_id 唯一）。注意：内置管理员角色（默认 SYSTEM_ADMIN，由部署配置可含多个编码）的权限不逐条写入 sys_role_permission，登录时展开为全部权限码，因此 permission_count 为 0 不代表没有权限；权限明细请看 ai_sys_role_permission。",
+      "columns": [
+        {
+          "name": "role_id",
+          "description": "角色唯一标识"
+        },
+        {
+          "name": "role_code",
+          "description": "角色稳定编码，区分大小写、全局唯一，授权判定依据；停用后不复用"
+        },
+        {
+          "name": "role_name",
+          "description": "角色显示名，可修改"
+        },
+        {
+          "name": "description",
+          "description": "角色说明，仅用于展示；NULL 表示未填写"
+        },
+        {
+          "name": "status",
+          "description": "角色状态代码：ENABLED 启用，DISABLED 停用；停用使持有者旧会话失效"
+        },
+        {
+          "name": "status_label",
+          "description": "角色状态中文标签，来自字典 common.status（可维护）"
+        },
+        {
+          "name": "member_count",
+          "description": "直接绑定该角色的用户数（不含继承关系）"
+        },
+        {
+          "name": "permission_count",
+          "description": "显式写入 sys_role_permission 的权限数；内置管理员角色为 0 但登录时拥有全部权限，不能据此判断权限多少"
+        },
+        {
+          "name": "version",
+          "description": "角色并发编辑版本"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "角色创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "角色最近修改时刻 UTC"
+        }
+      ]
+    },
+    {
+      "view": "ai_sys_role_permission",
+      "displayName": "角色权限关系",
+      "description": "角色与权限码的显式授予关系，一行一个「角色 × 权限码」；只包含显式写入 sys_role_permission 的授权，不含内置管理员角色登录时展开的全部权限。",
+      "columns": [
+        {
+          "name": "role_id",
+          "description": "角色 ID"
+        },
+        {
+          "name": "role_code",
+          "description": "角色稳定编码"
+        },
+        {
+          "name": "role_name",
+          "description": "角色显示名"
+        },
+        {
+          "name": "role_status",
+          "description": "角色状态代码：ENABLED 启用，DISABLED 停用"
+        },
+        {
+          "name": "permission_id",
+          "description": "权限码 ID"
+        },
+        {
+          "name": "permission_code",
+          "description": "权限码，形如「模块:资源:动作」；判权使用的稳定标识，创建后不可修改"
+        },
+        {
+          "name": "permission_name",
+          "description": "权限显示名"
+        },
+        {
+          "name": "permission_description",
+          "description": "权限说明；NULL 表示未填写"
+        },
+        {
+          "name": "module_code",
+          "description": "权限所属模块编码（权限码第一段），如 system、agent、task、intelligence、maritime"
+        },
+        {
+          "name": "menu_names",
+          "description": "绑定该权限码的菜单节点名称（顿号连接），仅供展示；没有绑定时为 NULL"
+        },
+        {
+          "name": "granted_at_utc",
+          "description": "授予时刻 UTC"
+        }
+      ]
+    },
+    {
+      "view": "ai_sys_unit",
+      "displayName": "单位组织",
+      "description": "单位组织树，一行一个单位（unit_id 唯一）；层级为 1 总队、2 支队、3 大队，parent 为空表示顶级单位；child_count 与 user_count 只统计直属下一级与直属用户。",
+      "columns": [
+        {
+          "name": "unit_id",
+          "description": "单位唯一标识"
+        },
+        {
+          "name": "unit_code",
+          "description": "单位业务编码，区分大小写、全局唯一、停用后不复用"
+        },
+        {
+          "name": "unit_name",
+          "description": "单位显示名，可修改"
+        },
+        {
+          "name": "unit_level",
+          "description": "单位层级代码：1 总队，2 支队，3 大队"
+        },
+        {
+          "name": "unit_level_label",
+          "description": "层级中文标签，来自字典 system.unit.level（可维护）"
+        },
+        {
+          "name": "area_code",
+          "description": "行政区划代码；NULL 表示未提供，不参与单位关联"
+        },
+        {
+          "name": "status",
+          "description": "单位状态代码：ENABLED 启用，DISABLED 停用；停用后其用户不可登录"
+        },
+        {
+          "name": "status_label",
+          "description": "单位状态中文标签，来自字典 common.status（可维护）"
+        },
+        {
+          "name": "parent_id",
+          "description": "上级单位 ID；顶级单位为 NULL"
+        },
+        {
+          "name": "parent_code",
+          "description": "上级单位编码；顶级单位为 NULL"
+        },
+        {
+          "name": "parent_name",
+          "description": "上级单位当前名称；顶级单位为 NULL"
+        },
+        {
+          "name": "child_count",
+          "description": "直属下一级单位数量（不含更深层）"
+        },
+        {
+          "name": "user_count",
+          "description": "直属该单位的用户数（不含下级单位用户）"
+        },
+        {
+          "name": "version",
+          "description": "单位并发编辑版本"
+        },
+        {
+          "name": "created_at_utc",
+          "description": "创建时刻 UTC"
+        },
+        {
+          "name": "updated_at_utc",
+          "description": "最近修改时刻 UTC"
+        }
+      ]
+    },
+    {
+      "view": "ai_audit_log",
+      "displayName": "操作审计流水",
+      "description": "操作审计流水，一行一条追加记录；只追加，保留 30 天后硬删。module/action 是稳定代码（module 如 system、auth、agent、maritime、bootstrap），result_label 是中文结果；summary 是白名单摘要，不含密码、密钥与业务正文。",
+      "columns": [
+        {
+          "name": "audit_id",
+          "description": "审计记录唯一标识，按写入顺序递增"
+        },
+        {
+          "name": "occurred_at_utc",
+          "description": "操作发生时刻 UTC；列表与趋势按它排序"
+        },
+        {
+          "name": "stored_at_utc",
+          "description": "记录写入数据库时刻 UTC；与发生时刻的差即落库延迟"
+        },
+        {
+          "name": "actor_user_id",
+          "description": "操作者用户 ID；登录失败等无身份场景为 NULL"
+        },
+        {
+          "name": "actor_login",
+          "description": "操作者登录名快照；登录失败时记录尝试的登录名"
+        },
+        {
+          "name": "actor_name",
+          "description": "操作者姓名快照，账号改名或删除后仍可读"
+        },
+        {
+          "name": "actor_unit_name",
+          "description": "操作者单位名快照，反映操作当时归属"
+        },
+        {
+          "name": "module",
+          "description": "模块代码：system 系统管理、agent 智能体、maritime 涉海要素、auth 登录退出、bootstrap 初始化"
+        },
+        {
+          "name": "action",
+          "description": "动作代码「资源:动作」，如 user:create、role:update、auth:login"
+        },
+        {
+          "name": "result",
+          "description": "结果代码：SUCCEEDED 成功，FAILED 失败"
+        },
+        {
+          "name": "result_label",
+          "description": "结果中文标签，由 result 代码映射"
+        },
+        {
+          "name": "target_type",
+          "description": "操作对象类型，如 USER、ROLE、DATASOURCE、ISLAND；无对象时为空"
+        },
+        {
+          "name": "target_id",
+          "description": "对象标识（主键或编码），对象删除后仍保留"
+        },
+        {
+          "name": "target_label",
+          "description": "对象名称快照，对象删除后仍能读懂记录"
+        },
+        {
+          "name": "summary",
+          "description": "白名单摘要，不含密码、密钥与业务正文"
+        },
+        {
+          "name": "request_id",
+          "description": "请求 ID，用于与服务器日志对齐；可能为空"
+        },
+        {
+          "name": "client_ip",
+          "description": "客户端 IP；登录事件必填，写操作可能为空"
+        }
       ]
     }
   ]
